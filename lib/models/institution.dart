@@ -17,6 +17,20 @@ class Institution {
     return accounts.fold(0.0, (sum, account) => sum + account.totalValue);
   }
 
+  double get profitAndLoss {
+    return accounts.fold(0.0, (sum, account) => sum + account.profitAndLoss);
+  }
+
+  double get profitAndLossPercentage {
+    final totalPnl = profitAndLoss;
+    final currentValue = totalValue;
+    if (currentValue == totalPnl) {
+      return 0;
+    }
+    final previousValue = currentValue - totalPnl;
+    return totalPnl / previousValue;
+  }
+
   Institution deepCopy() {
     return Institution(
       name: name,

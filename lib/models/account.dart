@@ -30,6 +30,10 @@ class Account {
     return assetsValue + cashBalance;
   }
 
+  double get profitAndLoss {
+    return assets.fold(0.0, (sum, asset) => sum + asset.profitAndLoss);
+  }
+
   Account deepCopy() {
     return Account(
       name: name,
