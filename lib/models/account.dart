@@ -1,18 +1,21 @@
+import 'package:hive/hive.dart';
 import 'asset.dart';
 import 'account_type.dart';
 
-/// Représente un compte financier (PEA, CTO, etc.) au sein d'une institution.
+part 'account.g.dart';
+
+@HiveType(typeId: 2)
 class Account {
-  /// Nom du compte (ex: "PEA Boursorama")
+  @HiveField(0)
   final String name;
 
-  /// Type de compte
+  @HiveField(1)
   final AccountType type;
 
-  /// Liste des actifs détenus dans le compte
+  @HiveField(2)
   List<Asset> assets;
 
-  /// Solde de liquidités du compte
+  @HiveField(3)
   double cashBalance;
 
   Account({
@@ -22,28 +25,8 @@ class Account {
     this.cashBalance = 0.0,
   });
 
-  /// Valeur totale du compte (actifs + liquidités)
   double get totalValue {
     final assetsValue = assets.fold(0.0, (sum, asset) => sum + asset.totalValue);
     return assetsValue + cashBalance;
-  }
-
-  // Méthodes pour la sérialisation JSON
-  factory Account.fromJson(Map<String, dynamic> json) {
-    return Account(
-      name: json['name'],
-      type: AccountType.values.firstWhere((e) => e.toString() == json['type']),
-      assets: (json['assets'] as List).map((i) => Asset.fromJson(i)).toList(),
-      cashBalance: json['cashBalance'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'type': type.toString(),
-      'assets': assets.map((a) => a.toJson()).toList(),
-      'cashBalance': cashBalance,
-    };
   }
 }

@@ -1,18 +1,22 @@
-/// Représente un actif financier individuel (action, ETF, etc.)
+import 'package:hive/hive.dart';
+
+part 'asset.g.dart';
+
+@HiveType(typeId: 3)
 class Asset {
-  /// Nom de l'actif (ex: "Apple Inc.")
+  @HiveField(0)
   final String name;
 
-  /// Symbole boursier ou ticker (ex: "AAPL")
+  @HiveField(1)
   final String ticker;
 
-  /// Quantité d'actifs détenus
+  @HiveField(2)
   double quantity;
 
-  /// Prix de Revient Unitaire (PRU)
+  @HiveField(3)
   double averagePrice;
 
-  /// Prix actuel du marché
+  @HiveField(4)
   double currentPrice;
 
   Asset({
@@ -23,36 +27,12 @@ class Asset {
     required this.currentPrice,
   });
 
-  /// Valeur totale de l'actif
   double get totalValue => quantity * currentPrice;
 
-  /// Plus-value ou moins-value latente
   double get profitAndLoss => (currentPrice - averagePrice) * quantity;
 
-  /// Plus-value ou moins-value en pourcentage
   double get profitAndLossPercentage {
     if (averagePrice == 0) return 0.0;
     return (currentPrice / averagePrice - 1);
-  }
-
-  // Méthodes pour la sérialisation JSON (à implémenter avec Hive/Isar)
-  factory Asset.fromJson(Map<String, dynamic> json) {
-    return Asset(
-      name: json['name'],
-      ticker: json['ticker'],
-      quantity: json['quantity'],
-      averagePrice: json['averagePrice'],
-      currentPrice: json['currentPrice'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'ticker': ticker,
-      'quantity': quantity,
-      'averagePrice': averagePrice,
-      'currentPrice': currentPrice,
-    };
   }
 }

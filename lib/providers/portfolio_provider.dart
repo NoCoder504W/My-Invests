@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import '../models/portfolio.dart';
 import '../models/institution.dart';
 import '../models/account.dart';
@@ -7,13 +8,48 @@ import '../models/account_type.dart';
 
 class PortfolioProvider extends ChangeNotifier {
   Portfolio? _portfolio;
+  final Box<Portfolio> _portfolioBox = Hive.box('portfolio_box');
 
   Portfolio? get portfolio => _portfolio;
 
-  // TODO: Charger le portefeuille depuis Hive au démarrage
+  PortfolioProvider() {
+    _loadPortfolio();
+  }
+
+  void _loadPortfolio() {
+    // On essaie de charger le premier (et seul) portefeuille de la boîte.
+    if (_portfolioBox.isNotEmpty) {
+      _portfolio = _portfolioBox.getAt(0);
+      notifyListeners();
+    }
+  }
 
   void loadDemoPortfolio() {
-    _portfolio = Portfolio(
+    _portfolio = _createDemoPortfolio();
+    _savePortfolio();
+    notifyListeners();
+  }
+
+  void updatePortfolio(Portfolio portfolio) {
+    _portfolio = portfolio;
+    _savePortfolio();
+    notifyListeners();
+  }
+
+  void clearPortfolio() {
+    _portfolio = null;
+    _portfolioBox.clear(); // Vide toute la boîte
+    notifyListeners();
+  }
+
+  void _savePortfolio() {
+    if (_portfolio != null) {
+      _portfolioBox.put(0, _portfolio!); // Sauvegarde le portefeuille à l'index 0
+    }
+  }
+
+  Portfolio _createDemoPortfolio() {
+     return Portfolio(
       institutions: [
         Institution(
           name: 'Boursorama',
@@ -53,18 +89,5 @@ class PortfolioProvider extends ChangeNotifier {
         ),
       ],
     );
-    notifyListeners();
-  }
-
-  void updatePortfolio(Portfolio portfolio) {
-    _portfolio = portfolio;
-    // TODO: Sauvegarder le portefeuille dans Hive
-    notifyListeners();
-  }
-
-  void clearPortfolio() {
-    _portfolio = null;
-    // TODO: Supprimer le portefeuille de Hive
-    notifyListeners();
   }
 }
