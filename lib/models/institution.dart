@@ -31,6 +31,15 @@ class Institution {
     return totalPnl / previousValue;
   }
 
+  double get estimatedAnnualYield {
+    final totalVal = totalValue;
+    if (totalVal == 0) {
+      return 0.0;
+    }
+    final weightedYield = accounts.fold(0.0, (sum, acc) => sum + (acc.totalValue * acc.estimatedAnnualYield));
+    return weightedYield / totalVal;
+  }
+
   Institution deepCopy() {
     return Institution(
       name: name,

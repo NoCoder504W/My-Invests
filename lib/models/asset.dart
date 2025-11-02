@@ -19,12 +19,16 @@ class Asset {
   @HiveField(4)
   double currentPrice;
 
+  @HiveField(5)
+  double estimatedAnnualYield;
+
   Asset({
     required this.name,
     required this.ticker,
     required this.quantity,
     required this.averagePrice,
     required this.currentPrice,
+    this.estimatedAnnualYield = 0.0,
   });
 
   double get totalValue => quantity * currentPrice;
@@ -43,6 +47,7 @@ class Asset {
       quantity: quantity,
       averagePrice: averagePrice,
       currentPrice: currentPrice,
+      estimatedAnnualYield: estimatedAnnualYield,
     );
   }
 }

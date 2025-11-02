@@ -18,6 +18,7 @@ class _AllocationChartState extends State<AllocationChart> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bool hasData = widget.portfolio.institutions.isNotEmpty && widget.portfolio.totalValue > 0;
 
     return Card(
       child: Padding(
@@ -32,30 +33,37 @@ class _AllocationChartState extends State<AllocationChart> {
             const SizedBox(height: 24),
             SizedBox(
               height: 180,
-              child: PieChart(
-                PieChartData(
-                  pieTouchData: PieTouchData(
-                    touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                      setState(() {
-                        if (!event.isInterestedForInteractions ||
-                            pieTouchResponse == null ||
-                            pieTouchResponse.touchedSection == null) {
-                          touchedIndex = -1;
-                          return;
-                        }
-                        touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                      });
-                    },
-                  ),
-                  sections: _generateSections(
-                    context,
-                    widget.portfolio.institutions,
-                    widget.portfolio.totalValue,
-                  ),
-                  centerSpaceRadius: 40,
-                  sectionsSpace: 2,
-                ),
-              ),
+              child: hasData
+                  ? PieChart(
+                      PieChartData(
+                        pieTouchData: PieTouchData(
+                          touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                            setState(() {
+                              if (!event.isInterestedForInteractions ||
+                                  pieTouchResponse == null ||
+                                  pieTouchResponse.touchedSection == null) {
+                                touchedIndex = -1;
+                                return;
+                              }
+                              touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                            });
+                          },
+                        ),
+                        sections: _generateSections(
+                          context,
+                          widget.portfolio.institutions,
+                          widget.portfolio.totalValue,
+                        ),
+                        centerSpaceRadius: 40,
+                        sectionsSpace: 2,
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        'Aucune donnée d\'allocation disponible.',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                      ),
+                    ),
             ),
           ],
         ),
@@ -74,7 +82,8 @@ class _AllocationChartState extends State<AllocationChart> {
       Colors.red.shade400,
     ];
 
-    if (totalValue == 0) return [];
+    // Return an empty list if there is no value, to prevent division by zero
+    if (totalValue <= 0) return [];
 
     return List.generate(institutions.length, (i) {
       final isTouched = i == touchedIndex;
@@ -82,6 +91,11 @@ class _AllocationChartState extends State<AllocationChart> {
       final percentage = (institution.totalValue / totalValue) * 100;
       final radius = isTouched ? 60.0 : 50.0;
       final fontSize = isTouched ? 16.0 : 14.0;
+
+      // Avoid creating a section with no value
+      if (institution.totalValue <= 0) {
+        return PieChartSectionData(value: 0); // Return a dummy, invisible section
+      }
 
       return PieChartSectionData(
         color: colors[i % colors.length],
@@ -97,6 +111,6 @@ class _AllocationChartState extends State<AllocationChart> {
           shadows: const [Shadow(color: Colors.black, blurRadius: 2)],
         ),
       );
-    });
+    }).where((section) => section.value > 0).toList(); // Filter out dummy sections
   }
 }

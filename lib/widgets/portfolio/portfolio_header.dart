@@ -10,12 +10,12 @@ class PortfolioHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // NOTE: Le calcul de P/L et de rendement est simplifié ici.
+    // NOTE: Le calcul de P/L est simplifié ici.
     // Une vraie application nécessiterait une logique plus complexe.
     final totalValue = portfolio.totalValue;
     final totalPL = 5000.0; // Exemple
     final totalPLPercentage = 0.10; // Exemple
-    final annualYield = 0.05; // Exemple
+    final annualYield = portfolio.estimatedAnnualYield;
 
     return Card(
       child: Padding(

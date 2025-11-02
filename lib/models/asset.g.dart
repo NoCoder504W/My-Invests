@@ -22,13 +22,14 @@ class AssetAdapter extends TypeAdapter<Asset> {
       quantity: fields[2] as double,
       averagePrice: fields[3] as double,
       currentPrice: fields[4] as double,
+      estimatedAnnualYield: fields[5] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, Asset obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -38,7 +39,9 @@ class AssetAdapter extends TypeAdapter<Asset> {
       ..writeByte(3)
       ..write(obj.averagePrice)
       ..writeByte(4)
-      ..write(obj.currentPrice);
+      ..write(obj.currentPrice)
+      ..writeByte(5)
+      ..write(obj.estimatedAnnualYield);
   }
 
   @override

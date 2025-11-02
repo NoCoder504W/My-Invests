@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/portfolio_provider.dart';
 import '../providers/settings_provider.dart';
+import 'launch_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -28,7 +30,6 @@ class SettingsScreen extends StatelessWidget {
             onChanged: (bool value) {
               settingsProvider.toggleOnlineMode(value);
             },
-             // Correction de la propriété obsolète
             activeTrackColor: theme.colorScheme.primary,
           ),
           const Divider(),
@@ -49,9 +50,58 @@ class SettingsScreen extends StatelessWidget {
               }).toList(),
             ),
           ),
+          const Divider(),
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton.icon(
+              icon: const Icon(Icons.delete_forever),
+              label: const Text('Réinitialiser l\'application'),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.error,
+              ),
+              onPressed: () => _showResetConfirmationDialog(context),
+            ),
+          ),
           const SizedBox(height: 20),
         ],
       ),
+    );
+  }
+
+  void _showResetConfirmationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Réinitialiser l\'application ?'),
+          content: const Text(
+              'Toutes vos données seront définitivement effacées. Cette action est irréversible.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Annuler'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Close the dialog
+              },
+            ),
+            TextButton(
+              child: Text(
+                'Réinitialiser',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+              onPressed: () {
+                // Clear data
+                Provider.of<PortfolioProvider>(context, listen: false).clearPortfolio();
+
+                // Navigate to launch screen and remove all previous routes
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LaunchScreen()),
+                  (Route<dynamic> route) => false,
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

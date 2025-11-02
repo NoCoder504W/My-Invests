@@ -50,7 +50,7 @@ class WelcomeScreen extends StatelessWidget {
                 onPressed: () {
                   // TODO: Naviguer vers un écran de création de portefeuille
                   // Pour l'instant, on charge le portefeuille de démo et on va au dashboard
-                  portfolioProvider.loadDemoPortfolio();
+                  portfolioProvider.createDemoPortfolio();
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (_) => const DashboardScreen()),
                   );
@@ -65,7 +65,7 @@ class WelcomeScreen extends StatelessWidget {
                   side: BorderSide(color: theme.colorScheme.primary),
                 ),
                 onPressed: () {
-                  portfolioProvider.loadDemoPortfolio();
+                  portfolioProvider.createDemoPortfolio();
                    Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (_) => const DashboardScreen()),
                   );

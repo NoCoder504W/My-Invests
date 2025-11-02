@@ -34,6 +34,15 @@ class Account {
     return assets.fold(0.0, (sum, asset) => sum + asset.profitAndLoss);
   }
 
+  double get estimatedAnnualYield {
+    final assetsValue = assets.fold(0.0, (sum, asset) => sum + asset.totalValue);
+    if (assetsValue == 0) {
+      return 0.0;
+    }
+    final weightedYield = assets.fold(0.0, (sum, asset) => sum + (asset.totalValue * asset.estimatedAnnualYield));
+    return weightedYield / assetsValue;
+  }
+
   Account deepCopy() {
     return Account(
       name: name,

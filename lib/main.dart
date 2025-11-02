@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart'; // Importer kDebugMode
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -15,7 +16,7 @@ import 'providers/settings_provider.dart';
 
 // Screens
 import 'screens/dashboard_screen.dart';
-import 'screens/welcome_screen.dart';
+import 'screens/launch_screen.dart'; 
 
 // Utils
 import 'utils/app_theme.dart';
@@ -25,6 +26,11 @@ void main() async {
 
   // 1. Initialiser Hive
   await Hive.initFlutter();
+
+  // !! AJOUT : Vider Hive en mode debug pour des tests propres !!
+  if (kDebugMode) {
+    await Hive.deleteFromDisk(); // Supprime toutes les données
+  }
 
   // 2. Enregistrer les Adapters générés
   Hive.registerAdapter(PortfolioAdapter());
@@ -58,7 +64,7 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             home: portfolioProvider.portfolio != null
                 ? const DashboardScreen()
-                : const WelcomeScreen(),
+                : const LaunchScreen(), 
           );
         },
       ),
