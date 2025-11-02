@@ -13,4 +13,10 @@ class Portfolio extends HiveObject {
   double get totalValue {
     return institutions.fold(0.0, (sum, inst) => sum + inst.totalValue);
   }
+
+  Portfolio deepCopy() {
+    return Portfolio(
+      institutions: institutions.map((inst) => inst.deepCopy()).toList(),
+    );
+  }
 }

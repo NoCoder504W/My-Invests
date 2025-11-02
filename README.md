@@ -8,24 +8,21 @@ La structure de base de l'application est en place, incluant les modèles de don
 
 ### Ce qui est terminé (Fondations Techniques) :
 
-- **Squelette de l'Interface Utilisateur (UI) :** Les écrans principaux ont été implémentés de manière statique (Welcome, Dashboard, Overview, Planner, Correction, Settings) et affichent des données d'exemple.
-- **Modèles de Données (`models`) :** La structure des données (`Portfolio`, `Account`, `Asset`, etc.) est définie, préparant l'application à gérer les informations du portefeuille.
+- **Squelette de l'Interface Utilisateur (UI) :** Les écrans principaux ont été implémentés de manière statique et affichent des données d'exemple.
+- **Modèles de Données (`models`) :** La structure des données est définie, préparant l'application à gérer les informations du portefeuille.
 - **Gestion d'État (`providers`) :** Le socle de gestion d'état est configuré avec `Provider` pour une architecture réactive.
-- **Thème Visuel (`utils`) :** Le thème global de l'application (Dark Mode, couleurs, typographie) est implémenté et centralisé.
-- **Données de Test :** Une fonctionnalité de chargement de portefeuille de démonstration est disponible pour les tests et le développement de l'UI.
+- **Thème Visuel (`utils`) :** Le thème global de l'application (Dark Mode) est implémenté et centralisé.
+- **Persistance des Données (stockage local) :** L'application sauvegarde les données de l'utilisateur et les conserve entre les sessions grâce à `Hive`.
 
 ### Problèmes Techniques Résolus :
 
-- **Configuration de l'Environnement de Build :** Correction des problèmes de compatibilité entre Flutter et l'environnement de développement Windows (Visual Studio).
-- **Résolution des Dépendances :** Ajout et configuration des librairies externes nécessaires au projet (`provider`, `fl_chart`).
-- **Correction du Code Initial :** Révision et correction des erreurs de syntaxe, des chemins d'importation et des configurations de thème dans le code de base.
+- **Configuration de l'Environnement de Build :** Correction des problèmes de compatibilité entre Flutter et l'environnement de développement Windows.
+- **Résolution des Dépendances :** Ajout et configuration des librairies externes nécessaires (`provider`, `fl_chart`, `hive`).
+- **Correction du Code Initial :** Révision et correction des erreurs de syntaxe et des chemins d'importation.
 
 ## Prochaines Étapes (Implémentation des Fonctionnalités)
 
 Voici la liste des tâches à accomplir pour rendre l'application fonctionnelle. Vous pouvez demander à démarrer une tâche en utilisant son numéro.
-
-- **1. Persistance des Données**
-  - **Objectif :** Implémenter le stockage local pour que les données de l'utilisateur soient conservées entre les sessions.
 
 - **2. Implémentation de la Logique UI**
   - **Objectif :** Rendre l'interface utilisateur dynamique et interactive.

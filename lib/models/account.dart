@@ -29,4 +29,13 @@ class Account {
     final assetsValue = assets.fold(0.0, (sum, asset) => sum + asset.totalValue);
     return assetsValue + cashBalance;
   }
+
+  Account deepCopy() {
+    return Account(
+      name: name,
+      type: type,
+      cashBalance: cashBalance,
+      assets: assets.map((asset) => asset.deepCopy()).toList(),
+    );
+  }
 }

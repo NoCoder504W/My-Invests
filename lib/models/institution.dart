@@ -16,4 +16,11 @@ class Institution {
   double get totalValue {
     return accounts.fold(0.0, (sum, account) => sum + account.totalValue);
   }
+
+  Institution deepCopy() {
+    return Institution(
+      name: name,
+      accounts: accounts.map((account) => account.deepCopy()).toList(),
+    );
+  }
 }

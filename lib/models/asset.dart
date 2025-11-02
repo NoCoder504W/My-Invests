@@ -35,4 +35,14 @@ class Asset {
     if (averagePrice == 0) return 0.0;
     return (currentPrice / averagePrice - 1);
   }
+
+  Asset deepCopy() {
+    return Asset(
+      name: name,
+      ticker: ticker,
+      quantity: quantity,
+      averagePrice: averagePrice,
+      currentPrice: currentPrice,
+    );
+  }
 }
