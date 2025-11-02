@@ -6,8 +6,8 @@ Ce projet vise à créer une application mobile pour le suivi de portefeuille fi
 
 Vous pouvez télécharger les dernières versions de test de l'application ici :
 
-- ⬇️ **[Télécharger pour Windows](https://github.com/VOTRE_NOM_UTILISATEUR/VOTRE_DEPOT/releases/latest/download/NOM_DU_FICHIER_WINDOWS.zip)**
-- ⬇️ **[Télécharger pour Android](https://github.com/VOTRE_NOM_UTILISATEUR/VOTRE_DEPOT/releases/latest/download/NOM_DU_FICHIER_ANDROID.apk)**
+- ⬇️ **[Télécharger pour Windows](https://github.com/kireg/portefeuille/releases/download/v0.1.0/portefeuille-windows-v0.1.0.zip)**
+- ⬇️ **[Télécharger pour Android](https://github.com/kireg/portefeuille/releases/download/v0.1.0/app-release.apk)**
 
 *Note pour Android : Vous devrez peut-être autoriser l'installation d'applications de sources inconnues dans les paramètres de votre téléphone.*
 
