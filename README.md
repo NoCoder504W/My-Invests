@@ -2,6 +2,17 @@
 
 Ce projet vise à créer une application mobile pour le suivi de portefeuille financier, en se basant sur une architecture Flutter moderne et maintenable.
 
+## Téléchargement pour Test
+
+Vous pouvez télécharger les dernières versions de test de l'application ici :
+
+- ⬇️ **[Télécharger pour Windows](https://github.com/VOTRE_NOM_UTILISATEUR/VOTRE_DEPOT/releases/latest/download/NOM_DU_FICHIER_WINDOWS.zip)**
+- ⬇️ **[Télécharger pour Android](https://github.com/VOTRE_NOM_UTILISATEUR/VOTRE_DEPOT/releases/latest/download/NOM_DU_FICHIER_ANDROID.apk)**
+
+*Note pour Android : Vous devrez peut-être autoriser l'installation d'applications de sources inconnues dans les paramètres de votre téléphone.*
+
+---
+
 ## État d'Avancement (au 28/05/2024)
 
 La structure de base de l'application est en place, incluant les modèles de données, la gestion d'état et le squelette de l'interface utilisateur. Le projet est maintenant prêt pour l'implémentation des fonctionnalités dynamiques.
@@ -42,6 +53,3 @@ Voici la liste des tâches à accomplir pour rendre l'application fonctionnelle.
   - **Tâches :**
     - **4.1.** Implémenter le flux de **création d'un nouveau portefeuille**.
     - **4.2.** Implémenter la logique d'affichage des **bulles d'aide** (Tooltips) en fonction du niveau de l'utilisateur.
-
----
-*Note : À la fin de chaque modification, une proposition de message de commit pour GitHub sera fournie en français.*
