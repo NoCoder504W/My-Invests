@@ -49,23 +49,49 @@ Une application Flutter pour suivre et analyser vos investissements sur différe
 
 ```
 lib/
-├── models/
-│   ├── portfolio.dart      # Modèle racine, contenant la liste des institutions.
-│   ├── institution.dart    # Représente une institution financière (banque, courtier).
-│   ├── account.dart        # Représente un compte financier (PEA, CTO, etc.).
-│   ├── asset.dart          # Représente un actif (action, obligation, crypto).
-│   └── account_type.dart   # Énumération des différents types de comptes.
-│
-├── providers/      # Logique métier et gestion de l'état (ex: PortfolioProvider).
-│
-├── screens/        # Widgets représentant les écrans complets de l'application.
-│   └── tabs/       # Widgets pour les différents onglets du tableau de bord.
-│
-├── utils/          # Classes utilitaires (formatters, thèmes, etc.).
-│
-├── widgets/        # Widgets réutilisables (graphiques, cartes, etc.).
-│
-└── main.dart       # Point d'entrée de l'application.
+├── main.dart               # Point d'entrée de l'application
+
+├── models/                 # Modèles de données (persistés avec Hive)
+│   ├── account.dart        # Modèle pour un compte (PEA, CTO, etc.)
+│   ├── account.g.dart      # Fichier généré par Hive pour account.dart
+│   ├── account_type.dart   # Enum pour les types de comptes
+│   ├── account_type.g.dart # Fichier généré par Hive pour account_type.dart
+│   ├── asset.dart          # Modèle pour un actif (action, crypto, etc.)
+│   ├── asset.g.dart        # Fichier généré par Hive pour asset.dart
+│   ├── institution.dart    # Modèle pour une institution financière (banque, courtier)
+│   ├── institution.g.dart  # Fichier généré par Hive pour institution.dart
+│   ├── portfolio.dart      # Modèle principal qui contient toutes les données
+│   └── portfolio.g.dart    # Fichier généré par Hive pour portfolio.dart
+
+├── providers/              # (Vide) Fournisseurs de données (potentiellement pour Riverpod/Provider)
+
+├── screens/                # Écrans principaux de l'application
+│   ├── dashboard_screen.dart # Écran principal avec la vue d'ensemble du portefeuille
+│   ├── launch_screen.dart    # Écran de chargement initial
+│   ├── settings_screen.dart  # Écran des paramètres
+│   ├── tabs/                 # Onglets affichés sur le dashboard
+│   │   ├── correction_tab.dart # Onglet pour la correction des données
+│   │   ├── overview_tab.dart   # Onglet principal de vue d'ensemble
+│   │   └── planner_tab.dart    # Onglet pour la planification
+│   └── welcome_screen.dart   # Écran d'accueil pour les nouveaux utilisateurs
+
+├── utils/                  # Classes et fonctions utilitaires
+│   ├── app_theme.dart        # Thème de l'application (couleurs, polices)
+│   └── currency_formatter.dart # Formateur pour les montants monétaires
+
+└── widgets/                # Widgets réutilisables
+    ├── analysis/           # Widgets liés à l'analyse
+    │   └── ai_analysis_card.dart # Carte d'analyse par IA
+    ├── charts/             # Widgets de graphiques
+    │   └── allocation_chart.dart # Graphique d'allocation du portefeuille
+    ├── common/             # Widgets communs et génériques
+    │   └── account_type_chip.dart # Puce pour afficher le type de compte
+    └── portfolio/          # Widgets spécifiques à l'affichage du portefeuille
+        ├── account_tile.dart     # Tuile pour afficher un compte
+        ├── asset_list_item.dart  # Élément de liste pour un actif
+        ├── institution_list.dart # Liste des institutions
+        ├── institution_tile.dart # Tuile pour afficher une institution
+        └── portfolio_header.dart # En-tête du portefeuille
 ```
 
 ### Logique de l'application
