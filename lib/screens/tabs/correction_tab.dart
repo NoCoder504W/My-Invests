@@ -140,6 +140,7 @@ class _AssetEditorTileState extends State<_AssetEditorTile> {
   late final TextEditingController _quantityController;
   late final TextEditingController _pruController;
   late final TextEditingController _priceController;
+  late final TextEditingController _yieldController;
 
   @override
   void initState() {
@@ -147,6 +148,7 @@ class _AssetEditorTileState extends State<_AssetEditorTile> {
     _quantityController = TextEditingController(text: widget.asset.quantity.toString());
     _pruController = TextEditingController(text: widget.asset.averagePrice.toStringAsFixed(2));
     _priceController = TextEditingController(text: widget.asset.currentPrice.toStringAsFixed(2));
+    _yieldController = TextEditingController(text: (widget.asset.estimatedAnnualYield * 100).toStringAsFixed(2));
   }
 
   @override
@@ -154,6 +156,7 @@ class _AssetEditorTileState extends State<_AssetEditorTile> {
     _quantityController.dispose();
     _pruController.dispose();
     _priceController.dispose();
+    _yieldController.dispose();
     super.dispose();
   }
 
@@ -187,12 +190,28 @@ class _AssetEditorTileState extends State<_AssetEditorTile> {
                     widget.onChanged();
                   },
                 ),
-                const SizedBox(width: 8),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
                 _buildEditableField(
                   label: 'Prix Actuel',
                   controller: _priceController,
                   onChanged: (value) {
                     widget.asset.currentPrice = double.tryParse(value) ?? widget.asset.currentPrice;
+                    widget.onChanged();
+                  },
+                ),
+                const SizedBox(width: 8),
+                _buildEditableField(
+                  label: 'Rdt. Ann. Est. (%)',
+                  controller: _yieldController,
+                  onChanged: (value) {
+                    final percentage = double.tryParse(value);
+                    if (percentage != null) {
+                      widget.asset.estimatedAnnualYield = percentage / 100.0;
+                    }
                     widget.onChanged();
                   },
                 ),

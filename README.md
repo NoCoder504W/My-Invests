@@ -49,11 +49,32 @@ Une application Flutter pour suivre et analyser vos investissements sur différe
 
 ```
 lib/
-├── models/         # Modèles de données (Portfolio, Asset, etc.) et leurs adaptateurs Hive.
+├── models/
+│   ├── portfolio.dart      # Modèle racine, contenant la liste des institutions.
+│   ├── institution.dart    # Représente une institution financière (banque, courtier).
+│   ├── account.dart        # Représente un compte financier (PEA, CTO, etc.).
+│   ├── asset.dart          # Représente un actif (action, obligation, crypto).
+│   └── account_type.dart   # Énumération des différents types de comptes.
+│
 ├── providers/      # Logique métier et gestion de l'état (ex: PortfolioProvider).
+│
 ├── screens/        # Widgets représentant les écrans complets de l'application.
-│   ├── tabs/       # Widgets pour les différents onglets du tableau de bord.
+│   └── tabs/       # Widgets pour les différents onglets du tableau de bord.
+│
 ├── utils/          # Classes utilitaires (formatters, thèmes, etc.).
+│
 ├── widgets/        # Widgets réutilisables (graphiques, cartes, etc.).
+│
 └── main.dart       # Point d'entrée de l'application.
 ```
+
+### Logique de l'application
+
+L'application s'articule autour du modèle `Portfolio`, qui est l'objet principal persistant dans la base de données locale (Hive).
+
+- Un `Portfolio` contient une liste d'`Institution`.
+- Chaque `Institution` (ex: "Boursorama", "Binance") contient une liste d'`Account`.
+- Chaque `Account` (ex: "PEA", "CTO") a un `AccountType` et contient une liste d'`Asset`.
+- Chaque `Asset` représente un actif financier individuel avec sa quantité, son prix moyen d'achat et son prix actuel.
+
+La logique de calcul (valeur totale, plus-values, rendement) est répartie dans les modèles : chaque modèle calcule ses propres métriques, qui sont ensuite agrégées par le modèle parent. Par exemple, la valeur totale d'une `Institution` est la somme des valeurs de ses `Account`.
