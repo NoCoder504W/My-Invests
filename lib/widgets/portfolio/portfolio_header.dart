@@ -35,17 +35,21 @@ class PortfolioHeader extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStat(
-                  context,
-                  'Plus/Moins-value',
-                  '${CurrencyFormatter.format(totalPL)} (${(totalPLPercentage * 100).toStringAsFixed(2)}%)',
-                  totalPL >= 0 ? Colors.green[400]! : Colors.red[400]!,
+                Expanded(
+                  child: _buildStat(
+                    context,
+                    'Plus/Moins-value',
+                    '${CurrencyFormatter.format(totalPL)} (${(totalPLPercentage * 100).toStringAsFixed(2)}%)',
+                    totalPL >= 0 ? Colors.green[400]! : Colors.red[400]!,
+                  ),
                 ),
-                 _buildStat(
-                  context,
-                  'Rendement Annuel Estimé',
-                   '${(annualYield * 100).toStringAsFixed(2)}%',
-                  theme.colorScheme.secondary,
+                Expanded(
+                  child: _buildStat(
+                    context,
+                    'Rendement Annuel Estimé',
+                    '${(annualYield * 100).toStringAsFixed(2)}%',
+                    theme.colorScheme.secondary,
+                  ),
                 ),
               ],
             ),
@@ -62,6 +66,7 @@ class PortfolioHeader extends StatelessWidget {
         Text(
           label,
           style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[400]),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
         Text(
@@ -70,6 +75,7 @@ class PortfolioHeader extends StatelessWidget {
             color: valueColor,
             fontWeight: FontWeight.bold,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
