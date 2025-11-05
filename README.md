@@ -1,106 +1,201 @@
-# Portefeuille - Gestionnaire de Finances Personnelles
+﻿# Portefeuille  gestionnaire de finances personnelles (Flutter)
 
-Une application Flutter pour suivre et analyser vos investissements sur différentes plateformes (banques, courtiers, crypto-monnaies).
+Une application Flutter pour agréger et analyser vos comptes et investissements (banques, courtiers, cryptos).
 
-## ✨ Fonctionnalités
+## Résumé
 
-*   **Vue d'ensemble centralisée** : Visualisez la valeur totale de votre portefeuille en un coup d'œil.
-*   **Suivi multi-comptes** : Agrégez des comptes de différents types (CTO, PEA, Assurance Vie, Crypto) et de différentes institutions.
-*   **Calcul de performance** : Suivez vos plus/moins-values et estimez le rendement annuel de vos actifs.
-*   **Mode Démo** : Une version de démonstration pré-remplie pour découvrir rapidement les fonctionnalités de l'application.
-*   **Personnalisation** : Paramètres pour adapter l'expérience utilisateur.
+- Langage : Dart / Flutter
+- Point d'entrée : `lib/features/00_app/main.dart`
+- Stockage local : Hive
+- Principales dépendances : provider, hive, hive_flutter, fl_chart, intl
 
-## 🚀 Démarrer avec le projet
+## Prérequis
 
-### Prérequis
+- Flutter SDK (compatible avec Dart >=3.4.0). Installez depuis https://flutter.dev
+- Un appareil ou émulateur (Android / iOS / Windows / macOS / Linux). Utilisez par exemple :
 
-*   [Flutter SDK](https://flutter.dev/docs/get-started/install) (version 3.x ou supérieure)
-*   Un éditeur de code comme [VS Code](https://code.visualstudio.com/) ou [Android Studio](https://developer.android.com/studio).
+```powershell
+flutter run -d <device>
+```
 
-### Installation
+## Installation rapide
 
-1.  **Clonez le dépôt** :
-    ```sh
-    git clone <URL_DU_DEPOT_GIT>
-    cd Portefeuille
-    ```
+1. Clonez le dépôt :
 
-2.  **Installez les dépendances** :
-    ```sh
-    flutter pub get
-    ```
+```powershell
+git clone <URL_DU_DEPOT_GIT>
+cd Portefeuille
+```
 
-3.  **Générez les fichiers nécessaires** (pour Hive) :
-    ```sh
-    flutter pub run build_runner build --delete-conflicting-outputs
-    ```
+2. Récupérez les packages :
 
-### Lancer l'application
+```powershell
+flutter pub get
+```
 
-*   **Avec VS Code ou Android Studio** : Lancez l'application en mode "Debug" via l'interface de l'éditeur.
-*   **En ligne de commande** :
-    ```sh
-    flutter run
-    ```
+3. Générez les fichiers de sérialisation Hive (codegen) :
 
-> **Note pour le développement** : En mode "debug", toutes les données sont automatiquement effacées à chaque redémarrage pour garantir un environnement de test propre.
+```powershell
+flutter pub run build_runner build --delete-conflicting-outputs
+```
 
-## 📂 Structure du projet
+4. Lancez l'application (ex. sur l'émulateur Android par défaut) :
+
+```powershell
+flutter run
+```
+
+## Notes de développement
+
+- Le point d'entrée est `lib/features/00_app/main.dart`. Le `main` initialise Hive, enregistre les adapters et ouvre la box principale avant d'instancier le repository.
+- En mode debug, le code appelle `Hive.deleteFromDisk()` (voir `main.dart`), ce qui supprime les données locales à chaque exécution  pratique pour le développement mais à désactiver en production.
+- Pour générer ou regénérer les fichiers `.g.dart` liés à Hive, utilisez `build_runner` (commande ci-dessus).
+
+## Compilation  APK (Android) et EXE (Windows)
+
+Voici les commandes et prérequis pour compiler des binaires pour Android (APK / AAB) et Windows (EXE).
+
+Pré-requis généraux :
+- Avoir le SDK Flutter installé et configuré (exécutez `flutter doctor` pour vérifier).
+
+### Android (APK / App Bundle)
+
+- Pré-requis : Android SDK et Android Studio (installe Java/Gradle), un device ou un émulateur.
+- Commande (APK release) :
+
+```powershell
+flutter build apk --release
+```
+
+- Pour générer des APKs séparés par ABI (réduit la taille) :
+
+```powershell
+flutter build apk --split-per-abi --release
+```
+
+- Pour générer un Android App Bundle (AAB) destiné au Play Store :
+
+```powershell
+flutter build appbundle --release
+```
+
+- Signature : pour créer un APK signé, configurez un keystore et la section `signingConfigs` dans `android/app/build.gradle`. Placez vos informations de keystore dans `android/key.properties` puis build.
+
+### Windows (EXE)
+
+- Pré-requis : machine Windows avec Visual Studio (Desktop development with C++) installé. Activez le support desktop si nécessaire :
+
+```powershell
+flutter config --enable-windows-desktop
+flutter doctor
+```
+
+- Commande de build :
+
+```powershell
+flutter build windows --release
+```
+
+- L'exécutable généré se trouve typiquement dans :
+
+```
+build\windows\runner\Release\
+```
+
+Recommandations :
+- Testez d'abord en mode `debug`, puis en `profile`/`release`.
+- Sur Android, vérifiez les permissions et la configuration du `android/app/src/main/AndroidManifest.xml` avant publication.
+- Sur Windows, vérifiez les dépendances runtime (VC++ redistribuables) si vous distribuez l'exécutable.
+
+
+## Structure détaillée de l'application
+
+Ci-dessous une arborescence commentée des dossiers et fichiers les plus importants. Elle reflète l'organisation actuelle du projet et aide à localiser la logique, les modèles et l'UI.
 
 ```
 lib/
-├── main.dart               # Point d'entrée de l'application
+├── features/
+│   ├── 00_app/
+│   │   ├── main.dart                    # Point d'entrée de l'application (initialisation Hive, providers)
+│   │   ├── providers/                    # Providers (ChangeNotifier) utilisés globalement
+│   │   └── ...                           # Autres fichiers liés à l'initialisation
+│   ├── 01_launch/                        # Écran(s) de lancement / onboarding
+│   ├── 02_dashboard/                     # Écran principal : dashboard et ses composants
+│   │   └── ui/                           # UI spécifiques au dashboard
+│   ├── 03_overview/                      # Fonctionnalité "Overview" (rapports, synthèse)
+│   ├── 04_correction/                    # Outils de correction / import manuel
+│   ├── 05_planner/                       # Planification / simulateur
+│   └── 06_settings/                      # Écran de paramètres
 
-├── models/                 # Modèles de données (persistés avec Hive)
-│   ├── account.dart        # Modèle pour un compte (PEA, CTO, etc.)
-│   ├── account.g.dart      # Fichier généré par Hive pour account.dart
-│   ├── account_type.dart   # Enum pour les types de comptes
-│   ├── account_type.g.dart # Fichier généré par Hive pour account_type.dart
-│   ├── asset.dart          # Modèle pour un actif (action, crypto, etc.)
-│   ├── asset.g.dart        # Fichier généré par Hive pour asset.dart
-│   ├── institution.dart    # Modèle pour une institution financière (banque, courtier)
-│   ├── institution.g.dart  # Fichier généré par Hive pour institution.dart
-│   ├── portfolio.dart      # Modèle principal qui contient toutes les données
-│   └── portfolio.g.dart    # Fichier généré par Hive pour portfolio.dart
+├── core/
+│   ├── data/
+│   │   ├── models/                       # Modèles persistés (Hive adapters .dart + .g.dart)
+│   │   │   ├── portfolio.dart
+│   │   │   ├── institution.dart
+│   │   │   ├── account.dart
+│   │   │   ├── asset.dart
+│   │   │   └── account_type.dart
+│   │   └── repositories/                 # Accès aux données et logique de persistence (PortfolioRepository...)
+│   ├── ui/
+│   │   ├── splash_screen.dart           # Splash / routage initial
+│   │   └── theme/                        # Thème, styles (ex: app_theme.dart)
+│   └── utils/                            # Constantes, formatters, helpers (currency_formatter, constants)
 
-├── providers/              # (Vide) Fournisseurs de données (potentiellement pour Riverpod/Provider)
+├── widgets/                              # Widgets réutilisables (charts, lists, cards)
+│   ├── analysis/
+│   ├── charts/
+│   └── portfolio/
 
-├── screens/                # Écrans principaux de l'application
-│   ├── dashboard_screen.dart # Écran principal avec la vue d'ensemble du portefeuille
-│   ├── launch_screen.dart    # Écran de chargement initial
-│   ├── settings_screen.dart  # Écran des paramètres
-│   ├── tabs/                 # Onglets affichés sur le dashboard
-│   │   ├── correction_tab.dart # Onglet pour la correction des données
-│   │   ├── overview_tab.dart   # Onglet principal de vue d'ensemble
-│   │   └── planner_tab.dart    # Onglet pour la planification
-│   └── welcome_screen.dart   # Écran d'accueil pour les nouveaux utilisateurs
+└── main.dart (historique)                # Note : le vrai point d'entrée dans ce projet est `lib/features/00_app/main.dart`
 
-├── utils/                  # Classes et fonctions utilitaires
-│   ├── app_theme.dart        # Thème de l'application (couleurs, polices)
-│   └── currency_formatter.dart # Formateur pour les montants monétaires
+android/                                  # Code et configuration Android (Gradle, keystore, manifest)
+ios/                                      # Projet iOS (Xcode workspace, Info.plist)
+windows/                                  # Projet Windows (CMake, runner)
+linux/                                    # Projet Linux (si présent)
+macos/                                    # Projet macOS (si présent)
 
-└── widgets/                # Widgets réutilisables
-    ├── analysis/           # Widgets liés à l'analyse
-    │   └── ai_analysis_card.dart # Carte d'analyse par IA
-    ├── charts/             # Widgets de graphiques
-    │   └── allocation_chart.dart # Graphique d'allocation du portefeuille
-    ├── common/             # Widgets communs et génériques
-    │   └── account_type_chip.dart # Puce pour afficher le type de compte
-    └── portfolio/          # Widgets spécifiques à l'affichage du portefeuille
-        ├── account_tile.dart     # Tuile pour afficher un compte
-        ├── asset_list_item.dart  # Élément de liste pour un actif
-        ├── institution_list.dart # Liste des institutions
-        ├── institution_tile.dart # Tuile pour afficher une institution
-        └── portfolio_header.dart # En-tête du portefeuille
+pubspec.yaml                              # Dépendances et assets
+build/                                    # Artefacts de build (générés)
+
 ```
 
-### Logique de l'application
+Description rapide des principaux éléments
+- `lib/features/00_app/main.dart` : initialise Hive, enregistre les adapters, ouvre la box principale et instancie le `PortfolioRepository`, puis démarre `MyApp` avec les providers.
+- `lib/core/data/models/` : contient les modèles métiers persistés (avec leurs fichiers générés `.g.dart` par Hive). Toute modification de ces classes nécessite de relancer `build_runner`.
+- `lib/core/data/repositories/` : encapsule la logique d'accès/écriture des données (abstraction du stockage Hive).
+- `lib/core/ui/` : composants UI partagés (thème, splash screen, widgets réutilisables).
+- `lib/features/*` : chaque dossier `features/XX_name` contient la logique UI et les widgets spécifiques à une fonctionnalité (dashboard, overview, planner...).
 
-L'application s'articule autour du modèle `Portfolio`, qui est l'objet principal persistant dans la base de données locale (Hive).
+Conseils pour naviguer dans le code
+- Cherchez le point d'entrée avec `main.dart` sous `lib/features/00_app/` pour comprendre l'ordre d'initialisation.
+- Utilisez la recherche sur les types principaux (`Portfolio`, `PortfolioRepository`, `PortfolioProvider`) pour tracer la logique métier et les mises à jour de l'UI.
+- Les modèles Hive ont des adapters enregistrés dans `main.dart` — vérifiez la présence des `.g.dart` générés lors d'erreurs de sérialisation.
 
-- Un `Portfolio` contient une liste d'`Institution`.
-- Chaque `Institution` (ex: "Boursorama", "Binance") contient une liste d'`Account`.
-- Chaque `Account` (ex: "PEA", "CTO") a un `AccountType` et contient une liste d'`Asset`.
-- Chaque `Asset` représente un actif financier individuel avec sa quantité, son prix moyen d'achat et son prix actuel.
+Si vous voulez, je peux :
+- Générer une arborescence plus complète (tous les fichiers présents) ;
+- Ajouter un diagramme simple (mermaid) montrant les relations Portfolio -> Institution -> Account -> Asset ;
+- Créer un fichier `DEVELOPMENT.md` séparé avec commandes utiles (build, test, codegen, debug).
 
-La logique de calcul (valeur totale, plus-values, rendement) est répartie dans les modèles : chaque modèle calcule ses propres métriques, qui sont ensuite agrégées par le modèle parent. Par exemple, la valeur totale d'une `Institution` est la somme des valeurs de ses `Account`.
+
+## Dépendances importantes
+
+- `provider`  gestion d'état
+- `hive`, `hive_flutter`  stockage local
+- `hive_generator`, `build_runner`  génération de code pour Hive (dev_dependencies)
+- `fl_chart`  graphiques
+- `intl`  formatage des montants
+
+Consultez `pubspec.yaml` pour la liste complète et versions.
+
+## Conseils et bonnes pratiques
+
+- Désactivez la suppression automatique de la base Hive (appel `Hive.deleteFromDisk()` en debug) si vous voulez conserver des données entre relances.
+- Ajoutez/validez les adapters Hive dès que vous modifiez un modèle pour éviter des erreurs de sérialisation.
+
+## Contribuer
+
+Soumettez des PRs sur la branche principale du dépôt (voir le workflow du projet). Incluez des tests pour la logique métier si possible.
+
+---
+
+Si vous souhaitez que j'ajoute des sections supplémentaires au README (ex. capture d'écran, diagramme de l'architecture, commandes CI, ou instructions pour Windows/macOS spécifiques), dites-le et je l'ajouterai.
