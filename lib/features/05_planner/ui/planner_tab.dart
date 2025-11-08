@@ -21,9 +21,19 @@ class PlannerTab extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.add_shopping_cart, color: Colors.cyan),
-              title: const Text('Achat mensuel d\'ETF World'),
-              subtitle: const Text('Cible : Amundi MSCI World (CW8)'),
-              trailing: const Text('150 €/mois', style: TextStyle(fontWeight: FontWeight.bold)),
+              title: const Text(
+                'Achat mensuel d\'ETF World',
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: const Text(
+                'Cible : Amundi MSCI World (CW8)',
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: const Text(
+                '150 €/mois',
+                style: TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
               onTap: () { /* TODO: Modifier le plan */ },
             ),
           ),

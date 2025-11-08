@@ -17,7 +17,10 @@ class AssetListItem extends StatelessWidget {
 
     return ListTile(
       dense: true,
-      title: Text(asset.name),
+      title: Text(
+        asset.name,
+        overflow: TextOverflow.ellipsis,
+      ),
       subtitle: RichText(
         text: TextSpan(
           style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
@@ -30,20 +33,26 @@ class AssetListItem extends StatelessWidget {
               ),
           ],
         ),
+        overflow: TextOverflow.ellipsis,
       ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            CurrencyFormatter.format(asset.totalValue),
-            style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          Text(
-            '${CurrencyFormatter.format(pnl)} (${(asset.profitAndLossPercentage * 100).toStringAsFixed(2)}%)}',
-            style: theme.textTheme.bodySmall?.copyWith(color: pnlColor),
-          ),
-        ],
+      trailing: SizedBox(
+        width: 100,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              CurrencyFormatter.format(asset.totalValue),
+              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              '${CurrencyFormatter.format(pnl)} (${(asset.profitAndLossPercentage * 100).toStringAsFixed(2)}%)}',
+              style: theme.textTheme.bodySmall?.copyWith(color: pnlColor),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

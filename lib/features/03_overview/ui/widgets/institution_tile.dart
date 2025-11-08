@@ -29,21 +29,27 @@ class InstitutionTile extends StatelessWidget {
         title: Text(
           institution.name,
           style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           '${NumberFormat.percentPattern(Localizations.localeOf(context).languageCode).format(percentageOfPortfolio)} du portefeuille',
           style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade400),
+          overflow: TextOverflow.ellipsis,
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              CurrencyFormatter.format(institution.totalValue),
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            _buildProfitAndLoss(institution.profitAndLoss, institution.profitAndLossPercentage, theme),
-          ],
+        trailing: SizedBox(
+          width: 120,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                CurrencyFormatter.format(institution.totalValue),
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+              _buildProfitAndLoss(institution.profitAndLoss, institution.profitAndLossPercentage, theme),
+            ],
+          ),
         ),
         childrenPadding: const EdgeInsets.only(left: 16.0),
         children: institution.accounts
@@ -63,9 +69,12 @@ class InstitutionTile extends StatelessWidget {
       children: [
         Icon(isPositive ? Icons.arrow_upward : Icons.arrow_downward, color: color, size: 16),
         const SizedBox(width: 4),
-        Text(
-          '${CurrencyFormatter.format(pnl)} (${NumberFormat.percentPattern().format(pnlPercentage)})',
-          style: theme.textTheme.bodyMedium?.copyWith(color: color),
+        Flexible(
+          child: Text(
+            '${CurrencyFormatter.format(pnl)} (${NumberFormat.percentPattern().format(pnlPercentage)})',
+            style: theme.textTheme.bodyMedium?.copyWith(color: color),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
