@@ -8,7 +8,15 @@ import 'package:uuid/uuid.dart';
 
 class AddAssetScreen extends StatefulWidget {
   final String accountId;
-  const AddAssetScreen({super.key, required this.accountId});
+  /// Si onAssetCreated est fourni, l'actif sera retourné via ce callback
+  /// au lieu d'être ajouté directement au provider (utile pour l'onglet Correction)
+  final void Function(Asset)? onAssetCreated;
+  
+  const AddAssetScreen({
+    super.key,
+    required this.accountId,
+    this.onAssetCreated,
+  });
 
   @override
   State<AddAssetScreen> createState() => _AddAssetScreenState();
@@ -49,8 +57,14 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
         (double.tryParse(_yieldController.text) ?? 0) / 100.0,
       );
 
-      Provider.of<PortfolioProvider>(context, listen: false)
-          .addAsset(widget.accountId, newAsset);
+      // Si un callback est fourni, on retourne l'actif
+      // Sinon, on l'ajoute directement au provider
+      if (widget.onAssetCreated != null) {
+        widget.onAssetCreated!(newAsset);
+      } else {
+        Provider.of<PortfolioProvider>(context, listen: false)
+            .addAsset(widget.accountId, newAsset);
+      }
 
       Navigator.of(context).pop();
     }

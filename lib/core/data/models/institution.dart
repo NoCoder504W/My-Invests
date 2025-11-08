@@ -17,8 +17,8 @@ class Institution {
   Institution({
     required this.id, // MIS À JOUR
     required this.name,
-    this.accounts = const [],
-  });
+    List<Account>? accounts,
+  }) : accounts = accounts ?? [];
 
   double get totalValue {
     return accounts.fold(0.0, (sum, account) => sum + account.totalValue);

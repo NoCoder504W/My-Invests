@@ -9,7 +9,15 @@ import 'package:uuid/uuid.dart';
 
 class AddAccountScreen extends StatefulWidget {
   final String institutionId;
-  const AddAccountScreen({super.key, required this.institutionId});
+  /// Si onAccountCreated est fourni, le compte sera retourné via ce callback
+  /// au lieu d'être ajouté directement au provider (utile pour l'onglet Correction)
+  final void Function(Account)? onAccountCreated;
+  
+  const AddAccountScreen({
+    super.key,
+    required this.institutionId,
+    this.onAccountCreated,
+  });
 
   @override
   State<AddAccountScreen> createState() => _AddAccountScreenState();
@@ -39,8 +47,14 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
         assets: [],
       );
 
-      Provider.of<PortfolioProvider>(context, listen: false)
-          .addAccount(widget.institutionId, newAccount);
+      // Si un callback est fourni, on retourne le compte
+      // Sinon, on l'ajoute directement au provider
+      if (widget.onAccountCreated != null) {
+        widget.onAccountCreated!(newAccount);
+      } else {
+        Provider.of<PortfolioProvider>(context, listen: false)
+            .addAccount(widget.institutionId, newAccount);
+      }
 
       Navigator.of(context).pop();
     }

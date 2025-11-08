@@ -17,8 +17,7 @@ class AssetAdapter extends TypeAdapter<Asset> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Asset(
-      id: (fields[6] as String?) ??
-          'asset-${DateTime.now().millisecondsSinceEpoch}-${fields[1]}',
+      id: (fields[6] as String?) ?? 'asset-${DateTime.now().millisecondsSinceEpoch}-${fields[0]}',
       name: fields[0] as String,
       ticker: fields[1] as String,
       quantity: fields[2] as double,
