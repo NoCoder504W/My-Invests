@@ -24,10 +24,12 @@ class InstitutionList extends StatelessWidget {
             title: Text(
               institution.name,
               style: const TextStyle(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
             ),
             trailing: Text(
               CurrencyFormatter.format(institution.totalValue),
               style: const TextStyle(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
             ),
             children: [
               ...institution.accounts.map((account) {

@@ -69,6 +69,9 @@ class PortfolioHeader extends StatelessWidget {
           label,
           style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[400]),
           textAlign: TextAlign.center,
+          softWrap: true,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 4),
         Text(
@@ -78,6 +81,9 @@ class PortfolioHeader extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
           textAlign: TextAlign.center,
+          softWrap: true,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

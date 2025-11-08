@@ -25,6 +25,7 @@ class AccountTile extends StatelessWidget {
             account.name,
             style:
             theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
           AccountTypeChip(
@@ -34,6 +35,7 @@ class AccountTile extends StatelessWidget {
       trailing: Text(
         CurrencyFormatter.format(account.totalValue),
         style: theme.textTheme.bodyLarge,
+        overflow: TextOverflow.ellipsis,
       ),
       childrenPadding: const EdgeInsets.only(left: 16.0),
       children: [
@@ -47,6 +49,7 @@ class AccountTile extends StatelessWidget {
             CurrencyFormatter.format(account.cashBalance),
             style:
             TextStyle(color: Colors.grey[300], fontStyle: FontStyle.italic),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         const Divider(height: 1),
