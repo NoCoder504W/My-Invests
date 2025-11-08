@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-
 // Core
 import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/core/data/models/institution.dart';
@@ -37,8 +36,9 @@ void main() async {
   Hive.registerAdapter(AssetAdapter());
   Hive.registerAdapter(AccountTypeAdapter());
 
-  // 3. Ouvrir la boîte
+  // 3. Ouvrir les boîtes
   await Hive.openBox<Portfolio>(AppConstants.kPortfolioBoxName);
+  await Hive.openBox(AppConstants.kSettingsBoxName); // MODIFIÉ : Ajout de la boîte des settings
 
   // 4. Instancier le Repository
   final portfolioRepository = PortfolioRepository();
