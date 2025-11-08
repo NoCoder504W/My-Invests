@@ -55,17 +55,14 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _navigateToNextScreen() async {
     await Future.delayed(const Duration(milliseconds: 3500));
-
     if (mounted) {
       final portfolioProvider =
       Provider.of<PortfolioProvider>(context, listen: false);
-
       final bool hasPortfolios = portfolioProvider.portfolios.isNotEmpty;
 
       final Widget nextScreen = hasPortfolios
           ? const DashboardScreen()
           : const LaunchScreen();
-
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => nextScreen),
       );
@@ -84,15 +81,16 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-
-    // MODIFIÉ : Récupère la couleur depuis le provider
     final Color kColor = Provider.of<SettingsProvider>(context).appColor;
 
-    // Ces couleurs sont statiques et correspondent au fond de l'application
+    // --- MODIFICATION ---
+    // Les couleurs sont maintenant dynamiques et basées sur la couleur du provider
     final List<Color> gradientColors = [
-      const Color(0xFF1a2943), // scaffoldBackgroundColor
-      const Color(0xFF294166), // surface
+      Color.lerp(kColor, Colors.black, 0.75)!, // Teinte la plus foncée
+      Color.lerp(kColor, Colors.black, 0.6)! // Teinte un peu moins foncée
     ];
+    // --- FIN MODIFICATION ---
+
     return Scaffold(
       body: Container(
         width: size.width,
@@ -101,7 +99,7 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: gradientColors,
+            colors: gradientColors, // Utilise les couleurs dynamiques
           ),
         ),
         child: Stack(
@@ -113,7 +111,6 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // MODIFIÉ : Passe la couleur dynamique au logo
                     _buildAnimatedLogo(kColor),
                     const SizedBox(height: 48),
                     _buildShimmeredTitle(),
@@ -200,7 +197,7 @@ class _SplashScreenState extends State<SplashScreen>
                   style: TextStyle(
                     fontSize: 56,
                     fontWeight: FontWeight.bold,
-                    color: kColor, // MODIFIÉ : Utilise la couleur passée
+                    color: kColor,
                     letterSpacing: -2,
                   ),
                 ),
@@ -293,7 +290,6 @@ class BackgroundLinesPainter extends CustomPainter {
     final linePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-
     final int numberOfLines = 8;
 
     for (int i = 0; i < numberOfLines; i++) {
