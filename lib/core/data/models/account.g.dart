@@ -17,11 +17,10 @@ class AccountAdapter extends TypeAdapter<Account> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Account(
-      id: (fields[4] as String?) ??
-          'account-${DateTime.now().millisecondsSinceEpoch}-${fields[0]}',
+      id: (fields[4] as String?) ?? 'account-${DateTime.now().millisecondsSinceEpoch}-${fields[0]}',
       name: fields[0] as String,
       type: fields[1] as AccountType,
-      assets: (fields[2] as List).cast<Asset>(),
+      assets: (fields[2] as List?)?.cast<Asset>(),
       cashBalance: fields[3] as double,
     );
   }

@@ -6,7 +6,7 @@ import 'package:portefeuille/core/data/models/institution.dart';
 part 'portfolio.g.dart';
 
 @HiveType(typeId: 0)
-class Portfolio extends HiveObject {
+class Portfolio {
   @HiveField(0)
   List<Institution> institutions;
 
@@ -19,8 +19,8 @@ class Portfolio extends HiveObject {
   Portfolio({
     required this.id,
     required this.name,
-    this.institutions = const [],
-  });
+    List<Institution>? institutions,
+  }) : institutions = institutions ?? [];
 
   double get totalValue {
     return institutions.fold(0.0, (sum, inst) => sum + inst.totalValue);

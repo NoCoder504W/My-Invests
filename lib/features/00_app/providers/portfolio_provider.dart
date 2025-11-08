@@ -145,8 +145,9 @@ class PortfolioProvider extends ChangeNotifier {
           }
         }
       }
-    } catch (e) {
       debugPrint("Compte non trouvé : $accountId");
+    } catch (e) {
+      debugPrint("Erreur lors de l'ajout de l'actif : $e");
     }
   }
 }

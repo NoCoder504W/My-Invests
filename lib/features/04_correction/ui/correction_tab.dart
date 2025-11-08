@@ -1,14 +1,13 @@
 // lib/features/04_correction/ui/correction_tab.dart
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
-import 'package:portefeuille/core/data/models/asset.dart';
 import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/core/data/models/account_type.dart';
 import 'package:portefeuille/core/utils/currency_formatter.dart';
+import 'package:portefeuille/features/07_management/ui/screens/add_institution_screen.dart';
+import 'package:portefeuille/features/07_management/ui/screens/add_account_screen.dart';
+import 'package:portefeuille/features/07_management/ui/screens/add_asset_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../../00_app/providers/portfolio_provider.dart';
@@ -91,6 +90,159 @@ class _CorrectionTabState extends State<CorrectionTab>
     }
   }
 
+  void _addInstitution() {
+    if (_editedPortfolio == null) return;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => AddInstitutionScreen(
+        onInstitutionCreated: (newInstitution) {
+          setState(() {
+            _editedPortfolio!.institutions.add(newInstitution);
+            _onDataChanged();
+          });
+        },
+      ),
+    );
+  }
+
+  void _deleteInstitution(int index) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Supprimer l\'institution ?'),
+        content: Text(
+          'Voulez-vous vraiment supprimer "${_editedPortfolio!.institutions[index].name}" et tous ses comptes ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () {
+              setState(() {
+                _editedPortfolio!.institutions.removeAt(index);
+                _onDataChanged();
+              });
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addAccount(int instIndex) {
+    if (_editedPortfolio == null) return;
+    
+    final institutionId = _editedPortfolio!.institutions[instIndex].id;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => AddAccountScreen(
+        institutionId: institutionId,
+        onAccountCreated: (newAccount) {
+          setState(() {
+            _editedPortfolio!.institutions[instIndex].accounts.add(newAccount);
+            _onDataChanged();
+          });
+        },
+      ),
+    );
+  }
+
+  void _deleteAccount(int instIndex, int accIndex) {
+    final instName = _editedPortfolio!.institutions[instIndex].name;
+    final accName = _editedPortfolio!.institutions[instIndex].accounts[accIndex].name;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Supprimer le compte ?'),
+        content: Text(
+          'Voulez-vous vraiment supprimer le compte "$accName" de "$instName" et tous ses actifs ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () {
+              setState(() {
+                _editedPortfolio!.institutions[instIndex].accounts.removeAt(accIndex);
+                _onDataChanged();
+              });
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addAsset(int instIndex, int accIndex) {
+    if (_editedPortfolio == null) return;
+    
+    final accountId = _editedPortfolio!.institutions[instIndex].accounts[accIndex].id;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => AddAssetScreen(
+        accountId: accountId,
+        onAssetCreated: (newAsset) {
+          setState(() {
+            _editedPortfolio!.institutions[instIndex].accounts[accIndex].assets.add(newAsset);
+            _onDataChanged();
+          });
+        },
+      ),
+    );
+  }
+
+  void _deleteAsset(int instIndex, int accIndex, int assetIndex) {
+    final assetName = _editedPortfolio!.institutions[instIndex].accounts[accIndex].assets[assetIndex].name;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Supprimer l\'actif ?'),
+        content: Text('Voulez-vous vraiment supprimer "$assetName" ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () {
+              setState(() {
+                _editedPortfolio!.institutions[instIndex].accounts[accIndex].assets.removeAt(assetIndex);
+                _onDataChanged();
+              });
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -117,11 +269,26 @@ class _CorrectionTabState extends State<CorrectionTab>
       children: [
         Padding(
           padding: EdgeInsets.only(bottom: _hasChanges ? bottomBarHeight : 0),
-          child: ListView.builder(
-            key: _listKey,
-            padding: const EdgeInsets.all(8.0),
-            itemCount: institutions.length,
-            itemBuilder: (context, instIndex) {
+          child: Column(
+            children: [
+              // Bouton pour ajouter une institution
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: OutlinedButton.icon(
+                  onPressed: _addInstitution,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Ajouter une Institution'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  key: _listKey,
+                  padding: const EdgeInsets.all(8.0),
+                  itemCount: institutions.length,
+                  itemBuilder: (context, instIndex) {
               final inst = institutions[instIndex];
               final instTotal = inst.totalValue;
 
@@ -144,13 +311,21 @@ class _CorrectionTabState extends State<CorrectionTab>
                       Expanded(
                           child: Text(inst.name,
                               style: theme.textTheme.titleLarge)),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        color: theme.colorScheme.error,
+                        tooltip: 'Supprimer l\'institution',
+                        onPressed: () => _deleteInstitution(instIndex),
+                      ),
                       Text(
                         CurrencyFormatter.format(instTotal),
                         style: theme.textTheme.titleSmall,
                       ),
                     ],
                   ),
-                  children: inst.accounts.map((account) {
+                  children: [
+                    ...inst.accounts.map((account) {
+                      final accIndex = inst.accounts.indexOf(account);
                     return Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12.0, vertical: 8.0),
@@ -191,10 +366,21 @@ class _CorrectionTabState extends State<CorrectionTab>
                                   ),
                                 ],
                               ),
-                              Text(
-                                CurrencyFormatter.format(account.totalValue),
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                    color: theme.colorScheme.primary),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, size: 20),
+                                    color: theme.colorScheme.error,
+                                    tooltip: 'Supprimer le compte',
+                                    onPressed: () => _deleteAccount(instIndex, accIndex),
+                                  ),
+                                  Text(
+                                    CurrencyFormatter.format(account.totalValue),
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                        color: theme.colorScheme.primary),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -294,16 +480,48 @@ class _CorrectionTabState extends State<CorrectionTab>
                                         itemBuilder: (context, assetIndex) {
                                           final asset =
                                           account.assets[assetIndex];
-                                          // Widget extrait
-                                          return AssetEditorTile(
-                                            key: ValueKey(
-                                                '${inst.id}_${account.id}_${asset.id}'),
-                                            asset: asset,
-                                            onChanged: _onDataChanged,
+                                          // Widget extrait avec bouton de suppression
+                                          return Stack(
+                                            children: [
+                                              AssetEditorTile(
+                                                key: ValueKey(
+                                                    '${inst.id}_${account.id}_${asset.id}'),
+                                                asset: asset,
+                                                onChanged: _onDataChanged,
+                                              ),
+                                              Positioned(
+                                                top: 4,
+                                                right: 4,
+                                                child: IconButton(
+                                                  icon: Icon(
+                                                    Icons.close,
+                                                    size: 18,
+                                                    color: theme.colorScheme.error,
+                                                  ),
+                                                  tooltip: 'Supprimer l\'actif',
+                                                  onPressed: () => _deleteAsset(instIndex, accIndex, assetIndex),
+                                                  style: IconButton.styleFrom(
+                                                    backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.8),
+                                                    padding: const EdgeInsets.all(4),
+                                                    minimumSize: const Size(24, 24),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           );
                                         },
                                       );
                                     },
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // Bouton pour ajouter un actif
+                                  OutlinedButton.icon(
+                                    onPressed: () => _addAsset(instIndex, accIndex),
+                                    icon: const Icon(Icons.add, size: 18),
+                                    label: const Text('Ajouter un actif'),
+                                    style: OutlinedButton.styleFrom(
+                                      minimumSize: const Size(double.infinity, 40),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -313,11 +531,27 @@ class _CorrectionTabState extends State<CorrectionTab>
                       ),
                     );
                   }).toList(),
+                    // Bouton pour ajouter un compte
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: OutlinedButton.icon(
+                        onPressed: () => _addAccount(instIndex),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Ajouter un compte'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 48),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
           ),
         ),
+              ],
+            ),
+          ),
         if (_hasChanges)
           Positioned(
             left: 0,

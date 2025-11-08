@@ -25,9 +25,9 @@ class Account {
     required this.id, // MIS À JOUR
     required this.name,
     required this.type,
-    this.assets = const [],
+    List<Asset>? assets,
     this.cashBalance = 0.0,
-  });
+  }) : assets = assets ?? [];
 
   double get totalValue {
     final assetsValue =

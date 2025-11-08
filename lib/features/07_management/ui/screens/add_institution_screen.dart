@@ -7,7 +7,14 @@ import 'package:portefeuille/core/data/models/institution.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 
 class AddInstitutionScreen extends StatefulWidget {
-  const AddInstitutionScreen({super.key});
+  /// Si onInstitutionCreated est fourni, l'institution sera retournée via ce callback
+  /// au lieu d'être ajoutée directement au provider (utile pour l'onglet Correction)
+  final void Function(Institution)? onInstitutionCreated;
+  
+  const AddInstitutionScreen({
+    super.key,
+    this.onInstitutionCreated,
+  });
 
   @override
   State<AddInstitutionScreen> createState() => _AddInstitutionScreenState();
@@ -32,8 +39,14 @@ class _AddInstitutionScreenState extends State<AddInstitutionScreen> {
         accounts: [],
       );
 
-      Provider.of<PortfolioProvider>(context, listen: false)
-          .addInstitution(newInstitution);
+      // Si un callback est fourni, on retourne l'institution
+      // Sinon, on l'ajoute directement au provider
+      if (widget.onInstitutionCreated != null) {
+        widget.onInstitutionCreated!(newInstitution);
+      } else {
+        Provider.of<PortfolioProvider>(context, listen: false)
+            .addInstitution(newInstitution);
+      }
 
       // On ferme le bottom sheet
       Navigator.of(context).pop();
