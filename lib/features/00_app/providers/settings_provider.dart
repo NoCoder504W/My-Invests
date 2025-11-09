@@ -44,12 +44,13 @@ class SettingsProvider extends ChangeNotifier {
     _secureStorage = const FlutterSecureStorage(
       aOptions: AndroidOptions(encryptedSharedPreferences: true),
     );
-    // 2. Charger les paramètres
-    _loadSettings();
+    // 2. Charger les paramètres (d'abord synchrones, puis asynchrones)
+    _loadSyncSettings();
+    _loadAsyncSettings();
   }
 
-  /// Charge les paramètres depuis Hive ET le stockage sécurisé.
-  void _loadSettings() async {
+  /// Charge les paramètres synchrones depuis Hive.
+  void _loadSyncSettings() {
     // Charger le mode en ligne
     _isOnlineMode = _settingsBox.get(
       _kIsOnlineMode,
@@ -72,11 +73,13 @@ class SettingsProvider extends ChangeNotifier {
       defaultValue: _defaultAppColorValue,
     );
     _appColor = Color(appColorValue);
+  }
 
-    // NOUVEAU : Charger la clé depuis le stockage sécurisé
+  /// Charge les paramètres asynchrones (clé API depuis le stockage sécurisé).
+  Future<void> _loadAsyncSettings() async {
+    // Charger la clé depuis le stockage sécurisé
     _fmpApiKey = await _secureStorage.read(key: _kFmpApiKey);
-
-    // Note : On notifie les listeners APRES le chargement asynchrone de la clé
+    // Notifier les listeners après le chargement de la clé
     notifyListeners();
   }
 

@@ -9,11 +9,13 @@ Une application Flutter moderne pour agréger et analyser vos comptes et investi
 - **Stockage local** : Hive (base de données NoSQL légère et rapide)
 - **Architecture** : Organisation par fonctionnalités (feature-first)
 - **Gestion d'état** : Provider
-- **Principales dépendances** : provider, hive, hive_flutter, fl_chart, intl, uuid, shimmer, animated_text_kit
+- **Principales dépendances** : provider, hive, hive_flutter, fl_chart, intl, uuid, shimmer, animated_text_kit, http, flutter_secure_storage
 
 ## Fonctionnalités Principales
 
 - **Multi-portefeuilles** : Créez et gérez plusieurs portefeuilles d'investissement
+- **Synchronisation en ligne** : Récupération automatique des prix en temps réel (FMP et Yahoo Finance)
+- **Recherche intelligente** : Auto-complétion des tickers et ISIN lors de l'ajout d'actifs
 - **Types de comptes supportés** :
   - PEA (Plan d'Épargne en Actions)
   - CTO (Compte-Titres Ordinaire)
@@ -32,6 +34,91 @@ Une application Flutter moderne pour agréger et analyser vos comptes et investi
   - Correction manuelle des données
 - **Planificateur** : Simulez vos investissements futurs
 - **Persistance des données** : Sauvegarde automatique locale avec Hive
+
+## 🌐 Mode En Ligne et Synchronisation des Prix
+
+L'application propose un **mode en ligne optionnel** qui permet de synchroniser automatiquement les prix de vos actifs et de bénéficier d'une aide à la saisie lors de l'ajout de nouveaux actifs.
+
+### Activation du Mode En Ligne
+
+1. Ouvrez l'écran des **Paramètres** (icône ⚙️ en haut à droite)
+2. Activez l'option **"Mode en ligne"**
+3. L'indicateur de statut dans l'AppBar affiche maintenant **"En ligne"**
+
+### Fonctionnement
+
+#### Récupération des Prix
+
+L'application utilise une **stratégie de fallback intelligente** :
+
+1. **Financial Modeling Prep (FMP)** : Si vous avez configuré une clé API (optionnel)
+   - Plus fiable et complète
+   - Requiert une inscription gratuite sur [financialmodelingprep.com](https://financialmodelingprep.com)
+   
+2. **Yahoo Finance** : Utilisé automatiquement en fallback ou si aucune clé FMP n'est configurée
+   - Gratuit et sans inscription
+   - Fonctionne pour la majorité des tickers (actions, ETF, cryptos)
+
+#### Cache Intelligent
+
+Pour optimiser les performances et limiter les appels API :
+- **Prix** : Mis en cache pendant **15 minutes**
+- **Recherche de tickers** : Mise en cache pendant **24 heures**
+
+### Configuration de la Clé API FMP (Optionnel)
+
+Pour améliorer la fiabilité de la synchronisation, vous pouvez configurer une clé API Financial Modeling Prep :
+
+1. Créez un compte gratuit sur [financialmodelingprep.com](https://financialmodelingprep.com)
+2. Récupérez votre clé API depuis votre tableau de bord
+3. Dans l'application :
+   - Ouvrez **Paramètres** > **Paramètres de l'Application**
+   - Activez le **Mode en ligne**
+   - Dans le champ **"Clé API FMP (Optionnel)"**, saisissez votre clé
+   - Cliquez sur l'icône 💾 pour sauvegarder
+
+**Sécurité** : La clé API est stockée de manière sécurisée dans le Keystore (Android) / Keychain (iOS) / Credential Manager (Windows).
+
+### Recherche de Tickers et Auto-complétion
+
+Lors de l'ajout d'un actif (écran "Ajouter un actif") :
+
+1. Commencez à taper un **ticker** (ex: "AAPL") ou un **ISIN** dans le champ dédié
+2. Après 500ms, des suggestions apparaissent automatiquement (si le mode en ligne est actif)
+3. Sélectionnez une suggestion pour :
+   - Remplir automatiquement le **nom** de l'actif
+   - Récupérer le **prix actuel** en temps réel
+   - Pré-remplir le **prix de revient unitaire** (PRU) avec le prix actuel
+
+**Types de résultats supportés** : Actions (EQUITY), ETF, Crypto-monnaies
+
+### Synchronisation Automatique
+
+Les prix sont synchronisés automatiquement dans les cas suivants :
+- **Au démarrage** de l'application (si le mode en ligne est actif)
+- **À l'activation** du mode en ligne
+- L'indicateur **"Synchro..."** s'affiche pendant la mise à jour
+
+**Mode hors ligne** : L'application fonctionne parfaitement sans connexion internet. Les prix restent ceux saisis manuellement ou récupérés lors de la dernière synchronisation.
+
+### Indicateur de Statut
+
+L'AppBar du Dashboard affiche l'état actuel de la connectivité :
+- ☁️ **"En ligne"** : Mode en ligne actif, synchronisation disponible
+- 🚫 **"Hors ligne"** : Mode hors ligne, pas de synchronisation
+- ⏳ **"Synchro..."** : Synchronisation en cours
+
+### Limitations et Bonnes Pratiques
+
+#### API Gratuites
+- **Yahoo Finance** : Aucune limitation officielle mais évitez les requêtes excessives
+- **FMP (gratuit)** : Généralement limité à 250 requêtes/jour (vérifiez votre plan)
+
+#### Recommandations
+- Le cache évite la plupart des appels répétés
+- La synchronisation est optimisée (appels en parallèle)
+- En cas d'échec, les prix existants sont conservés
+- Les erreurs sont loguées dans la console (mode debug)
 
 ## Prérequis
 
@@ -190,9 +277,12 @@ lib/
 │   │   │   ├── account.dart              # Compte d'investissement
 │   │   │   ├── asset.dart                # Actif/Position
 │   │   │   ├── account_type.dart         # Enum des types de comptes
+│   │   │   ├── savings_plan.dart         # Plans d'épargne
 │   │   │   └── *.g.dart                  # Fichiers générés par Hive
-│   │   └── repositories/                 # Logique d'accès aux données
-│   │       └── portfolio_repository.dart # Repository principal
+│   │   ├── repositories/                 # Logique d'accès aux données
+│   │   │   └── portfolio_repository.dart # Repository principal
+│   │   └── services/                     # Services externes
+│   │       └── api_service.dart          # Service de récupération des prix (FMP, Yahoo)
 │   │
 │   ├── ui/                               # Composants UI partagés
 │   │   ├── splash_screen.dart            # Écran de démarrage
@@ -222,8 +312,10 @@ analysis_options.yaml                     # Configuration Dart analyzer
 - **`lib/core/data/repositories/`** : Encapsule la logique d'accès et d'écriture des données, abstrayant le stockage Hive du reste de l'application
 
 - **`lib/features/00_app/providers/`** : Providers (ChangeNotifier) qui gèrent l'état global :
-  - `PortfolioProvider` : Opérations CRUD sur les portefeuilles, institutions, comptes et actifs
-  - `SettingsProvider` : Gestion des préférences utilisateur (couleur de thème, etc.)
+  - `PortfolioProvider` : Opérations CRUD sur les portefeuilles, institutions, comptes et actifs + synchronisation des prix en ligne
+  - `SettingsProvider` : Gestion des préférences utilisateur (couleur de thème, mode en ligne, clé API FMP, etc.)
+
+- **`lib/core/data/services/api_service.dart`** : Service centralisé pour les appels réseau (FMP, Yahoo Finance) avec cache intelligent et gestion des fallbacks
 
 - **`lib/features/07_management/`** : Écrans dédiés à l'ajout et la modification d'institutions, comptes et actifs avec formulaires validés
 
@@ -247,6 +339,8 @@ analysis_options.yaml                     # Configuration Dart analyzer
 - **`uuid`** (^4.4.0) : Génération d'identifiants uniques pour les entités
 - **`shimmer`** (^3.0.0) : Effets de chargement élégants
 - **`animated_text_kit`** (^4.2.2) : Animations de texte pour l'interface
+- **`http`** (^1.2.1) : Client HTTP pour les appels API
+- **`flutter_secure_storage`** (^9.1.1) : Stockage sécurisé pour les clés API (Keystore/Keychain)
 
 ### Dépendances de Développement
 
