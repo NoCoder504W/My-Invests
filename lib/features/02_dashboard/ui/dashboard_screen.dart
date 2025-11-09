@@ -1,16 +1,18 @@
 // lib/features/02_dashboard/ui/dashboard_screen.dart
+// REMPLACEZ LE FICHIER COMPLET
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../00_app/providers/portfolio_provider.dart';
-// NOUVEL IMPORT
 import '../../00_app/providers/settings_provider.dart';
 
 // Ecrans des onglets
 import '../../03_overview/ui/overview_tab.dart';
 import '../../05_planner/ui/planner_tab.dart';
-import '../../04_correction/ui/correction_tab.dart';
+import 'package:portefeuille/features/04_journal/ui/journal_tab.dart';
 import '../../06_settings/ui/settings_screen.dart';
+
+import '../../07_management/ui/screens/add_transaction_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,23 +23,32 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+
   static const List<Widget> _widgetOptions = <Widget>[
     OverviewTab(),
     PlannerTab(),
-    CorrectionTab(),
+    JournalTab(),
   ];
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  // --- NOUVELLE FONCTION (WIDGET D'ÉTAT) ---
+  void _openAddTransactionModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Permet au sheet de prendre tout l'écran
+      builder: (context) => const AddTransactionScreen(),
+    );
+  }
+
   /// Construit l'indicateur d'état pour l'AppBar.
   Widget _buildStatusIndicator(
       SettingsProvider settings, PortfolioProvider portfolio) {
+    // ... (code inchangé)
     final theme = Theme.of(context);
-    // Style pour le texte dans l'AppBar (clair)
     final textStyle = theme.appBarTheme.titleTextStyle?.copyWith(
       fontSize: 12,
       fontWeight: FontWeight.normal,
@@ -81,26 +92,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    // Ajoute un padding pour ne pas coller l'icône des paramètres
     return Padding(
       padding: const EdgeInsets.only(right: 8.0),
       child: child,
     );
   }
-  // --- FIN NOUVELLE FONCTION ---
 
   @override
   Widget build(BuildContext context) {
-    // --- MODIFIÉ ---
-    // Nous avons besoin des deux providers
     final portfolioProvider = Provider.of<PortfolioProvider>(context);
     final settingsProvider = Provider.of<SettingsProvider>(context);
-    // --- FIN MODIFICATION ---
-
     final portfolio = portfolioProvider.activePortfolio;
 
     if (portfolio == null) {
-      // (Partie "Aucun portefeuille" inchangée)
+      // ... (code "aucun portefeuille" inchangé)
       return Scaffold(
         body: Center(
           child: Column(
@@ -124,31 +129,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(portfolio.name),
-        // --- MODIFIÉ (Actions de l'AppBar) ---
-        actions: [
-          // 1. Notre nouvel indicateur de statut
-          _buildStatusIndicator(settingsProvider, portfolioProvider),
+        // --- MODIFICATION : Bouton "+" à gauche ---
+        leading: IconButton(
+          icon: const Icon(Icons.add_circle_outline),
+          tooltip: 'Ajouter une transaction',
+          onPressed: _openAddTransactionModal,
+        ),
+        // --- FIN MODIFICATION ---
 
-          // 2. Le bouton de paramètres existant
+        // --- MODIFICATION : Titre centré ---
+        title: Text(portfolio.name),
+        centerTitle: true,
+        // --- FIN MODIFICATION ---
+
+        actions: [
+          _buildStatusIndicator(settingsProvider, portfolioProvider),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
               showModalBottomSheet(
                 context: context,
-                isScrollControlled: true, // Permet au BottomSheet de grandir
+                isScrollControlled: true,
                 builder: (context) => const SettingsScreen(),
               );
             },
           ),
         ],
-        // --- FIN MODIFICATION ---
       ),
       body: IndexedStack(
         index: _selectedIndex,
         children: _widgetOptions,
       ),
+
+      // --- SUPPRESSION DU FAB ---
+      // floatingActionButton: FloatingActionButton(...),
+      // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      // --- FIN SUPPRESSION ---
+
       bottomNavigationBar: BottomNavigationBar(
+        // --- MODIFICATION : 'centerDocked' n'est plus nécessaire ---
+        type: BottomNavigationBarType.fixed,
+        // --- FIN MODIFICATION ---
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
@@ -161,9 +182,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: 'Planificateur',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.edit_note_outlined),
-            activeIcon: Icon(Icons.edit_note),
-            label: 'Correction',
+            icon: Icon(Icons.history_outlined),
+            activeIcon: Icon(Icons.history),
+            label: 'Journal',
           ),
         ],
         currentIndex: _selectedIndex,

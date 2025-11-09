@@ -6,7 +6,6 @@ import 'package:portefeuille/core/data/models/account.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/ui/widgets/account_type_chip.dart';
 import 'asset_list_item.dart';
-import 'package:portefeuille/features/07_management/ui/screens/add_asset_screen.dart';
 
 class AccountTile extends StatelessWidget {
   final Account account;
@@ -54,23 +53,6 @@ class AccountTile extends StatelessWidget {
         ),
         const Divider(height: 1),
         ...account.assets.map((asset) => AssetListItem(asset: asset)),
-        ListTile(
-          dense: true,
-          leading: Icon(Icons.add, color: Colors.grey[400], size: 20),
-          title: Text(
-            'Ajouter un actif',
-            style: TextStyle(color: Colors.grey[400], fontSize: 14),
-          ),
-          // --- MODIFIÉ ---
-          onTap: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (context) => AddAssetScreen(accountId: account.id),
-            );
-          },
-          // --- FIN MODIFICATION ---
-        ),
       ],
     );
   }
