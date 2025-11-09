@@ -417,8 +417,36 @@ class PortfolioProvider extends ChangeNotifier {
   }
 
   Future<void> deletePortfolio(String portfolioId) async {
-    // TODO: Il faudra aussi supprimer les transactions liées à ce portefeuille
+    Portfolio? portfolioToDelete;
+    try {
+      // 1. Trouver le portefeuille à supprimer (qui contient les transactions hydratées)
+      portfolioToDelete = _portfolios.firstWhere((p) => p.id == portfolioId);
+    } catch (e) {
+      debugPrint(
+          "Impossible de supprimer le portefeuille : ID $portfolioId non trouvé.");
+      return;
+    }
+
+    // 2. Collecter toutes les transactions associées à ce portefeuille
+    final List<Future<void>> deleteFutures = [];
+    for (final inst in portfolioToDelete.institutions) {
+      for (final acc in inst.accounts) {
+        for (final tx in acc.transactions) {
+          // Ajoute la suppression au lot de tâches
+          deleteFutures.add(_repository.deleteTransaction(tx.id));
+        }
+      }
+    }
+
+    // 3. Exécuter toutes les suppressions de transactions en parallèle
+    if (deleteFutures.isNotEmpty) {
+      await Future.wait(deleteFutures);
+    }
+
+    // 4. Maintenant que les transactions sont supprimées, supprimer le portefeuille
     await _repository.deletePortfolio(portfolioId);
+
+    // 5. Mettre à jour l'état local (logique existante)
     _portfolios.removeWhere((p) => p.id == portfolioId);
     if (_activePortfolio?.id == portfolioId) {
       _activePortfolio = _portfolios.isNotEmpty ? _portfolios.first : null;
