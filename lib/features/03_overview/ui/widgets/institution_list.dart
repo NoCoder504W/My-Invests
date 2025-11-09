@@ -1,4 +1,5 @@
 // lib/features/03_overview/ui/widgets/institution_list.dart
+// REMPLACEZ LE FICHIER COMPLET
 
 import 'package:flutter/material.dart';
 import 'package:portefeuille/core/data/models/institution.dart';
@@ -8,7 +9,13 @@ import 'package:portefeuille/features/07_management/ui/screens/add_account_scree
 
 class InstitutionList extends StatelessWidget {
   final List<Institution> institutions;
-  const InstitutionList({super.key, required this.institutions});
+  final bool isReadOnly; // <--- NOUVEAU
+
+  const InstitutionList({
+    super.key,
+    required this.institutions,
+    this.isReadOnly = false, // <--- NOUVEAU (valeur par défaut)
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,23 +42,26 @@ class InstitutionList extends StatelessWidget {
               ...institution.accounts.map((account) {
                 return AccountTile(account: account);
               }).toList(),
-              ListTile(
-                leading: Icon(Icons.add, color: Colors.grey[400]),
-                title: Text(
-                  'Ajouter un compte',
-                  style: TextStyle(color: Colors.grey[400]),
+
+              // --- MODIFICATION ---
+              // N'affiche le bouton que si nous ne sommes PAS en lecture seule
+              if (!isReadOnly)
+                ListTile(
+                  leading: Icon(Icons.add, color: Colors.grey[400]),
+                  title: Text(
+                    'Ajouter un compte',
+                    style: TextStyle(color: Colors.grey[400]),
+                  ),
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (context) =>
+                          AddAccountScreen(institutionId: institution.id),
+                    );
+                  },
                 ),
-                // --- MODIFIÉ ---
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (context) =>
-                        AddAccountScreen(institutionId: institution.id),
-                  );
-                },
-                // --- FIN MODIFICATION ---
-              ),
+              // --- FIN MODIFICATION ---
             ],
           ),
         );

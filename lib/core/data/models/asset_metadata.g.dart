@@ -1,47 +1,44 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'asset.dart';
+part of 'asset_metadata.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class AssetAdapter extends TypeAdapter<Asset> {
+class AssetMetadataAdapter extends TypeAdapter<AssetMetadata> {
   @override
-  final int typeId = 3;
+  final int typeId = 9;
 
   @override
-  Asset read(BinaryReader reader) {
+  AssetMetadata read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Asset(
-      id: fields[6] as String,
-      name: fields[0] as String,
-      ticker: fields[1] as String,
-      type: fields[7] as AssetType?,
-      stale_quantity: fields[2] as double?,
-      stale_averagePrice: fields[3] as double?,
+    return AssetMetadata(
+      ticker: fields[0] as String,
+      currentPrice: fields[1] as double,
+      estimatedAnnualYield: fields[2] as double,
+      lastUpdated: fields[3] as DateTime?,
+      isManualYield: fields[4] as bool,
     );
   }
 
   @override
-  void write(BinaryWriter writer, Asset obj) {
+  void write(BinaryWriter writer, AssetMetadata obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(5)
       ..writeByte(0)
-      ..write(obj.name)
-      ..writeByte(1)
       ..write(obj.ticker)
+      ..writeByte(1)
+      ..write(obj.currentPrice)
       ..writeByte(2)
-      ..write(obj.stale_quantity)
+      ..write(obj.estimatedAnnualYield)
       ..writeByte(3)
-      ..write(obj.stale_averagePrice)
-      ..writeByte(6)
-      ..write(obj.id)
-      ..writeByte(7)
-      ..write(obj.type);
+      ..write(obj.lastUpdated)
+      ..writeByte(4)
+      ..write(obj.isManualYield);
   }
 
   @override
@@ -50,7 +47,7 @@ class AssetAdapter extends TypeAdapter<Asset> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is AssetAdapter &&
+      other is AssetMetadataAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
