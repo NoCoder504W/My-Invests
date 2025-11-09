@@ -107,8 +107,6 @@ class _SyntheseViewState extends State<SyntheseView> {
   Widget build(BuildContext context) {
     return Consumer<PortfolioProvider>(
       builder: (context, provider, child) {
-        // Force le rebuild en accédant au timestamp
-        final _ = provider.lastUpdateTimestamp;
 
         final aggregatedAssets = _aggregateAssets(provider);
 

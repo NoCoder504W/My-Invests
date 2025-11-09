@@ -31,15 +31,12 @@ class PortfolioProvider extends ChangeNotifier {
   Portfolio? _activePortfolio;
   bool _isLoading = true;
   bool _isSyncing = false;
-  
-  // NOUVEAU : Timestamp pour forcer le rebuild des widgets
-  int _lastUpdateTimestamp = DateTime.now().millisecondsSinceEpoch;
+
 
   List<Portfolio> get portfolios => _portfolios;
   Portfolio? get activePortfolio => _activePortfolio;
   bool get isLoading => _isLoading;
   bool get isSyncing => _isSyncing;
-  int get lastUpdateTimestamp => _lastUpdateTimestamp; // Getter pour le timestamp
 
   PortfolioProvider({
     required PortfolioRepository repository,
@@ -547,12 +544,9 @@ class PortfolioProvider extends ChangeNotifier {
     final metadata = _repository.getOrCreateAssetMetadata(ticker);
     metadata.updateYield(newYield, isManual: true);
     await _repository.saveAssetMetadata(metadata);
-    
-    // Recharger les portfolios pour injecter les nouvelles métadonnées
+
+    // Recharger les portfolios (qui notifiera les listeners)
     await loadAllPortfolios();
-    
-    _lastUpdateTimestamp = DateTime.now().millisecondsSinceEpoch;
-    notifyListeners();
   }
 
   /// Met à jour le prix actuel d'un actif.
@@ -561,11 +555,8 @@ class PortfolioProvider extends ChangeNotifier {
     final metadata = _repository.getOrCreateAssetMetadata(ticker);
     metadata.updatePrice(newPrice);
     await _repository.saveAssetMetadata(metadata);
-    
-    // Recharger les portfolios pour injecter les nouvelles métadonnées
+
+    // Recharger les portfolios (qui notifiera les listeners)
     await loadAllPortfolios();
-    
-    _lastUpdateTimestamp = DateTime.now().millisecondsSinceEpoch;
-    notifyListeners();
   }
 }
