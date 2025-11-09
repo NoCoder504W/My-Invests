@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Permissions requises pour la synchronisation en ligne des prix -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    
     <application
         android:label="portefeuille"
         android:name="${applicationName}"
