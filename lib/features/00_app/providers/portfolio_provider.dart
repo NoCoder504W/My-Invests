@@ -483,29 +483,6 @@ class PortfolioProvider extends ChangeNotifier {
     }
   }
 
-  // CETTE MÉTHODE EST MAINTENANT OBSOLÈTE
-  // L'ajout d'asset se fera via une TRANSACTION
-  void addAsset(String accountId, Asset newAsset) {
-    /*
-    if (_activePortfolio == null) return;
-    final updatedPortfolio = _activePortfolio!.deepCopy();
-    try {
-      for (var inst in updatedPortfolio.institutions) {
-        for (var acc in inst.accounts) {
-          if (acc.id == accountId) {
-            // ERREUR : acc.assets est un getter
-            // acc.assets.add(newAsset);
-            savePortfolio(updatedPortfolio);
-            return;
-          }
-        }
-      }
-      debugPrint("Compte non trouvé : $accountId");
-    } catch (e) {
-      debugPrint("Erreur lors de l'ajout de l'actif : $e");
-    }
-    */
-  }
 
   // ========== GESTION DES PLANS D'ÉPARGNE ==========
 
