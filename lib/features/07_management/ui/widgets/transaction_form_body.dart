@@ -172,9 +172,10 @@ class _TransactionFormBodyState extends State<TransactionFormBody> {
     });
     FocusScope.of(context).unfocus();
     if (_settingsProvider.isOnlineMode) {
-      _apiService.getPrice(suggestion.ticker).then((price) {
-        if (price != null && mounted) {
-          _priceController.text = price.toStringAsFixed(2);
+      _apiService.getPrice(suggestion.ticker).then((priceResult) { // <--- 'price' est maintenant 'priceResult'
+        // VÉRIFICATION CORRIGÉE : utilise priceResult.price
+        if (priceResult.price != null && mounted) {
+          _priceController.text = priceResult.price!.toStringAsFixed(2); // <--- CORRIGÉ
         }
       });
     }

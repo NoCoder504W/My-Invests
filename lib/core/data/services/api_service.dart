@@ -27,6 +27,18 @@ class TickerSuggestion {
       {required this.ticker, required this.name, required this.exchange});
 }
 
+// --- NOUVEAU : Objets de résultat pour un meilleur feedback ---
+enum ApiSource { Fmp, Yahoo, Cache, None }
+
+class PriceResult {
+  final double? price;
+  final ApiSource source;
+  final String ticker;
+
+  PriceResult(this.price, this.source, this.ticker);
+}
+// --- FIN NOUVEAU ---
+
 /// Service responsable des appels réseau pour les données financières.
 /// Gère la logique de cache et la stratégie FMP > Yahoo.
 class ApiService {
@@ -44,39 +56,44 @@ class ApiService {
 
   /// Récupère le prix pour un ticker.
   /// Gère le cache et la stratégie de fallback.
-  /// Retourne null en cas d'erreur (ne lance jamais d'exception).
-  Future<double?> getPrice(String ticker) async {
+  /// MODIFIÉ : Retourne un PriceResult pour un feedback détaillé.
+  Future<PriceResult> getPrice(String ticker) async {
     try {
       // 1. Vérifier le cache
       final cached = _priceCache[ticker];
       if (cached != null && !cached.isStale) {
-        return cached.value;
+        return PriceResult(cached.value, ApiSource.Cache, ticker);
       }
 
       // 2. Si le cache est vide ou obsolète, appeler le réseau
-      double?
-      price;
+      double? price;
       final bool hasFmpKey = _settingsProvider.hasFmpApiKey;
 
       if (hasFmpKey) {
         price = await _fetchFromFmp(ticker);
+        if (price != null) {
+          _priceCache[ticker] = _CacheEntry(price);
+          return PriceResult(price, ApiSource.Fmp, ticker);
+        }
       }
 
-      if (price == null) {
-        // Stratégie 2 : Yahoo (Fallback)
-        price = await _fetchFromYahoo(ticker);
-      }
+      // 3. Stratégie 2 : Yahoo (Fallback ou si FMP n'a pas de clé)
+      price = await _fetchFromYahoo(ticker);
 
-      // 3. Mettre à jour le cache si un prix est trouvé
+      // 4. Mettre à jour le cache et retourner
       if (price != null) {
         _priceCache[ticker] = _CacheEntry(price);
+        // Si FMP était activé mais a échoué, c'est un fallback Yahoo
+        // Si FMP n'était pas activé, c'est une source Yahoo standard
+        return PriceResult(price, ApiSource.Yahoo, ticker);
       }
 
-      return price;
+      // 5. Échec complet
+      return PriceResult(null, ApiSource.None, ticker);
     } catch (e) {
-      // Capturer TOUTES les exceptions non gérées (y compris DNS, timeout, etc.)
+      // Capturer TOUTES les exceptions non gérées
       debugPrint("⚠️ Erreur inattendue lors de la récupération du prix pour $ticker : $e");
-      return null; // Retourner null plutôt que de crasher
+      return PriceResult(null, ApiSource.None, ticker);
     }
   }
 
@@ -98,6 +115,7 @@ class ApiService {
           }
         }
       }
+      debugPrint("Erreur FMP pour $ticker (Status: ${response.statusCode}): ${response.body}");
       return null;
     } catch (e) {
       debugPrint("Erreur FMP pour $ticker: $e");
@@ -123,8 +141,7 @@ class ApiService {
       final List<dynamic>? results = jsonData['spark']?['result'];
       if (results != null && results.isNotEmpty) {
         final result = results[0];
-        final String?
-        resultSymbol = result['symbol'];
+        final String? resultSymbol = result['symbol'];
         final num? newPriceNum =
         result['response']?[0]?['meta']?['regularMarketPrice'];
         if (resultSymbol == ticker && newPriceNum != null) {
@@ -171,8 +188,7 @@ class ApiService {
       debugPrint("📊 ${quotes.length} résultats trouvés");
 
       for (final quote in quotes) {
-        final String?
-        ticker = quote['symbol'];
+        final String? ticker = quote['symbol'];
         final String? name = quote['longname'] ?? quote['shortname'];
         final String? exchange = quote['exchDisp'];
         if (ticker != null && name != null && exchange != null) {
@@ -214,37 +230,6 @@ class ApiService {
     debugPrint("ℹ️ Caches de l'ApiService vidés.");
   }
 
-  // --- NOUVEAU ---
-  /// Récupère l'état de la consommation de l'API FMP.
-  /// Retourne une chaîne formatée ou un message d'erreur.
-  Future<String> getApiUsage() async {
-    if (!_settingsProvider.hasFmpApiKey) {
-      return "Aucune clé FMP n'est configurée.";
-    }
-
-    final apiKey = _settingsProvider.fmpApiKey!;
-    // Note : C'est un endpoint FMP typique, ajustez si nécessaire.
-    final uri = Uri.parse(
-        'https://financialmodelingprep.com/api/v3/api-limitation?apikey=$apiKey');
-
-    try {
-      final response =
-      await _httpClient.get(uri).timeout(const Duration(seconds: 8));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data is Map && data.containsKey('apiCallsLimit') && data.containsKey('apiCallsMade')) {
-          final limit = data['apiCallsLimit'];
-          final made = data['apiCallsMade'];
-          return "Utilisation : $made / $limit requêtes";
-        }
-        return "Réponse API FMP inattendue.";
-      } else {
-        return "Erreur FMP : Statut ${response.statusCode}";
-      }
-    } catch (e) {
-      debugPrint("Erreur lors de la récupération de l'utilisation FMP : $e");
-      return "Impossible de contacter le service FMP.";
-    }
-  }
+// --- SUPPRIMÉ ---
+// La méthode getApiUsage() a été supprimée car l'endpoint n'existe pas.
 }
