@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../00_app/providers/portfolio_provider.dart';
 import '../../02_dashboard/ui/dashboard_screen.dart';
+import 'widgets/initial_setup_wizard.dart';
 
 class LaunchScreen extends StatelessWidget {
   const LaunchScreen({super.key});
@@ -29,7 +30,7 @@ class LaunchScreen extends StatelessWidget {
                 const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
               onPressed: () {
-                // MODIFIÉ : Appel de la nouvelle méthode
+                // Mode démo : créer directement et aller au dashboard
                 portfolioProvider.addDemoPortfolio();
 
                 Navigator.of(context).pushReplacement(
@@ -45,15 +46,23 @@ class LaunchScreen extends StatelessWidget {
                 padding:
                 const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
-              onPressed: () {
-                // MODIFIÉ : Appel de la nouvelle méthode
-                // (Pour l'instant, nom par défaut. On pourra ajouter un dialogue plus tard)
-                portfolioProvider.addNewPortfolio("Mon Portefeuille");
-
-                Navigator.of(context).pushReplacement(
+              onPressed: () async {
+                // MODIFIÉ : Lancer l'assistant de configuration
+                final result = await Navigator.of(context).push(
                   MaterialPageRoute(
-                      builder: (context) => const DashboardScreen()),
+                    builder: (context) => const InitialSetupWizard(
+                      portfolioName: "Mon Portefeuille",
+                    ),
+                  ),
                 );
+
+                // Si le wizard a réussi, aller au dashboard
+                if (result == true && context.mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                        builder: (context) => const DashboardScreen()),
+                  );
+                }
               },
               child: const Text('Commencer avec un portefeuille vide'),
             ),

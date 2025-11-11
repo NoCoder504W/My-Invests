@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
+import 'package:portefeuille/features/01_launch/ui/widgets/initial_setup_wizard.dart';
 
 class PortfolioManagementSettings extends StatelessWidget {
   const PortfolioManagementSettings({super.key});
@@ -54,10 +55,7 @@ class PortfolioManagementSettings extends StatelessWidget {
                 TextButton.icon(
                   icon: const Icon(Icons.add_outlined),
                   label: const Text('Nouveau'),
-                  onPressed: () {
-                    // TODO: Ajouter un dialogue pour demander le nom
-                    portfolioProvider.addNewPortfolio("Nouveau Portefeuille");
-                  },
+                  onPressed: () => _showNewPortfolioDialog(context, portfolioProvider),
                 ),
                 TextButton.icon(
                   icon: Icon(Icons.edit_outlined, color: Colors.grey[300]),
@@ -121,6 +119,68 @@ class PortfolioManagementSettings extends StatelessWidget {
                 if (newName.isNotEmpty) {
                   provider.renameActivePortfolio(newName);
                   Navigator.of(dialogContext).pop();
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showNewPortfolioDialog(BuildContext context, PortfolioProvider provider) {
+    final nameController = TextEditingController(text: "Nouveau Portefeuille");
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Nouveau portefeuille'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Comment souhaitez-vous créer votre nouveau portefeuille ?'),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nom du portefeuille',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Annuler'),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            TextButton(
+              child: const Text('Portefeuille vide'),
+              onPressed: () {
+                final name = nameController.text.trim().isEmpty 
+                    ? "Nouveau Portefeuille" 
+                    : nameController.text.trim();
+                provider.addNewPortfolio(name);
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            FilledButton.icon(
+              icon: const Icon(Icons.assistant_outlined),
+              label: const Text('Assistant'),
+              onPressed: () async {
+                final name = nameController.text.trim().isEmpty 
+                    ? "Nouveau Portefeuille" 
+                    : nameController.text.trim();
+                Navigator.of(dialogContext).pop();
+                final result = await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => InitialSetupWizard(portfolioName: name),
+                  ),
+                );
+                // Si l'assistant est complété, le nouveau portefeuille est déjà créé
+                if (result == true) {
+                  // Rien à faire, le wizard a créé le portefeuille
                 }
               },
             ),
