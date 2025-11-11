@@ -32,11 +32,12 @@ class _Step4AssetsState extends State<Step4Assets> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _pruController = TextEditingController();
-  
+  final TextEditingController _currentPriceController = TextEditingController();
+
   WizardAccount? _selectedAccount;
   AssetType? _selectedAssetType;
   DateTime _firstPurchaseDate = DateTime.now();
-  
+
   // Pour la recherche de tickers
   List<TickerSuggestion> _suggestions = [];
   bool _isLoadingSearch = false;
@@ -47,7 +48,7 @@ class _Step4AssetsState extends State<Step4Assets> {
     if (widget.accounts.isNotEmpty) {
       _selectedAccount = widget.accounts.first;
     }
-    
+
     // Écouter les changements du ticker pour la recherche
     if (widget.enableOnlineMode) {
       _tickerController.addListener(_onTickerChanged);
@@ -60,6 +61,7 @@ class _Step4AssetsState extends State<Step4Assets> {
     _nameController.dispose();
     _quantityController.dispose();
     _pruController.dispose();
+    _currentPriceController.dispose();
     super.dispose();
   }
 
@@ -81,14 +83,14 @@ class _Step4AssetsState extends State<Step4Assets> {
 
   Future<void> _search(String query) async {
     if (!widget.enableOnlineMode) return;
-    
+
     setState(() {
       _isLoadingSearch = true;
     });
-    
+
     final apiService = context.read<ApiService>();
     final results = await apiService.searchTicker(query);
-    
+
     if (mounted) {
       setState(() {
         _suggestions = results;
@@ -103,7 +105,7 @@ class _Step4AssetsState extends State<Step4Assets> {
     setState(() {
       _suggestions = [];
     });
-    
+
     // Récupérer le prix actuel
     if (widget.enableOnlineMode) {
       final apiService = context.read<ApiService>();
@@ -117,62 +119,79 @@ class _Step4AssetsState extends State<Step4Assets> {
 
   void _addAsset() {
     if (_selectedAccount == null) return;
-    
+
     final ticker = _tickerController.text.trim();
     final name = _nameController.text.trim();
     final quantityStr = _quantityController.text.trim();
     final pruStr = _pruController.text.trim();
-    
-    if (ticker.isEmpty || name.isEmpty || quantityStr.isEmpty || pruStr.isEmpty) {
+    final currentPriceStr = _currentPriceController.text.trim();
+
+    if (ticker.isEmpty ||
+        name.isEmpty ||
+        quantityStr.isEmpty ||
+        pruStr.isEmpty ||
+        currentPriceStr.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez remplir tous les champs obligatoires')),
+        const SnackBar(
+            content: Text('Veuillez remplir tous les champs obligatoires')),
       );
       return;
     }
-    
+
     final quantity = double.tryParse(quantityStr);
     final pru = double.tryParse(pruStr);
-    
+    final currentPrice = double.tryParse(currentPriceStr);
+
     if (quantity == null || quantity <= 0 || pru == null || pru <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La quantité et le PRU doivent être supérieurs à 0')),
+        const SnackBar(
+            content: Text('La quantité et le PRU doivent être supérieurs à 0')),
       );
       return;
     }
-    
+
+    if (currentPrice == null || currentPrice <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Le prix actuel doit être supérieur à 0')),
+      );
+      return;
+    }
+
     final asset = WizardAsset(
       ticker: ticker,
       name: name,
       quantity: quantity,
       averagePrice: pru,
+      currentPrice: currentPrice,
       firstPurchaseDate: _firstPurchaseDate,
       accountDisplayName: _selectedAccount!.displayName,
       type: _selectedAssetType,
     );
-    
+
     widget.assets.add(asset);
     _selectedAccount!.assets.add(asset);
-    
+
     // Réinitialiser le formulaire
     _tickerController.clear();
     _nameController.clear();
     _quantityController.clear();
     _pruController.clear();
+    _currentPriceController.clear();
     _selectedAssetType = null;
     _firstPurchaseDate = DateTime.now();
-    
+
     widget.onAssetsChanged();
   }
 
   void _removeAsset(int index) {
     final asset = widget.assets[index];
-    
+
     // Retirer aussi du compte parent
     final account = widget.accounts.firstWhere(
       (a) => a.displayName == asset.accountDisplayName,
     );
     account.assets.remove(asset);
-    
+
     widget.assets.removeAt(index);
     widget.onAssetsChanged();
   }
@@ -183,9 +202,8 @@ class _Step4AssetsState extends State<Step4Assets> {
       initialDate: _firstPurchaseDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
-      locale: const Locale('fr', 'FR'),
     );
-    
+
     if (picked != null) {
       setState(() {
         _firstPurchaseDate = picked;
@@ -208,7 +226,7 @@ class _Step4AssetsState extends State<Step4Assets> {
                 ),
           ),
           const SizedBox(height: 8),
-          
+
           Text(
             'Ajoutez vos actifs actuels (actions, ETF, crypto, etc.)',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -232,7 +250,7 @@ class _Step4AssetsState extends State<Step4Assets> {
                         ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Sélection du compte
                   DropdownButtonFormField<WizardAccount>(
                     value: _selectedAccount,
@@ -252,7 +270,7 @@ class _Step4AssetsState extends State<Step4Assets> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Ticker avec recherche
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +287,8 @@ class _Step4AssetsState extends State<Step4Assets> {
                                   height: 20,
                                   child: Padding(
                                     padding: EdgeInsets.all(12.0),
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
                                   ),
                                 )
                               : null,
@@ -277,7 +296,7 @@ class _Step4AssetsState extends State<Step4Assets> {
                         ),
                         textCapitalization: TextCapitalization.characters,
                       ),
-                      
+
                       // Suggestions de recherche
                       if (_suggestions.isNotEmpty) ...[
                         const SizedBox(height: 8),
@@ -309,7 +328,7 @@ class _Step4AssetsState extends State<Step4Assets> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Nom de l'actif
                   TextField(
                     controller: _nameController,
@@ -321,7 +340,7 @@ class _Step4AssetsState extends State<Step4Assets> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Type d'actif (facultatif)
                   DropdownButtonFormField<AssetType>(
                     value: _selectedAssetType,
@@ -341,7 +360,7 @@ class _Step4AssetsState extends State<Step4Assets> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Quantité et PRU sur la même ligne
                   Row(
                     children: [
@@ -354,9 +373,11 @@ class _Step4AssetsState extends State<Step4Assets> {
                             prefixIcon: Icon(Icons.numbers),
                             border: OutlineInputBorder(),
                           ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,8}')),
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d+\.?\d{0,8}')),
                           ],
                         ),
                       ),
@@ -370,16 +391,38 @@ class _Step4AssetsState extends State<Step4Assets> {
                             prefixIcon: Icon(Icons.euro),
                             border: OutlineInputBorder(),
                           ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d+\.?\d{0,2}')),
                           ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
+                  // Prix actuel
+                  TextField(
+                    controller: _currentPriceController,
+                    decoration: const InputDecoration(
+                      labelText: 'Prix actuel (€) *',
+                      hintText: '165.50',
+                      helperText:
+                          'Prix actuel de l\'actif (pour calcul de la valeur)',
+                      prefixIcon: Icon(Icons.attach_money),
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d+\.?\d{0,2}')),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
                   // Date du premier achat
                   InkWell(
                     onTap: _selectDate,
@@ -395,7 +438,7 @@ class _Step4AssetsState extends State<Step4Assets> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   ElevatedButton.icon(
                     onPressed: _addAsset,
                     icon: const Icon(Icons.add),
@@ -416,7 +459,6 @@ class _Step4AssetsState extends State<Step4Assets> {
                   ),
             ),
             const SizedBox(height: 12),
-            
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -427,11 +469,13 @@ class _Step4AssetsState extends State<Step4Assets> {
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.tertiaryContainer,
                       child: Text(
                         asset.ticker.substring(0, 1).toUpperCase(),
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.onTertiaryContainer,
+                          color:
+                              Theme.of(context).colorScheme.onTertiaryContainer,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

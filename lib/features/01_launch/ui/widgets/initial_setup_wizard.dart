@@ -54,7 +54,8 @@ class _InitialSetupWizardState extends State<InitialSetupWizard> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Configuration initiale (${_currentStep + 1}/$_totalSteps)'),
+          title:
+              Text('Configuration initiale (${_currentStep + 1}/$_totalSteps)'),
           leading: _currentStep > 0
               ? IconButton(
                   icon: const Icon(Icons.arrow_back),
@@ -147,8 +148,11 @@ class _InitialSetupWizardState extends State<InitialSetupWizard> {
           // Bouton Suivant / Terminer
           ElevatedButton.icon(
             onPressed: _canProceed() ? _nextStep : null,
-            icon: Icon(_currentStep == _totalSteps - 1 ? Icons.check : Icons.arrow_forward),
-            label: Text(_currentStep == _totalSteps - 1 ? 'Terminer' : 'Suivant'),
+            icon: Icon(_currentStep == _totalSteps - 1
+                ? Icons.check
+                : Icons.arrow_forward),
+            label:
+                Text(_currentStep == _totalSteps - 1 ? 'Terminer' : 'Suivant'),
           ),
         ],
       ),
@@ -160,7 +164,8 @@ class _InitialSetupWizardState extends State<InitialSetupWizard> {
       case 0:
         return true; // Toujours possible de continuer (choix facultatif)
       case 1:
-        return _institutions.isNotEmpty && _institutions.every((i) => i.isValid);
+        return _institutions.isNotEmpty &&
+            _institutions.every((i) => i.isValid);
       case 2:
         return _accounts.isNotEmpty && _accounts.every((a) => a.isValid);
       case 3:
@@ -199,7 +204,33 @@ class _InitialSetupWizardState extends State<InitialSetupWizard> {
     // 2. Créer le portefeuille et les entités
     await _createPortfolioData(portfolioProvider);
 
-    // 3. Fermer le wizard et laisser le parent gérer la navigation
+    // 3. Attendre un peu pour que toutes les données soient bien sauvegardées
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // 4. Recharger tous les portefeuilles depuis la base de données
+    await portfolioProvider.loadAllPortfolios();
+
+    // 5. Synchroniser les prix UNIQUEMENT en mode en ligne
+    // GARDE-FOU : Vérifier que le mode en ligne est VRAIMENT activé
+    if (_enableOnlineMode && settingsProvider.isOnlineMode) {
+      debugPrint('🔄 Mode en ligne activé : synchronisation des prix...');
+      try {
+        await portfolioProvider.forceSynchroniserLesPrix();
+        debugPrint('✅ Synchronisation des prix terminée');
+      } catch (e) {
+        debugPrint('⚠️ Erreur lors de la synchronisation des prix : $e');
+        // Ne pas bloquer si la sync échoue, les prix manuels sont déjà sauvegardés
+      }
+    } else {
+      debugPrint(
+          '📴 Mode hors ligne : synchronisation des prix DÉSACTIVÉE (utilisation des prix manuels)');
+      if (_enableOnlineMode && !settingsProvider.isOnlineMode) {
+        debugPrint(
+            '⚠️ ALERTE : Mode en ligne demandé mais non activé dans les paramètres !');
+      }
+    }
+
+    // 6. Fermer le wizard et laisser le parent gérer la navigation
     if (mounted) {
       Navigator.of(context).pop(true); // Retourner true pour indiquer le succès
     }
@@ -209,11 +240,12 @@ class _InitialSetupWizardState extends State<InitialSetupWizard> {
     // Générer les transactions à partir des données du wizard
     try {
       const uuid = Uuid();
-      
+
       // 1. Créer le portefeuille
       provider.addNewPortfolio(widget.portfolioName);
-      await Future.delayed(const Duration(milliseconds: 100)); // Attendre que le provider se mette à jour
-      
+      await Future.delayed(const Duration(
+          milliseconds: 200)); // Attendre que le provider se mette à jour
+
       // 2. Créer les institutions et comptes
       for (final wizardInstitution in _institutions) {
         // Créer l'institution
@@ -223,12 +255,13 @@ class _InitialSetupWizardState extends State<InitialSetupWizard> {
           accounts: [],
         );
         provider.addInstitution(institution);
-        
+        await Future.delayed(const Duration(milliseconds: 50));
+
         // Créer les comptes pour cette institution
         final institutionAccounts = _accounts
             .where((a) => a.institutionName == wizardInstitution.name)
             .toList();
-        
+
         for (final wizardAccount in institutionAccounts) {
           // Créer le compte
           final account = Account(
@@ -237,7 +270,8 @@ class _InitialSetupWizardState extends State<InitialSetupWizard> {
             type: wizardAccount.type,
           );
           provider.addAccount(institution.id, account);
-          
+          await Future.delayed(const Duration(milliseconds: 50));
+
           // 3. Créer une transaction Deposit pour le solde initial
           if (wizardAccount.cashBalance > 0) {
             final depositTransaction = Transaction(
@@ -250,20 +284,22 @@ class _InitialSetupWizardState extends State<InitialSetupWizard> {
               notes: 'Solde initial (assistant de configuration)',
             );
             await provider.addTransaction(depositTransaction);
+            await Future.delayed(const Duration(milliseconds: 50));
           }
-          
+
           // 4. Créer les transactions Buy pour les actifs
           final accountAssets = _assets
               .where((a) => a.accountDisplayName == wizardAccount.displayName)
               .toList();
-          
+
           for (final wizardAsset in accountAssets) {
             final buyTransaction = Transaction(
               id: uuid.v4(),
               accountId: account.id,
               type: TransactionType.Buy,
               date: wizardAsset.firstPurchaseDate,
-              amount: -(wizardAsset.quantity * wizardAsset.averagePrice), // Négatif pour un achat
+              amount: -(wizardAsset.quantity *
+                  wizardAsset.averagePrice), // Négatif pour un achat
               fees: 0.0,
               assetTicker: wizardAsset.ticker,
               assetName: wizardAsset.name,
@@ -273,10 +309,19 @@ class _InitialSetupWizardState extends State<InitialSetupWizard> {
               notes: 'Position initiale (assistant de configuration)',
             );
             await provider.addTransaction(buyTransaction);
+            await Future.delayed(const Duration(milliseconds: 50));
+
+            // Sauvegarder le prix actuel dans les métadonnées
+            await provider.updateAssetPrice(
+                wizardAsset.ticker, wizardAsset.currentPrice);
+            await Future.delayed(const Duration(milliseconds: 50));
           }
         }
       }
-      
+
+      // 5. Forcer une mise à jour complète du provider
+      provider.updateActivePortfolio();
+
       debugPrint('✅ Portefeuille créé avec succès !');
       debugPrint('  - ${_institutions.length} institution(s)');
       debugPrint('  - ${_accounts.length} compte(s)');

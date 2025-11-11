@@ -2,6 +2,7 @@
 // REMPLACEZ LE FICHIER COMPLET
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -52,7 +53,7 @@ void main() async {
 
   // NOUVEAU : Ouvrir la boîte des transactions
   await Hive.openBox<Transaction>(AppConstants.kTransactionBoxName);
-  
+
   // NOUVEAU : Ouvrir la boîte des métadonnées d'actifs
   await Hive.openBox<AssetMetadata>(AppConstants.kAssetMetadataBoxName);
 
@@ -99,6 +100,15 @@ class MyApp extends StatelessWidget {
             title: 'Portefeuille',
             theme: AppTheme.getTheme(settingsProvider.appColor),
             debugShowCheckedModeBanner: false,
+            // Configuration pour afficher les dates en français
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('fr', 'FR'),
+            ],
             home: const SplashScreen(),
           );
         },

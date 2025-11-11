@@ -383,6 +383,8 @@ class _PlannerTabState extends State<PlannerTab> {
   BarChartData _buildChartData(List<ProjectionData> data, ThemeData theme) {
     final lastData = data.last;
     final maxValue = lastData.totalValue;
+    // Éviter division par zéro : utiliser au minimum 1.0 pour horizontalInterval
+    final interval = maxValue > 0 ? maxValue / 5 : 1.0;
 
     final barGroups = data.map((d) {
       return BarChartGroupData(
@@ -488,7 +490,7 @@ class _PlannerTabState extends State<PlannerTab> {
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
-        horizontalInterval: maxValue / 5,
+        horizontalInterval: interval,
         getDrawingHorizontalLine: (value) => FlLine(
           color: Colors.grey.withOpacity(0.1),
           strokeWidth: 1,

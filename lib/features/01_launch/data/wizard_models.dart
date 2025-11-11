@@ -46,6 +46,7 @@ class WizardAsset {
   AssetType? type;
   double quantity;
   double averagePrice; // PRU
+  double currentPrice; // Prix actuel (pour calculer la valeur actuelle)
   DateTime firstPurchaseDate;
   final String accountDisplayName; // Référence au compte parent
 
@@ -54,6 +55,7 @@ class WizardAsset {
     required this.name,
     required this.quantity,
     required this.averagePrice,
+    required this.currentPrice,
     required this.firstPurchaseDate,
     required this.accountDisplayName,
     this.type,
@@ -63,8 +65,9 @@ class WizardAsset {
       ticker.trim().isNotEmpty &&
       name.trim().isNotEmpty &&
       quantity > 0 &&
-      averagePrice > 0;
+      averagePrice > 0 &&
+      currentPrice > 0;
 
-  /// Valeur totale de la position (quantité × PRU)
-  double get totalValue => quantity * averagePrice;
+  /// Valeur totale de la position (quantité × prix actuel)
+  double get totalValue => quantity * currentPrice;
 }
