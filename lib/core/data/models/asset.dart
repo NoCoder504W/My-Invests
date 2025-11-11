@@ -101,6 +101,9 @@ class Asset {
 
   double get profitAndLoss => (currentPrice - averagePrice) * quantity;
 
+  // NOUVEAU : Capital investi (coût total d'acquisition)
+  double get totalInvestedCapital => averagePrice * quantity;
+
   double get profitAndLossPercentage {
     if (averagePrice == 0) return 0.0;
     return (currentPrice / averagePrice - 1);

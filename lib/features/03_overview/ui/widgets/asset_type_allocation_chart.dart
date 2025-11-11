@@ -110,6 +110,8 @@ class _AssetTypeAllocationChartState extends State<AssetTypeAllocationChart> {
       final assetType = entry.key;
       final value = entry.value;
 
+      // CORRIGÉ : Le pourcentage est calculé ici (0-100), 
+      // ne pas multiplier par 100 une seconde fois
       final percentage = (value / totalValue) * 100;
       final radius = isTouched ? 60.0 : 50.0;
       final fontSize = isTouched ? 16.0 : 14.0;
@@ -120,7 +122,7 @@ class _AssetTypeAllocationChartState extends State<AssetTypeAllocationChart> {
 
       return PieChartSectionData(
         color: colors[i % colors.length],
-        value: percentage,
+        value: value, // CORRIGÉ : Utiliser la valeur brute, pas le pourcentage
         title: isTouched
             ? assetType.displayName // Utilise l'extension
             : '${percentage.toStringAsFixed(1)}%',

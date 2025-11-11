@@ -42,21 +42,23 @@ class Portfolio {
     return institutions.fold(0.0, (sum, inst) => sum + inst.profitAndLoss);
   }
 
+  // NOUVEAU : Capital investi total (somme de tous les achats)
+  double get totalInvestedCapital {
+    return institutions.fold(0.0, (sum, inst) => sum + inst.totalInvestedCapital);
+  }
+
   // NOUVEAU : Logique de P/L en pourcentage
+  // CORRIGÉ : Formule correcte basée sur le capital investi
   double get profitAndLossPercentage {
-    final totalPnl = profitAndLoss;
-    final currentValue = totalValue;
-
-    if (currentValue == totalPnl) {
-      return totalPnl > 0 ? double.infinity : 0;
-    }
-
-    final previousValue = currentValue - totalPnl;
-    if (previousValue == 0) {
+    final capitalInvested = totalInvestedCapital;
+    
+    // Si aucun capital investi, pas de P/L
+    if (capitalInvested == 0) {
       return 0.0;
     }
 
-    return totalPnl / previousValue;
+    final totalPnl = profitAndLoss;
+    return totalPnl / capitalInvested;
   }
 
   double get estimatedAnnualYield {

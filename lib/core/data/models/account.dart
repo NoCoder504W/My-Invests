@@ -127,6 +127,11 @@ class Account {
     return assets.fold(0.0, (sum, asset) => sum + asset.profitAndLoss);
   }
 
+  // NOUVEAU : Capital investi total (coût d'acquisition de tous les actifs)
+  double get totalInvestedCapital {
+    return assets.fold(0.0, (sum, asset) => sum + asset.totalInvestedCapital);
+  }
+
   double get estimatedAnnualYield {
     final assetsValue =
     assets.fold(0.0, (sum, asset) => sum + asset.totalValue);
