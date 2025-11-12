@@ -304,6 +304,61 @@ Pour distribuer l'exécutable :
 - Incluez **tous les fichiers** du dossier `Release\`
 - Les utilisateurs peuvent avoir besoin des **VC++ Redistributables**
 
+### Web (GitHub Pages)
+
+#### 🌐 Accès à l'Application Web
+
+L'application est automatiquement déployée sur GitHub Pages à chaque push sur la branche `master` :
+
+**URL** : [https://kireg.github.io/portefeuille/](https://kireg.github.io/portefeuille/)
+
+#### ⚙️ Déploiement Automatique
+
+Le workflow GitHub Actions (`.github/workflows/deploy-web.yml`) :
+1. **Build** automatique de l'application web
+2. **Déploiement** sur la branche `gh-pages`
+3. **Publication** sur GitHub Pages
+
+**Déclenchement** : À chaque push sur `master` ou manuellement via l'onglet "Actions" sur GitHub
+
+#### 🔨 Build Web en Local
+
+Pour compiler et tester localement :
+
+```powershell
+# Build de production
+flutter build web --release --base-href "/portefeuille/"
+
+# Tester localement (serveur local sur http://localhost:8080)
+cd build\web
+python -m http.server 8080
+```
+
+#### 📱 Utilisation sur iPhone
+
+1. Ouvrez **Safari** sur votre iPhone
+2. Accédez à l'URL : `https://kireg.github.io/portefeuille/`
+3. Pour ajouter à l'écran d'accueil :
+   - Appuyez sur le bouton **Partager** (icône ↑)
+   - Sélectionnez **"Sur l'écran d'accueil"**
+   - L'icône apparaîtra comme une application native
+
+#### ⚠️ Limitations Web
+
+- **Stockage local** : Les données sont stockées dans IndexedDB (navigateur)
+- **Pas de synchronisation** : Les données ne sont pas partagées entre appareils
+- **Cache navigateur** : Vider le cache supprime les données
+- **flutter_secure_storage** : Utilise le stockage navigateur standard (moins sécurisé que natif)
+
+#### 🔧 Configuration GitHub Pages
+
+Si vous clonez ce projet, activez GitHub Pages :
+
+1. Allez dans **Settings** > **Pages** de votre dépôt
+2. **Source** : Deploy from a branch
+3. **Branch** : `gh-pages` / `root`
+4. Sauvegardez et attendez le déploiement
+
 ### iOS / macOS
 
 ```powershell

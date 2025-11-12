@@ -1,11 +1,11 @@
 {
-    "name": "portefeuille",
-    "short_name": "portefeuille",
+    "name": "Portefeuille - Gestionnaire de Finances",
+    "short_name": "Portefeuille",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Gestionnaire de finances personnelles et d'investissements",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
