@@ -9,6 +9,7 @@ import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/features/01_launch/ui/widgets/initial_setup_wizard.dart';
 import 'package:portefeuille/features/01_launch/ui/launch_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:portefeuille/core/ui/theme/app_theme.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -20,14 +21,10 @@ class SettingsScreen extends StatelessWidget {
         return CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                child: Text(
-                  'Paramètres',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              child: AppTheme.buildScreenTitle(
+                context: context,
+                title: 'Paramètres',
+                centered: true,
               ),
             ),
             SliverPadding(
@@ -68,65 +65,55 @@ class _AppearanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settingsProvider = context.watch<SettingsProvider>();
-    final theme = Theme.of(context);
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.dividerColor),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.palette_outlined, color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
-                Text('Apparence', style: theme.textTheme.titleLarge),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12.0,
-              runSpacing: 12.0,
-              children: _colorOptions.map((color) {
-                final isSelected = settingsProvider.appColor == color;
-                return InkWell(
-                  onTap: () => settingsProvider.setAppColor(color),
-                  borderRadius: BorderRadius.circular(24),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSelected ? Colors.white : color.withOpacity(0.3),
-                        width: isSelected ? 3 : 2,
-                      ),
-                      boxShadow: isSelected
-                          ? [
-                        BoxShadow(
-                          color: color.withOpacity(0.4),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        )
-                      ]
-                          : [],
+    return AppTheme.buildStyledCard(
+      context: context,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppTheme.buildSectionHeader(
+            context: context,
+            icon: Icons.palette_outlined,
+            title: 'Apparence',
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12.0,
+            runSpacing: 12.0,
+            children: _colorOptions.map((color) {
+              final isSelected = settingsProvider.appColor == color;
+              return InkWell(
+                onTap: () => settingsProvider.setAppColor(color),
+                borderRadius: BorderRadius.circular(24),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? Colors.white : color.withOpacity(0.3),
+                      width: isSelected ? 3 : 2,
                     ),
-                    child: isSelected
-                        ? const Icon(Icons.check, color: Colors.white, size: 24)
-                        : null,
+                    boxShadow: isSelected
+                        ? [
+                      BoxShadow(
+                        color: color.withOpacity(0.4),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      )
+                    ]
+                        : [],
                   ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+                  child: isSelected
+                      ? const Icon(Icons.check, color: Colors.white, size: 24)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
@@ -139,96 +126,82 @@ class _PortfolioCard extends StatelessWidget {
     final portfolioProvider = context.watch<PortfolioProvider>();
     final theme = Theme.of(context);
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.dividerColor),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return AppTheme.buildStyledCard(
+      context: context,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppTheme.buildSectionHeader(
+            context: context,
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'Portefeuille',
+          ),
+          const SizedBox(height: 16),
+          AppTheme.buildInfoContainer(
+            context: context,
+            child: Row(
               children: [
-                Icon(Icons.account_balance_wallet_outlined,
-                    color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
-                Text('Portefeuille', style: theme.textTheme.titleLarge),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Actif', style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 4),
+                      Text(
+                        portfolioProvider.activePortfolio?.name ?? 'Aucun',
+                        style: theme.textTheme.titleMedium,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (portfolioProvider.portfolios.length > 1)
+                  PopupMenuButton<Portfolio>(
+                    icon: const Icon(Icons.swap_horiz),
+                    tooltip: 'Changer',
+                    onSelected: (portfolio) =>
+                        portfolioProvider.setActivePortfolio(portfolio.id),
+                    itemBuilder: (context) => portfolioProvider.portfolios
+                        .map((p) => PopupMenuItem(
+                      value: p,
+                      child: Text(p.name),
+                    ))
+                        .toList(),
+                  ),
               ],
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children: [
+              OutlinedButton.icon(
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Nouveau'),
+                onPressed: () => _showNewPortfolioDialog(context, portfolioProvider),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Actif', style: theme.textTheme.bodySmall),
-                        const SizedBox(height: 4),
-                        Text(
-                          portfolioProvider.activePortfolio?.name ?? 'Aucun',
-                          style: theme.textTheme.titleMedium,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (portfolioProvider.portfolios.length > 1)
-                    PopupMenuButton<Portfolio>(
-                      icon: const Icon(Icons.swap_horiz),
-                      tooltip: 'Changer',
-                      onSelected: (portfolio) =>
-                          portfolioProvider.setActivePortfolio(portfolio.id),
-                      itemBuilder: (context) => portfolioProvider.portfolios
-                          .map((p) => PopupMenuItem(
-                        value: p,
-                        child: Text(p.name),
-                      ))
-                          .toList(),
-                    ),
-                ],
+              OutlinedButton.icon(
+                icon: const Icon(Icons.edit, size: 18),
+                label: const Text('Renommer'),
+                onPressed: portfolioProvider.activePortfolio == null
+                    ? null
+                    : () => _showRenameDialog(context, portfolioProvider),
               ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 8.0,
-              children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Nouveau'),
-                  onPressed: () => _showNewPortfolioDialog(context, portfolioProvider),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('Supprimer'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
                 ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.edit, size: 18),
-                  label: const Text('Renommer'),
-                  onPressed: portfolioProvider.activePortfolio == null
-                      ? null
-                      : () => _showRenameDialog(context, portfolioProvider),
-                ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Supprimer'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: theme.colorScheme.error,
-                  ),
-                  onPressed: portfolioProvider.activePortfolio == null
-                      ? null
-                      : () => portfolioProvider.deletePortfolio(
-                      portfolioProvider.activePortfolio!.id),
-                ),
-              ],
-            ),
-          ],
-        ),
+                onPressed: portfolioProvider.activePortfolio == null
+                    ? null
+                    : () => portfolioProvider.deletePortfolio(
+                    portfolioProvider.activePortfolio!.id),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -377,141 +350,130 @@ class _OnlineModeCardState extends State<_OnlineModeCard> {
     final allMetadata = portfolioProvider.allMetadata.values.toList()
       ..sort((a, b) => a.ticker.compareTo(b.ticker));
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.dividerColor),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.cloud_outlined, color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text('Mode en ligne', style: theme.textTheme.titleLarge),
-                ),
-                Switch.adaptive(
-                  value: settingsProvider.isOnlineMode,
-                  onChanged: (val) => settingsProvider.toggleOnlineMode(val),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Prix en temps réel, analyse IA',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+    return AppTheme.buildStyledCard(
+      context: context,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.cloud_outlined, color: theme.colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('Mode en ligne', style: theme.textTheme.titleLarge),
               ),
+              Switch.adaptive(
+                value: settingsProvider.isOnlineMode,
+                onChanged: (val) => settingsProvider.toggleOnlineMode(val),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Prix en temps réel, analyse IA',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            if (settingsProvider.isOnlineMode) ...[
-              const SizedBox(height: 20),
-              // Statut des prix
-              if (allMetadata.isNotEmpty) ...[
-                Text('Statut des prix',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    )),
-                const SizedBox(height: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: allMetadata.length,
-                    separatorBuilder: (_, __) => Divider(height: 1, indent: 16),
-                    itemBuilder: (_, i) {
-                      final meta = allMetadata[i];
-                      return ListTile(
-                        dense: true,
-                        leading: CircleAvatar(
-                          radius: 16,
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          child: Text(
-                            meta.ticker[0],
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                        ),
-                        title: Text(meta.ticker, style: theme.textTheme.bodyMedium),
-                        trailing: Text(
-                          DateFormat('dd/MM HH:mm').format(meta.lastUpdated),
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-              // Clé API
-              Text('Clé API FMP (optionnel)',
+          ),
+          if (settingsProvider.isOnlineMode) ...[
+            const SizedBox(height: 20),
+            if (allMetadata.isNotEmpty) ...[
+              Text('Statut des prix',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   )),
-              const SizedBox(height: 8),
-              Text(
-                'Améliore la fiabilité de la récupération des prix.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              const SizedBox(height: 12),
+              AppTheme.buildInfoContainer(
+                context: context,
+                padding: EdgeInsets.zero,
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: allMetadata.length,
+                  separatorBuilder: (_, __) => Divider(height: 1, indent: 16),
+                  itemBuilder: (_, i) {
+                    final meta = allMetadata[i];
+                    return ListTile(
+                      dense: true,
+                      leading: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: theme.colorScheme.primaryContainer,
+                        child: Text(
+                          meta.ticker[0],
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                      title: Text(meta.ticker, style: theme.textTheme.bodyMedium),
+                      trailing: Text(
+                        DateFormat('dd/MM HH:mm').format(meta.lastUpdated),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    );
+                  },
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _keyController,
-                      obscureText: _obscureKey,
-                      decoration: InputDecoration(
-                        labelText: "Entrer la clé",
-                        isDense: true,
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscureKey
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined),
-                          onPressed: () => setState(() => _obscureKey = !_obscureKey),
-                        ),
+              const SizedBox(height: 20),
+            ],
+            Text('Clé API FMP (optionnel)',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                )),
+            const SizedBox(height: 8),
+            Text(
+              'Améliore la fiabilité de la récupération des prix.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _keyController,
+                    obscureText: _obscureKey,
+                    decoration: InputDecoration(
+                      labelText: "Entrer la clé",
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscureKey
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined),
+                        onPressed: () => setState(() => _obscureKey = !_obscureKey),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.save, size: 18),
-                    label: const Text('Sauver'),
-                    onPressed: () => _saveKey(settingsProvider),
-                  ),
-                ],
-              ),
-              if (settingsProvider.hasFmpApiKey)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12.0),
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle, size: 16, color: Colors.green[400]),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Clé enregistrée',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.green[400],
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
-            ],
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  icon: const Icon(Icons.save, size: 18),
+                  label: const Text('Sauver'),
+                  onPressed: () => _saveKey(settingsProvider),
+                ),
+              ],
+            ),
+            if (settingsProvider.hasFmpApiKey)
+              Padding(
+                padding: const EdgeInsets.only(top: 12.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, size: 16, color: Colors.green[400]),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Clé enregistrée',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.green[400],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -522,39 +484,31 @@ class _UserLevelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settingsProvider = context.watch<SettingsProvider>();
-    final theme = Theme.of(context);
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.dividerColor),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Row(
-          children: [
-            Icon(Icons.person_outline, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text('Niveau d\'utilisateur',
-                  style: theme.textTheme.titleLarge),
-            ),
-            DropdownButton<UserLevel>(
-              value: settingsProvider.userLevel,
-              underline: const SizedBox(),
-              onChanged: (val) {
-                if (val != null) settingsProvider.setUserLevel(val);
-              },
-              items: UserLevel.values.map((level) {
-                return DropdownMenuItem(
-                  value: level,
-                  child: Text(level.toString().split('.').last),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+    return AppTheme.buildStyledCard(
+      context: context,
+      child: Row(
+        children: [
+          Icon(Icons.person_outline, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text('Niveau d\'utilisateur',
+                style: Theme.of(context).textTheme.titleLarge),
+          ),
+          DropdownButton<UserLevel>(
+            value: settingsProvider.userLevel,
+            underline: const SizedBox(),
+            onChanged: (val) {
+              if (val != null) settingsProvider.setUserLevel(val);
+            },
+            items: UserLevel.values.map((level) {
+              return DropdownMenuItem(
+                value: level,
+                child: Text(level.toString().split('.').last),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
