@@ -75,6 +75,10 @@ class ApiService {
   final Map<String, List<TickerSuggestion>> _searchCache = {};
   final Map<String, DateTime> _searchCacheTimestamps = {};
 
+  // Cache pour les taux de change (24h)
+  final Map<String, double> _exchangeRateCache = {};
+  final Map<String, DateTime> _exchangeRateCacheTimestamps = {};
+
   ApiService({
     required SettingsProvider settingsProvider,
     http.Client? httpClient,
@@ -210,37 +214,111 @@ class ApiService {
     }
   }
 
-  // --- NOUVELLE MÉTHODE ---
-  /// Récupère le taux de change entre deux devises.
-  /// (Pour l'instant, simule un taux fixe pour les tests)
-  Future<double> getExchangeRate(String from, String to) async {
-    // Si les devises sont identiques, le taux est 1
-    if (from == to) return 1.0;
+  /// Récupère le taux de change réel depuis l'API Frankfurter (BCE)
+  ///
+  /// Frankfurter fournit des taux de change officiels de la Banque Centrale Européenne
+  /// 100% gratuit, pas de clé API requise, données fiables
+  ///
+  /// Exemple : _fetchExchangeRateFromFrankfurter('USD', 'EUR') → 0.92
+  Future<double?> _fetchExchangeRateFromFrankfurter(
+      String from, String to) async {
+    final url =
+        Uri.parse('https://api.frankfurter.app/latest?from=$from&to=$to');
 
-    // ⚠️ ATTENTION : Cette implémentation utilise des taux de change SIMULÉS
-    // Ces taux sont fixes et ne reflètent PAS les taux de change réels du marché.
-    // TODO CRITIQUE : Remplacer par un appel API réel (ex: FMP, Yahoo Finance, ou ECB)
-    // avant toute utilisation en production !
-    debugPrint(
-        "⚠️ WARNING: Utilisation de taux de change SIMULÉS (non-production)");
+    try {
+      debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      debugPrint("💱 FRANKFURTER: Récupération taux $from → $to");
+      debugPrint("🌐 URL: $url");
+      debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    if (from == 'USD' && to == 'EUR') {
-      debugPrint("API: Taux de change SIMULÉ USD->EUR: 0.92");
-      return 0.92;
+      final response =
+          await _httpClient.get(url).timeout(const Duration(seconds: 5));
+
+      debugPrint("📡 Réponse HTTP: ${response.statusCode}");
+
+      if (response.statusCode != 200) {
+        debugPrint("❌ Erreur Frankfurter (${response.statusCode})");
+        debugPrint("📄 Body: ${response.body}");
+        return null;
+      }
+
+      final jsonData = jsonDecode(response.body);
+      debugPrint("📦 JSON reçu: $jsonData");
+
+      final rates = jsonData['rates'];
+
+      if (rates != null && rates[to] != null) {
+        final rate = (rates[to] as num).toDouble();
+        debugPrint("✅ SUCCÈS: 1 $from = $rate $to (source: BCE)");
+        debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        return rate;
+      }
+
+      debugPrint("⚠️ Frankfurter n'a pas retourné de taux pour $from→$to");
+      debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      return null;
+    } on SocketException catch (e) {
+      debugPrint("❌ ERREUR RÉSEAU Frankfurter pour $from→$to");
+      debugPrint("📋 Détails: $e");
+      debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      return null;
+    } on TimeoutException catch (e) {
+      debugPrint("⏱️ TIMEOUT Frankfurter pour $from→$to (>5s)");
+      debugPrint("📋 Détails: $e");
+      debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      return null;
+    } catch (e) {
+      debugPrint("❌ ERREUR INCONNUE Frankfurter pour $from→$to");
+      debugPrint("📋 Détails: $e");
+      debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      return null;
     }
-    if (from == 'EUR' && to == 'USD') {
-      // Calcul mathématiquement cohérent : 1 / 0.92 ≈ 1.087
-      final rate = 1.0 / 0.92;
-      debugPrint(
-          "API: Taux de change SIMULÉ EUR->USD: ${rate.toStringAsFixed(4)}");
+  }
+
+  /// Récupère le taux de change entre deux devises.
+  /// Utilise l'API Frankfurter (données BCE) avec mise en cache de 24h
+  Future<double> getExchangeRate(String from, String to) async {
+    debugPrint("\n🔄 getExchangeRate appelé: $from → $to");
+
+    // Si les devises sont identiques, le taux est 1
+    if (from == to) {
+      debugPrint("✅ Devises identiques ($from = $to), taux = 1.0");
+      return 1.0;
+    }
+
+    // Vérifier le cache (24h)
+    final cacheKey = '$from->$to';
+    final cachedTimestamp = _exchangeRateCacheTimestamps[cacheKey];
+    if (cachedTimestamp != null &&
+        DateTime.now().difference(cachedTimestamp) <
+            const Duration(hours: 24)) {
+      final cachedRate = _exchangeRateCache[cacheKey];
+      if (cachedRate != null) {
+        final age = DateTime.now().difference(cachedTimestamp);
+        debugPrint(
+            "💾 CACHE HIT: Taux $from→$to = $cachedRate (âge: ${age.inMinutes}min)");
+        return cachedRate;
+      }
+    }
+
+    debugPrint("🌐 CACHE MISS: Appel API Frankfurter...");
+
+    // Appeler Frankfurter
+    final rate = await _fetchExchangeRateFromFrankfurter(from, to);
+
+    if (rate != null) {
+      // Mettre en cache
+      _exchangeRateCache[cacheKey] = rate;
+      _exchangeRateCacheTimestamps[cacheKey] = DateTime.now();
+      debugPrint("💾 Taux $from→$to mis en cache: $rate (valide 24h)");
       return rate;
     }
 
-    debugPrint("API: Taux de change SIMULÉ pour $from->$to: 1.0 (non géré)");
-    // Retourne 1.0 si la paire n'est pas gérée par la simulation
+    // Fallback : retourner 1.0 si échec (évite les crashs)
+    debugPrint("⚠️ FALLBACK: Taux $from→$to = 1.0 (Frankfurter indisponible)");
+    debugPrint("💡 Les conversions ne seront pas exactes!");
     return 1.0;
   }
-  // --- FIN NOUVELLE MÉTHODE ---
 
   /// Recherche un ticker ou un ISIN
   Future<List<TickerSuggestion>> searchTicker(String query) async {
@@ -329,11 +407,13 @@ class ApiService {
     }
   }
 
-  /// Vide les caches de prix et de recherche.
+  /// Vide les caches de prix, recherche et taux de change.
   void clearCache() {
     _priceCache.clear();
     _searchCache.clear();
     _searchCacheTimestamps.clear();
-    debugPrint("ℹ️ Caches de l'ApiService vidés.");
+    _exchangeRateCache.clear();
+    _exchangeRateCacheTimestamps.clear();
+    debugPrint("ℹ️ Caches de l'ApiService vidés (prix, recherche, taux).");
   }
 }
