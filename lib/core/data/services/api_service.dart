@@ -10,8 +10,10 @@ import 'dart:convert';
 
 /// Cache pour les prix (15 minutes)
 class _CacheEntry {
-  final double value;
+  // MODIFIÉ : Le cache stocke le PriceResult complet
+  final PriceResult value;
   final DateTime timestamp;
+
   _CacheEntry(this.value) : timestamp = DateTime.now();
 
   bool get isStale =>
@@ -23,96 +25,107 @@ class TickerSuggestion {
   final String ticker;
   final String name;
   final String exchange;
-  TickerSuggestion(
-      {required this.ticker, required this.name, required this.exchange});
+  // NOUVEAU : Ajouter la devise à la suggestion de recherche
+  final String currency;
+
+  TickerSuggestion({
+    required this.ticker,
+    required this.name,
+    required this.exchange,
+    required this.currency,
+  });
 }
 
-// --- NOUVEAU : Objets de résultat pour un meilleur feedback ---
+// Objets de résultat pour un meilleur feedback
 enum ApiSource { Fmp, Yahoo, Cache, None }
 
 class PriceResult {
   final double? price;
+  final String currency; // Ex: "USD", "EUR"
   final ApiSource source;
   final String ticker;
 
-  PriceResult(this.price, this.source, this.ticker);
+  PriceResult({
+    required this.price,
+    required this.currency,
+    required this.source,
+    required this.ticker,
+  });
+
+  // Constructeur d'échec
+  PriceResult.failure(this.ticker, {String? currency})
+      : price = null,
+        currency = currency ??
+            'EUR', // Utilise la devise fournie, sinon EUR par défaut
+        source = ApiSource.None;
 }
-// --- FIN NOUVEAU ---
 
 /// Service responsable des appels réseau pour les données financières.
 /// Gère la logique de cache et la stratégie FMP > Yahoo.
 class ApiService {
   final SettingsProvider _settingsProvider;
+  // MODIFIÉ : Le cache stocke <String, _CacheEntry>
   final Map<String, _CacheEntry> _priceCache = {};
-
-  // --- CORRECTION : CHAMP MANQUANT ---
   final http.Client _httpClient;
-  // --- FIN CORRECTION ---
 
   // Cache pour la recherche (24h)
   final Map<String, List<TickerSuggestion>> _searchCache = {};
   final Map<String, DateTime> _searchCacheTimestamps = {};
 
-  // --- CONSTRUCTEUR REFRACTORISÉ (Injection de dépendances) ---
   ApiService({
     required SettingsProvider settingsProvider,
-    http.Client? httpClient, // Optionnel, principalement pour les tests
+    http.Client? httpClient,
   })  : _settingsProvider = settingsProvider,
-        _httpClient =
-            httpClient ?? http.Client(); // Utilise un client réel par défaut
+        _httpClient = httpClient ?? http.Client();
 
   /// Récupère le prix pour un ticker.
-  /// Gère le cache et la stratégie de fallback.
-  /// MODIFIÉ : Retourne un PriceResult pour un feedback détaillé.
   Future<PriceResult> getPrice(String ticker) async {
     try {
       // 1. Vérifier le cache
       final cached = _priceCache[ticker];
       if (cached != null && !cached.isStale) {
-        return PriceResult(cached.value, ApiSource.Cache, ticker);
+        return cached.value; // Retourne le PriceResult mis en cache
       }
 
       // 2. Si le cache est vide ou obsolète, appeler le réseau
-      double? price;
+      PriceResult? result;
       final bool hasFmpKey = _settingsProvider.hasFmpApiKey;
 
       if (hasFmpKey) {
-        price = await _fetchFromFmp(ticker);
-        if (price != null) {
-          _priceCache[ticker] = _CacheEntry(price);
-          return PriceResult(price, ApiSource.Fmp, ticker);
+        result = await _fetchFromFmp(ticker);
+        if (result != null) {
+          _priceCache[ticker] = _CacheEntry(result);
+          return result;
         }
       }
 
       // 3. Stratégie 2 : Yahoo (Fallback ou si FMP n'a pas de clé)
-      price = await _fetchFromYahoo(ticker);
+      result = await _fetchFromYahoo(ticker);
+
       // 4. Mettre à jour le cache et retourner
-      if (price != null) {
-        _priceCache[ticker] = _CacheEntry(price);
-        // Si FMP était activé mais a échoué, c'est un fallback Yahoo
-        // Si FMP n'était pas activé, c'est une source Yahoo standard
-        return PriceResult(price, ApiSource.Yahoo, ticker);
+      if (result != null) {
+        _priceCache[ticker] = _CacheEntry(result);
+        return result;
       }
 
       // 5. Échec complet
-      return PriceResult(null, ApiSource.None, ticker);
+      return PriceResult.failure(ticker,
+          currency: _settingsProvider.baseCurrency);
     } catch (e) {
-      // Capturer TOUTES les exceptions non gérées
       debugPrint(
           "⚠️ Erreur inattendue lors de la récupération du prix pour $ticker : $e");
-      return PriceResult(null, ApiSource.None, ticker);
+      return PriceResult.failure(ticker,
+          currency: _settingsProvider.baseCurrency);
     }
   }
 
   /// Tente de récupérer un prix via FMP (Financial Modeling Prep)
-  Future<double?> _fetchFromFmp(String ticker) async {
+  Future<PriceResult?> _fetchFromFmp(String ticker) async {
     if (!_settingsProvider.hasFmpApiKey) return null;
     final apiKey = _settingsProvider.fmpApiKey!;
 
-    // --- CORRECTION ENDPOINT (de la réponse précédente) ---
     final uri = Uri.parse(
         'https://financialmodelingprep.com/api/v3/quote/$ticker?apikey=$apiKey');
-    // --- FIN CORRECTION ---
 
     try {
       final response =
@@ -121,8 +134,23 @@ class ApiService {
         final data = json.decode(response.body);
         if (data is List && data.isNotEmpty) {
           final price = data[0]['price'];
+          // FMP ne semble pas fournir la devise dans cet endpoint,
+          // nous allons donc devoir la déduire ou la supposer.
+          // Pour l'instant, supposons "USD" pour les tickers non-européens
+          // et "EUR" pour ceux finissant par .PA, .F, .DE, etc.
+          // C'est une simplification, Yahoo est meilleur pour ça.
+          // NOTE : FMP fournit parfois la devise dans sa réponse.
+          // Si elle est absente, on utilise la devise de base configurée par l'utilisateur.
+          final currency =
+              data[0]['currency'] ?? _settingsProvider.baseCurrency;
+
           if (price is num) {
-            return price.toDouble();
+            return PriceResult(
+              price: price.toDouble(),
+              currency: currency,
+              source: ApiSource.Fmp,
+              ticker: ticker,
+            );
           }
         }
       }
@@ -136,19 +164,14 @@ class ApiService {
   }
 
   /// Tente de récupérer un prix via Yahoo Finance (API 'spark')
-  Future<double?> _fetchFromYahoo(String ticker) async {
-    // --- CORRECTION WEB : Utiliser un proxy CORS pour contourner les limitations du navigateur ---
-    final String baseUrl = kIsWeb
-        ? 'https://corsproxy.io/?https://query1.finance.yahoo.com'
-        : 'https://query1.finance.yahoo.com';
-
+  Future<PriceResult?> _fetchFromYahoo(String ticker) async {
     final yahooUrl = Uri.parse(
-        '$baseUrl/v7/finance/spark?symbols=$ticker&range=1d&interval=1d');
-
+        'https://query1.finance.yahoo.com/v7/finance/spark?symbols=$ticker&range=1d&interval=1d');
     try {
       final response = await _httpClient.get(yahooUrl, headers: {
         'User-Agent': 'Mozilla/5.0'
       }).timeout(const Duration(seconds: 8));
+
       if (response.statusCode != 200) {
         debugPrint(
             'Erreur de l\'API Yahoo Finance (spark) pour $ticker: ${response.body}');
@@ -157,13 +180,23 @@ class ApiService {
 
       final jsonData = jsonDecode(response.body);
       final List<dynamic>? results = jsonData['spark']?['result'];
+
       if (results != null && results.isNotEmpty) {
         final result = results[0];
         final String? resultSymbol = result['symbol'];
         final num? newPriceNum =
             result['response']?[0]?['meta']?['regularMarketPrice'];
+        // NOUVEAU : Récupérer la devise
+        final String currency =
+            result['response']?[0]?['meta']?['currency'] ?? 'EUR';
+
         if (resultSymbol == ticker && newPriceNum != null) {
-          return newPriceNum.toDouble();
+          return PriceResult(
+            price: newPriceNum.toDouble(),
+            currency: currency,
+            source: ApiSource.Yahoo,
+            ticker: ticker,
+          );
         }
       }
       debugPrint("Yahoo (spark) n'a pas retourné de prix pour $ticker");
@@ -174,23 +207,48 @@ class ApiService {
     }
   }
 
+  // --- NOUVELLE MÉTHODE ---
+  /// Récupère le taux de change entre deux devises.
+  /// (Pour l'instant, simule un taux fixe pour les tests)
+  Future<double> getExchangeRate(String from, String to) async {
+    // Si les devises sont identiques, le taux est 1
+    if (from == to) return 1.0;
+
+    // ⚠️ ATTENTION : Cette implémentation utilise des taux de change SIMULÉS
+    // Ces taux sont fixes et ne reflètent PAS les taux de change réels du marché.
+    // TODO CRITIQUE : Remplacer par un appel API réel (ex: FMP, Yahoo Finance, ou ECB)
+    // avant toute utilisation en production !
+    debugPrint(
+        "⚠️ WARNING: Utilisation de taux de change SIMULÉS (non-production)");
+
+    if (from == 'USD' && to == 'EUR') {
+      debugPrint("API: Taux de change SIMULÉ USD->EUR: 0.92");
+      return 0.92;
+    }
+    if (from == 'EUR' && to == 'USD') {
+      // Calcul mathématiquement cohérent : 1 / 0.92 ≈ 1.087
+      final rate = 1.0 / 0.92;
+      debugPrint(
+          "API: Taux de change SIMULÉ EUR->USD: ${rate.toStringAsFixed(4)}");
+      return rate;
+    }
+
+    debugPrint("API: Taux de change SIMULÉ pour $from->$to: 1.0 (non géré)");
+    // Retourne 1.0 si la paire n'est pas gérée par la simulation
+    return 1.0;
+  }
+  // --- FIN NOUVELLE MÉTHODE ---
+
   /// Recherche un ticker ou un ISIN
   Future<List<TickerSuggestion>> searchTicker(String query) async {
-    // 1. Vérifier le cache (Cache de 24h pour la recherche)
     final timestamp = _searchCacheTimestamps[query];
     if (timestamp != null &&
         DateTime.now().difference(timestamp) < const Duration(hours: 24)) {
       return _searchCache[query] ?? [];
     }
 
-    // 2. Appeler l'API de recherche Yahoo
-    // --- CORRECTION WEB : Utiliser un proxy CORS ---
-    final String baseUrl = kIsWeb
-        ? 'https://corsproxy.io/?https://query1.finance.yahoo.com'
-        : 'https://query1.finance.yahoo.com';
-
-    final url =
-        Uri.parse('$baseUrl/v1/finance/search?q=$query&lang=fr-FR&region=FR');
+    final url = Uri.parse(
+        'https://query1.finance.yahoo.com/v1/finance/search?q=$query&lang=fr-FR&region=FR');
     try {
       debugPrint("🔍 Recherche de ticker: '$query' - URL: $url");
       final response = await _httpClient.get(url, headers: {
@@ -214,19 +272,29 @@ class ApiService {
         final String? ticker = quote['symbol'];
         final String? name = quote['longname'] ?? quote['shortname'];
         final String? exchange = quote['exchDisp'];
+        // NOUVEAU : Récupérer la devise de l'actif
+        // Note : L'API 'search' ne fournit pas la devise. Nous devons la déduire
+        // ou la laisser vide. Pour ce projet, nous allons la laisser vide
+        // et le formulaire de transaction la demandera si besoin.
+        // ---
+        // MISE A JOUR : Tentons de la récupérer depuis 'currency' si elle existe
+        final String currency = quote['currency'] ?? '???';
+
         if (ticker != null && name != null && exchange != null) {
-          // Filtrer les résultats non pertinents
           if (quote['quoteType'] == 'EQUITY' ||
               quote['quoteType'] == 'ETF' ||
               quote['quoteType'] == 'CRYPTOCURRENCY') {
             suggestions.add(TickerSuggestion(
-                ticker: ticker, name: name, exchange: exchange));
+              ticker: ticker,
+              name: name,
+              exchange: exchange,
+              currency: currency, // <-- MODIFIÉ
+            ));
           }
         }
       }
 
       debugPrint("✅ ${suggestions.length} suggestions valides");
-      // 3. Mettre en cache
       _searchCache[query] = suggestions;
       _searchCacheTimestamps[query] = DateTime.now();
 
@@ -240,11 +308,10 @@ class ApiService {
       return [];
     } catch (e) {
       debugPrint("❌ Erreur lors de la recherche de ticker pour '$query': $e");
-      return []; // Retourner une liste vide en cas d'erreur
+      return [];
     }
   }
 
-  // --- NOUVEAU ---
   /// Vide les caches de prix et de recherche.
   void clearCache() {
     _priceCache.clear();
@@ -252,7 +319,4 @@ class ApiService {
     _searchCacheTimestamps.clear();
     debugPrint("ℹ️ Caches de l'ApiService vidés.");
   }
-
-// --- SUPPRIMÉ ---
-// La méthode getApiUsage() a été supprimée car l'endpoint n'existe pas.
 }

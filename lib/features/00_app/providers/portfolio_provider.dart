@@ -42,19 +42,21 @@ class PortfolioProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSyncing => _isSyncing;
   String? get syncMessage => _syncMessage;
+
   /// Expose toutes les métadonnées pour les écrans de statut (ex: Paramètres)
-  Map<String, AssetMetadata> get allMetadata => _repository.getAllAssetMetadata();
+  Map<String, AssetMetadata> get allMetadata =>
+      _repository.getAllAssetMetadata();
 
   PortfolioProvider({
     required PortfolioRepository repository,
     required ApiService apiService,
   })  : _repository = repository,
         _apiService = apiService {
-
     // Initialiser les classes de logique
     _migrationLogic = PortfolioMigrationLogic(
       repository: _repository,
-      settingsProvider: _settingsProvider ?? SettingsProvider(), // Fournit un fallback
+      settingsProvider:
+          _settingsProvider ?? SettingsProvider(), // Fournit un fallback
       uuid: _uuid,
     );
     _syncLogic = PortfolioSyncLogic(
@@ -73,7 +75,6 @@ class PortfolioProvider extends ChangeNotifier {
     final bool wasOffline = _settingsProvider?.isOnlineMode ?? false;
     final bool wasNull = _settingsProvider == null;
     _settingsProvider = settingsProvider;
-
     // Mettre à jour les helpers avec la bonne instance de SettingsProvider
     _migrationLogic.settingsProvider = settingsProvider;
     _syncLogic.settingsProvider = settingsProvider;
@@ -86,13 +87,22 @@ class PortfolioProvider extends ChangeNotifier {
             await Future.delayed(const Duration(milliseconds: 100));
           }
 
+          // --- SÉQUENCE DE MIGRATION MISE À JOUR ---
           if (!settingsProvider.migrationV1Done) {
-            // Utilise la logique externalisée
+            // 1. Lancer la Migration V1
             await _migrationLogic.runDataMigrationV1(_portfolios);
-
-            // Recharger est crucial après la migration
+            // Recharger est crucial après la migration V1
             await loadAllPortfolios();
           }
+
+          if (settingsProvider.migrationV1Done &&
+              !settingsProvider.migrationV2Done) {
+            // 2. Lancer la Migration V2 (Devises)
+            await _migrationLogic.runDataMigrationV2();
+            // Recharger est crucial après la migration V2
+            await loadAllPortfolios();
+          }
+          // --- FIN SÉQUENCE ---
 
           if (_settingsProvider!.isOnlineMode && _activePortfolio != null) {
             await synchroniserLesPrix();
@@ -104,7 +114,10 @@ class PortfolioProvider extends ChangeNotifier {
       return;
     }
 
-    if (_settingsProvider!.isOnlineMode && !wasOffline && !wasNull && _activePortfolio != null) {
+    if (_settingsProvider!.isOnlineMode &&
+        !wasOffline &&
+        !wasNull &&
+        _activePortfolio != null) {
       synchroniserLesPrix().catchError((e) {
         debugPrint("⚠️ Impossible de synchroniser les prix : $e");
       });
@@ -118,7 +131,8 @@ class PortfolioProvider extends ChangeNotifier {
         _activePortfolio = _portfolios.first;
       } else {
         try {
-          _activePortfolio = _portfolios.firstWhere((p) => p.id == _activePortfolio!.id);
+          _activePortfolio =
+              _portfolios.firstWhere((p) => p.id == _activePortfolio!.id);
         } catch (e) {
           _activePortfolio = _portfolios.isNotEmpty ? _portfolios.first : null;
         }
@@ -131,7 +145,6 @@ class PortfolioProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- CORRIGÉ : Appel de la synchro forcée ---
   Future<void> forceSynchroniserLesPrix() async {
     if (_activePortfolio == null || _isSyncing) return;
     _isSyncing = true;
@@ -139,44 +152,37 @@ class PortfolioProvider extends ChangeNotifier {
     notifyListeners();
 
     final result = await _syncLogic.forceSynchroniserLesPrix(_activePortfolio!);
-
-    // On recharge si des prix ont été effectivement changés dans la BD
     if (result.updatedCount > 0) {
       await loadAllPortfolios();
     }
 
     _isSyncing = false;
-    // CORRIGÉ : On affiche TOUJOURS le message de résultat
     _syncMessage = result.getSummaryMessage();
     notifyListeners();
   }
 
-  // --- CORRIGÉ : Appel de la synchro standard ---
   Future<void> synchroniserLesPrix() async {
-    if (_activePortfolio == null || _isSyncing || _settingsProvider?.isOnlineMode != true) return;
+    if (_activePortfolio == null ||
+        _isSyncing ||
+        _settingsProvider?.isOnlineMode != true) return;
     _isSyncing = true;
     _syncMessage = "Synchronisation en cours...";
     notifyListeners();
 
     final result = await _syncLogic.synchroniserLesPrix(_activePortfolio!);
-
-    // On recharge si des prix ont été effectivement changés dans la BD
     if (result.updatedCount > 0) {
       await loadAllPortfolios();
     }
 
     _isSyncing = false;
-    // CORRIGÉ : On affiche TOUJOURS le message de résultat
     _syncMessage = result.getSummaryMessage();
     notifyListeners();
   }
 
   void clearSyncMessage() {
     _syncMessage = null;
-    // Ne notifie pas, pour éviter reconstruction inutile
   }
 
-  // --- GESTION DES TRANSACTIONS (via Helper) ---
   Future<void> addTransaction(Transaction transaction) async {
     await _transactionLogic.addTransaction(transaction);
     await loadAllPortfolios();
@@ -192,8 +198,6 @@ class PortfolioProvider extends ChangeNotifier {
     await loadAllPortfolios();
   }
 
-  // --- GESTION DU PORTEFEUILLE (Logique restante) ---
-
   void setActivePortfolio(String portfolioId) {
     try {
       _activePortfolio = _portfolios.firstWhere((p) => p.id == portfolioId);
@@ -204,7 +208,8 @@ class PortfolioProvider extends ChangeNotifier {
   }
 
   void addDemoPortfolio() {
-    if (_portfolios.any((p) => p.name == "Portefeuille de Démo")) {
+    if (_portfolios.any((p) => p.name == "Portefeuille de Démo (2020-2025)")) {
+      // MODIFIÉ : Nom du portefeuille de démo V2
       return;
     }
     final demo = _repository.createDemoPortfolio();
@@ -259,6 +264,7 @@ class PortfolioProvider extends ChangeNotifier {
     final List<Future<void>> deleteFutures = [];
     for (final inst in portfolioToDelete.institutions) {
       for (final acc in inst.accounts) {
+        // MODIFIÉ : Utilise acc.transactions (qui a été injecté)
         for (final tx in acc.transactions) {
           deleteFutures.add(_repository.deleteTransaction(tx.id));
         }
@@ -280,7 +286,9 @@ class PortfolioProvider extends ChangeNotifier {
     await _repository.deleteAllData();
     _portfolios = [];
     _activePortfolio = null;
+    // MODIFIÉ : Réinitialise les deux drapeaux
     await _settingsProvider?.setMigrationV1Done();
+    await _settingsProvider?.setMigrationV2Done();
     notifyListeners();
   }
 
@@ -305,8 +313,6 @@ class PortfolioProvider extends ChangeNotifier {
     }
   }
 
-  // ========== GESTION DES PLANS D'ÉPARGNE (simplifié ici, peut être extrait) ==========
-
   void addSavingsPlan(SavingsPlan newPlan) {
     if (_activePortfolio == null) return;
     final updatedPortfolio = _activePortfolio!.deepCopy();
@@ -318,7 +324,7 @@ class PortfolioProvider extends ChangeNotifier {
     if (_activePortfolio == null) return;
     final updatedPortfolio = _activePortfolio!.deepCopy();
     final index =
-    updatedPortfolio.savingsPlans.indexWhere((p) => p.id == planId);
+        updatedPortfolio.savingsPlans.indexWhere((p) => p.id == planId);
     if (index != -1) {
       updatedPortfolio.savingsPlans[index] = updatedPlan;
       savePortfolio(updatedPortfolio);
@@ -334,8 +340,6 @@ class PortfolioProvider extends ChangeNotifier {
     savePortfolio(updatedPortfolio);
   }
 
-  // ========== GESTION DES MÉTADONNÉES (simplifié ici, peut être extrait) ==========
-
   Future<void> updateAssetYield(String ticker, double newYield) async {
     final metadata = _repository.getOrCreateAssetMetadata(ticker);
     metadata.updateYield(newYield, isManual: true);
@@ -343,9 +347,20 @@ class PortfolioProvider extends ChangeNotifier {
     await loadAllPortfolios();
   }
 
-  Future<void> updateAssetPrice(String ticker, double newPrice) async {
+  Future<void> updateAssetPrice(String ticker, double newPrice,
+      {String? currency}) async {
     final metadata = _repository.getOrCreateAssetMetadata(ticker);
-    metadata.updatePrice(newPrice);
+
+    // Déterminer la devise à utiliser :
+    // 1. Si une devise est fournie en paramètre, l'utiliser
+    // 2. Sinon, utiliser la devise actuelle du metadata
+    // 3. Si celle-ci est vide (données legacy), utiliser la devise de base
+    final targetCurrency = currency ??
+        (metadata.priceCurrency.isEmpty
+            ? _settingsProvider!.baseCurrency
+            : metadata.priceCurrency);
+
+    metadata.updatePrice(newPrice, targetCurrency);
     await _repository.saveAssetMetadata(metadata);
     await loadAllPortfolios();
   }
