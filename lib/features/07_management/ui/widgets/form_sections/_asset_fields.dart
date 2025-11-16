@@ -69,7 +69,8 @@ class AssetFields extends StatelessWidget {
                     title: Text(suggestion.name),
                     subtitle: Text(
                         "${suggestion.ticker} (${suggestion.exchange})"
-                        "${suggestion.currency.isNotEmpty && suggestion.currency != '???' ? ' - Devise: ${suggestion.currency}' : ' - Devise: non disponible'}"),
+                        "${suggestion.currency.isNotEmpty && suggestion.currency != '???' ? ' - Devise: ${suggestion.currency}' : ' - Devise: non disponible'}"
+                        "${suggestion.isin != null && suggestion.isin!.isNotEmpty ? ' • ISIN: ${suggestion.isin}' : ''}"),
                     onTap: () =>
                         readState.onSuggestionSelected(suggestion, context),
                   );

@@ -330,7 +330,8 @@ class _Step4AssetsState extends State<Step4Assets> {
                                 dense: true,
                                 title: Text(suggestion.ticker),
                                 subtitle: Text(
-                                  '${suggestion.name} • ${suggestion.exchange}',
+                                  '${suggestion.name} • ${suggestion.exchange}'
+                                  '${suggestion.isin != null && suggestion.isin!.isNotEmpty ? ' • ISIN: ${suggestion.isin}' : ''}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),

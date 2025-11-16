@@ -27,12 +27,15 @@ class TickerSuggestion {
   final String exchange;
   // NOUVEAU : Ajouter la devise à la suggestion de recherche
   final String currency;
+  // NOUVEAU : Code ISIN de l'actif (si disponible)
+  final String? isin;
 
   TickerSuggestion({
     required this.ticker,
     required this.name,
     required this.exchange,
     required this.currency,
+    this.isin,
   });
 }
 
@@ -280,6 +283,12 @@ class ApiService {
         // MISE A JOUR : Tentons de la récupérer depuis 'currency' si elle existe
         final String currency = quote['currency'] ?? '???';
 
+        // NOUVEAU : Récupérer l'ISIN si disponible dans la réponse API
+        // NOTE IMPORTANTE : L'API Yahoo Finance Search ne fournit PAS l'ISIN dans sa réponse.
+        // Ce champ restera null jusqu'à ce qu'une autre source (FMP, API dédiée) soit utilisée.
+        // La structure est néanmoins prête pour une future implémentation.
+        final String? isin = quote['isin'];
+
         if (ticker != null && name != null && exchange != null) {
           if (quote['quoteType'] == 'EQUITY' ||
               quote['quoteType'] == 'ETF' ||
@@ -288,7 +297,8 @@ class ApiService {
               ticker: ticker,
               name: name,
               exchange: exchange,
-              currency: currency, // <-- MODIFIÉ
+              currency: currency,
+              isin: isin,
             ));
           }
         }
