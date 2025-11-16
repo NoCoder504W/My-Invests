@@ -35,6 +35,7 @@ Une application Flutter moderne et complète pour gérer vos comptes et investis
 - **PER** (Plan Épargne Retraite)
 - **Crypto-monnaies**
 - **Autres** comptes personnalisés
+- **Support multi-devises** : Chaque compte peut être configuré dans sa devise (EUR, USD, GBP, etc.)
 
 ### 💼 Types d'Actifs Gérés
 - **Actions** (Stock)
@@ -49,6 +50,8 @@ Architecture révolutionnaire basée sur l'historique des transactions :
 - **7 types de transactions** : Dépôt, Retrait, Achat, Vente, Dividende, Intérêts, Frais
 - Calcul dynamique des soldes, quantités et prix de revient unitaire (PRU)
 - Historique complet et traçable de toutes vos opérations
+- **Gestion multi-devises** : Support des transactions dans différentes devises avec conversion automatique
+- Taux de change historiques et conversions transparentes
 - Modification et suppression de transactions avec recalcul automatique
 
 ### 🌐 Mode En Ligne et Synchronisation des Prix
@@ -82,9 +85,11 @@ Architecture révolutionnaire basée sur l'historique des transactions :
 - **Clé API FMP** stockée de manière sécurisée (Keystore/Keychain/Credential Manager)
 - Aucune collecte de données personnelles
 
-## 🌐 Mode En Ligne et Synchronisation des Prix
+### 🌐 Mode En Ligne et Synchronisation des Prix
 
 L'application propose un **mode en ligne optionnel** qui permet de synchroniser automatiquement les prix de vos actifs et de bénéficier d'une aide à la saisie lors de l'ajout de nouvelles transactions.
+
+**Nouveauté** : Gestion intelligente des devises avec récupération automatique des prix dans leur devise native (USD, EUR, etc.) et conversion automatique selon la devise de votre compte.
 
 ### Activation du Mode En Ligne
 
@@ -105,6 +110,7 @@ L'application utilise une **stratégie de fallback intelligente** :
 2. **Yahoo Finance** : Utilisé automatiquement en fallback ou si aucune clé FMP n'est configurée
     - Gratuit et sans inscription
     - Fonctionne pour la majorité des tickers (actions, ETF, cryptos)
+    - **Récupère automatiquement la devise** de chaque actif (USD, EUR, GBP, etc.)
 
 #### Cache Intelligent
 
@@ -226,14 +232,16 @@ flutter doctor
 
 ### Boxes Hive Utilisées
 
-L'application utilise **quatre boxes Hive** :
+L'application utilise **six boxes Hive** :
 
 | Box | Constante | Description |
 |-----|-----------|-------------|
 | **Portfolio** | `kPortfolioBoxName` | Données de portefeuille (institutions, comptes) |
-| **Settings** | `kSettingsBoxName` | Paramètres de l'application (couleur, mode en ligne, etc.) |
+| **Settings** | `kSettingsBoxName` | Paramètres de l'application (couleur, mode en ligne, devise, etc.) |
 | **Transaction** | `kTransactionBoxName` | Historique complet des transactions |
 | **AssetMetadata** | `kAssetMetadataBoxName` | Prix et rendements des actifs (cache API) |
+| **PriceHistory** | `kPriceHistoryBoxName` | Historique des prix par jour — **NOUVEAU** |
+| **ExchangeRateHistory** | `kExchangeRateHistoryBoxName` | Historique des taux de change — **NOUVEAU** |
 
 ## 📦 Compilation — Générer des Binaires
 
@@ -420,6 +428,8 @@ lib/
 │   │   │   ├── transaction.dart             # Transaction financière
 │   │   │   ├── transaction_type.dart        # Enum : Buy, Sell, Deposit, etc.
 │   │   │   ├── asset_metadata.dart          # Métadonnées (Prix, Rendement, Cache API)
+│   │   │   ├── price_history_point.dart     # Historique des prix (par jour)
+│   │   │   ├── exchange_rate_history.dart   # Historique des taux de change
 │   │   │   ├── savings_plan.dart            # Plan d'épargne programmé
 │   │   │   └── *.g.dart                     # Fichiers générés par build_runner
 │   │   │
@@ -444,7 +454,8 @@ lib/
 │   │   └── providers/
 │   │       ├── portfolio_provider.dart      # Gestion d'état du portefeuille
 │   │       ├── portfolio_sync_logic.dart    # Logique de synchronisation API
-│   │       ├── portfolio_migration_logic.dart # Migration V1 (transactions)
+│   │       ├── portfolio_migration_logic.dart # Migrations V1 & V2 (transactions & devises)
+│   │       ├── portfolio_transaction_logic.dart # Logique CRUD des transactions
 │   │       └── settings_provider.dart       # Gestion des paramètres
 │   │
 │   ├── 01_launch/                           # 🎬 Écran de lancement
@@ -507,13 +518,15 @@ lib/
 #### Transaction (typeId: 7)
 Modèle central de l'architecture immuable :
 - `id`, `accountId`, `type`, `date`
-- `amount`, `fees` (montants en euros)
+- `amount`, `fees` (montants dans la **devise du compte**)
 - `assetTicker`, `assetName`, `assetType` (pour Buy/Sell)
-- `quantity`, `price` (pour Buy/Sell)
+- `quantity`, `price` (pour Buy/Sell - prix dans la **devise de l'actif**)
+- **`priceCurrency`** (devise du prix, ex: "USD") et **`exchangeRate`** (taux de conversion)
 - `notes` (notes personnalisées)
 - Getter `totalAmount` = `amount - fees`
 
 #### Account (typeId: 2)
+- **Nouveau champ** : `currency` (devise du compte : "EUR", "USD", etc.)
 - Getters calculés : `cashBalance`, `assets` (basés sur `transactions`)
 - Champs dépréciés : `stale_assets`, `stale_cashBalance` (migration V1)
 
@@ -523,7 +536,16 @@ Modèle central de l'architecture immuable :
 
 #### AssetMetadata (typeId: 9)
 - Cache des prix et rendements récupérés via API
+- **Nouveau champ** : `priceCurrency` (devise du prix récupéré)
 - `lastUpdated` pour gérer l'expiration du cache
+
+#### PriceHistoryPoint (typeId: 10) — **NOUVEAU**
+- Historique des prix par jour
+- Champs : `ticker`, `date`, `price`, `currency`
+
+#### ExchangeRateHistory (typeId: 11) — **NOUVEAU**
+- Historique des taux de change entre devises
+- Champs : `pair` (ex: "USD-EUR"), `date`, `rate`
 
 ### 🔄 Flux de Données
 
@@ -544,9 +566,9 @@ PortfolioProvider → ApiService → FMP/Yahoo → AssetMetadata (cache)
 
 ### 🧩 Providers
 
-- **SettingsProvider** : Paramètres de l'application (couleur, mode en ligne, clé API)
-- **PortfolioProvider** : État du portefeuille, synchronisation, migration
-- **ApiService** : Injection via Provider (non ChangeNotifier)
+- **SettingsProvider** : Paramètres de l'application (couleur, mode en ligne, clé API, **devise de base**)
+- **PortfolioProvider** : État du portefeuille, synchronisation, migrations V1 & V2
+- **ApiService** : Injection via Provider (non ChangeNotifier) - Gestion des prix et taux de change
 
 ---
 
@@ -561,6 +583,34 @@ L'application a migré vers une **architecture immuable basée sur les transacti
 - **Logique de migration automatique** : Conversion des anciennes données
 - **Nouvelles fonctionnalités** : Onglet Journal, Planificateur fonctionnel
 - **Tests et bonnes pratiques**
+
+### 🌍 Migration V2 - Support Multi-Devises — **NOUVEAU**
+
+La version 2 introduit la **gestion complète des devises multiples** :
+
+- **Comptes multi-devises** : Chaque compte peut avoir sa propre devise (EUR, USD, GBP, etc.)
+- **Transactions internationales** : Achat d'actifs en devise étrangère avec conversion automatique
+- **Prix dans leur devise native** : AAPL en USD, LVMH en EUR, etc.
+- **Taux de change historiques** : Conservation des taux utilisés lors des transactions
+- **Migration automatique** : Les données V1 sont converties en EUR par défaut
+
+**Exemple** :
+```dart
+// Compte en EUR
+Account { currency: "EUR" }
+
+// Transaction : Achat AAPL (actif en USD)
+Transaction {
+  type: Buy,
+  assetTicker: "AAPL",
+  quantity: 10,
+  price: 150.00,           // Prix en USD
+  priceCurrency: "USD",    // Devise du prix
+  exchangeRate: 0.92,      // Taux USD->EUR (1 USD = 0.92 EUR)
+  amount: -1380.00,        // Montant en EUR (10 × 150 × 0.92)
+  fees: 5.00               // Frais en EUR
+}
+```
 
 #### Résumé de la Migration
 
@@ -640,6 +690,7 @@ Configuration dans `analysis_options.yaml`.
 
 3. **Ajoutez un compte** :
    - Choisissez le type (PEA, CTO, Crypto, etc.)
+   - **Sélectionnez la devise** du compte (EUR, USD, GBP, etc.)
    - Nommez-le (ex: "PEA Principal")
 
 4. **Ajoutez votre première transaction** :
@@ -667,6 +718,7 @@ Configuration dans `analysis_options.yaml`.
 #### ⚙️ Paramètres (icône en haut à droite)
 - **Apparence** : Changer la couleur principale
 - **Mode en ligne** : Activer/désactiver la synchronisation des prix
+- **Devise de base** : Choisir votre devise principale (EUR, USD, etc.) — **NOUVEAU**
 - **Clé API FMP** : Configurer votre clé (optionnel)
 - **Gestion des portefeuilles** : Créer, changer, supprimer
 - **Tableau de métadonnées** : Suivi des prix/rendements (mode en ligne actif)
@@ -675,11 +727,12 @@ Configuration dans `analysis_options.yaml`.
 
 1. **Activez le mode** dans Paramètres > Mode en ligne
 2. L'indicateur **"En ligne"** s'affiche dans l'AppBar
-3. Les prix se synchronisent automatiquement au démarrage
+3. Les prix se synchronisent automatiquement au démarrage avec **leur devise native**
 4. Lors de l'ajout d'une transaction **Achat** :
    - Tapez un ticker (ex: "AAPL")
    - Sélectionnez dans les suggestions
-   - Le prix actuel se pré-remplit automatiquement
+   - Le prix actuel se pré-remplit automatiquement (en USD pour AAPL)
+   - La **conversion automatique** s'applique selon la devise de votre compte
 
 ---
 
@@ -770,6 +823,11 @@ flutter pub run build_runner build --delete-conflicting-outputs
 2. Connexion internet active ?
 3. Vérifiez les logs dans la console (`debugPrint`)
 
+#### Problèmes de conversion de devises
+**Cause** : Taux de change simulés actuellement utilisés
+
+**Note** : ⚠️ Les taux de change USD↔EUR sont actuellement **simulés à 0.92**. Pour un usage en production, une API réelle doit être intégrée (FMP, ECB, ou autre).
+
 #### Erreur "Box already open"
 **Cause** : Tentative d'ouvrir une box déjà ouverte
 
@@ -808,8 +866,9 @@ Ce projet utilise les packages suivants :
 
 ### APIs Utilisées
 
-- **[Financial Modeling Prep (FMP)](https://financialmodelingprep.com)** - Données financières (optionnel, clé API requise)
-- **[Yahoo Finance](https://finance.yahoo.com)** - Données financières (gratuit, fallback automatique)
+- **[Financial Modeling Prep (FMP)](https://financialmodelingprep.com)** - Données financières et devises (optionnel, clé API requise)
+- **[Yahoo Finance](https://finance.yahoo.com)** - Données financières et devises (gratuit, fallback automatique)
+- **Taux de change** : Actuellement simulés (USD↔EUR) — API réelle à intégrer prochainement ⚠️
 
 ### Auteur
 
@@ -840,11 +899,14 @@ Ce projet utilise les packages suivants :
 - [ ] **Import/Export** de transactions (CSV, JSON)
 - [ ] **Graphiques supplémentaires** : Évolution historique, répartition sectorielle
 - [ ] **Notifications** : Alertes de prix, rappels de plans d'épargne
-- [ ] **Multi-devises** : Support EUR, USD, GBP, etc.
+- [x] **Multi-devises** : Support EUR, USD, GBP, etc. ✅ **Implémenté en V2**
+- [ ] **API taux de change réels** : Remplacer les taux simulés par une API (FMP/ECB)
 - [ ] **Mode sombre** : Thème clair/sombre
 - [ ] **Synchronisation cloud** : Backup automatique (Firebase/Supabase)
 - [ ] **Analyse fiscale** : Calcul automatique des déclarations (IFU, etc.)
 - [ ] **Widget iOS/Android** : Affichage de la valeur du portefeuille sur l'écran d'accueil
+- [ ] **Graphiques historiques** : Visualisation de l'évolution du prix des actifs
+- [ ] **Conversion temps réel** : Affichage des valeurs dans différentes devises
 
 ### Optimisations Techniques
 
@@ -855,8 +917,31 @@ Ce projet utilise les packages suivants :
 
 ---
 
-**Version** : 1.0.0+1  
-**Dernière mise à jour de la documentation** : Novembre 2025
+## ⚠️ Notes Importantes
+
+### Gestion Multi-Devises (V2)
+
+La version 2 introduit le support multi-devises avec les limitations suivantes :
+
+1. **Taux de change simulés** : Actuellement, les taux de change sont **fixes et simulés** (USD↔EUR = 0.92). 
+   - ⚠️ **Ne PAS utiliser en production** sans intégrer une API réelle (FMP, ECB, ou autre)
+   - Les taux simulés ne reflètent PAS les taux de marché actuels
+   - Pour un usage réel, voir la roadmap pour l'intégration d'une API de taux de change
+
+2. **Migration automatique** : Les données V1 (sans devise) sont automatiquement converties en EUR lors de la première utilisation de V2.
+
+3. **Compatibilité** : Les portefeuilles créés en V2 ne sont pas rétro-compatibles avec V1.
+
+### Recommandations
+
+- Pour un **usage personnel/test** : Les taux simulés sont acceptables
+- Pour un **usage en production** : Intégrer impérativement une API de taux de change réels
+- **Backups réguliers** : Bien que Hive soit fiable, des exports réguliers sont recommandés
+
+---
+
+**Version** : 2.0.0+1 (Multi-Devises)  
+**Dernière mise à jour de la documentation** : 16 novembre 2025
 
 ---
 
