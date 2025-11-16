@@ -171,47 +171,109 @@ class ApiService {
   }
 
   /// Tente de récupérer un prix via Yahoo Finance (API 'spark')
+  /// Avec retry automatique (3 tentatives) et timeout adaptatif
   Future<PriceResult?> _fetchFromYahoo(String ticker) async {
-    final yahooUrl = Uri.parse(
-        'https://query1.finance.yahoo.com/v7/finance/spark?symbols=$ticker&range=1d&interval=1d');
-    try {
-      final response = await _httpClient.get(yahooUrl, headers: {
-        'User-Agent': 'Mozilla/5.0'
-      }).timeout(const Duration(seconds: 8));
+    const maxRetries = 3;
+    final timeouts = [
+      Duration(seconds: 5), // 1ère tentative: 5s
+      Duration(seconds: 8), // 2ème tentative: 8s
+      Duration(seconds: 12), // 3ème tentative: 12s
+    ];
 
-      if (response.statusCode != 200) {
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      final isLastAttempt = attempt == maxRetries - 1;
+      final timeout = timeouts[attempt];
+
+      try {
         debugPrint(
-            'Erreur de l\'API Yahoo Finance (spark) pour $ticker: ${response.body}');
-        return null;
-      }
+            "🔄 Yahoo Finance: Tentative ${attempt + 1}/$maxRetries pour $ticker (timeout: ${timeout.inSeconds}s)");
 
-      final jsonData = jsonDecode(response.body);
-      final List<dynamic>? results = jsonData['spark']?['result'];
+        final yahooUrl = Uri.parse(
+            'https://query1.finance.yahoo.com/v7/finance/spark?symbols=$ticker&range=1d&interval=1d');
 
-      if (results != null && results.isNotEmpty) {
-        final result = results[0];
-        final String? resultSymbol = result['symbol'];
-        final num? newPriceNum =
-            result['response']?[0]?['meta']?['regularMarketPrice'];
-        // NOUVEAU : Récupérer la devise
-        final String currency =
-            result['response']?[0]?['meta']?['currency'] ?? 'EUR';
+        final response = await _httpClient.get(yahooUrl,
+            headers: {'User-Agent': 'Mozilla/5.0'}).timeout(timeout);
 
-        if (resultSymbol == ticker && newPriceNum != null) {
-          return PriceResult(
-            price: newPriceNum.toDouble(),
-            currency: currency,
-            source: ApiSource.Yahoo,
-            ticker: ticker,
-          );
+        if (response.statusCode != 200) {
+          debugPrint(
+              '❌ Yahoo Finance HTTP ${response.statusCode} pour $ticker');
+          debugPrint('📄 Body: ${response.body}');
+
+          // Retry sauf si 404 (ticker introuvable)
+          if (response.statusCode == 404 || isLastAttempt) {
+            return null;
+          }
+
+          // Attendre avant retry (délai exponentiel)
+          await Future.delayed(Duration(seconds: attempt + 1));
+          continue;
         }
+
+        final jsonData = jsonDecode(response.body);
+        final List<dynamic>? results = jsonData['spark']?['result'];
+
+        if (results != null && results.isNotEmpty) {
+          final result = results[0];
+          final String? resultSymbol = result['symbol'];
+          final num? newPriceNum =
+              result['response']?[0]?['meta']?['regularMarketPrice'];
+          final String currency =
+              result['response']?[0]?['meta']?['currency'] ?? 'EUR';
+
+          if (resultSymbol == ticker && newPriceNum != null) {
+            debugPrint(
+                "✅ Yahoo Finance: Prix $ticker = $newPriceNum $currency (tentative ${attempt + 1})");
+            return PriceResult(
+              price: newPriceNum.toDouble(),
+              currency: currency,
+              source: ApiSource.Yahoo,
+              ticker: ticker,
+            );
+          }
+        }
+
+        debugPrint(
+            "⚠️ Yahoo Finance: Pas de prix pour $ticker (tentative ${attempt + 1})");
+        return null;
+      } on TimeoutException {
+        debugPrint(
+            "⏱️ Timeout Yahoo Finance pour $ticker (tentative ${attempt + 1}/${maxRetries}, ${timeout.inSeconds}s)");
+
+        if (isLastAttempt) {
+          debugPrint("❌ Échec final après $maxRetries tentatives (timeout)");
+          return null;
+        }
+
+        // Attendre avant retry
+        await Future.delayed(Duration(seconds: attempt + 1));
+      } on SocketException catch (e) {
+        debugPrint(
+            "🌐 Erreur réseau Yahoo Finance pour $ticker (tentative ${attempt + 1}/${maxRetries})");
+        debugPrint("📋 Détails: ${e.message}");
+
+        if (isLastAttempt) {
+          debugPrint("❌ Échec final après $maxRetries tentatives (réseau)");
+          return null;
+        }
+
+        // Attendre avant retry
+        await Future.delayed(Duration(seconds: attempt + 1));
+      } catch (e) {
+        debugPrint(
+            "❌ Erreur Yahoo Finance pour $ticker (tentative ${attempt + 1}/${maxRetries})");
+        debugPrint("📋 Détails: $e");
+
+        if (isLastAttempt) {
+          debugPrint("❌ Échec final après $maxRetries tentatives");
+          return null;
+        }
+
+        // Attendre avant retry
+        await Future.delayed(Duration(seconds: attempt + 1));
       }
-      debugPrint("Yahoo (spark) n'a pas retourné de prix pour $ticker");
-      return null;
-    } catch (e) {
-      debugPrint("Erreur http Yahoo (spark) pour $ticker: $e");
-      return null;
     }
+
+    return null;
   }
 
   /// Récupère le taux de change réel depuis l'API Frankfurter (BCE)
