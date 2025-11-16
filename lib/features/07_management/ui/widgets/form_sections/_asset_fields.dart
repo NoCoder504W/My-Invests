@@ -36,19 +36,20 @@ class AssetFields extends StatelessWidget {
           decoration: InputDecoration(
             labelText: 'Ticker (ex: AAPL) *',
             border: const OutlineInputBorder(),
-            suffixIcon: state.isLoadingSearch && state.settingsProvider.isOnlineMode
-                ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: Padding(
-                  padding: EdgeInsets.all(10.0),
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ))
-                : null,
+            suffixIcon:
+                state.isLoadingSearch && state.settingsProvider.isOnlineMode
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: Padding(
+                          padding: EdgeInsets.all(10.0),
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ))
+                    : null,
           ),
           textCapitalization: TextCapitalization.characters,
           validator: (value) =>
-          (value == null || value.isEmpty) ? 'Ticker requis' : null,
+              (value == null || value.isEmpty) ? 'Ticker requis' : null,
         ),
         if (state.suggestions.isNotEmpty)
           SizedBox(
@@ -67,8 +68,10 @@ class AssetFields extends StatelessWidget {
                     dense: true,
                     title: Text(suggestion.name),
                     subtitle: Text(
-                        "${suggestion.ticker} (${suggestion.exchange}) - Devise: ${suggestion.currency}"),
-                    onTap: () => readState.onSuggestionSelected(suggestion, context),
+                        "${suggestion.ticker} (${suggestion.exchange})"
+                        "${suggestion.currency.isNotEmpty && suggestion.currency != '???' ? ' - Devise: ${suggestion.currency}' : ' - Devise: non disponible'}"),
+                    onTap: () =>
+                        readState.onSuggestionSelected(suggestion, context),
                   );
                 },
               ),
@@ -83,7 +86,7 @@ class AssetFields extends StatelessWidget {
           ),
           textCapitalization: TextCapitalization.words,
           validator: (value) =>
-          (value == null || value.isEmpty) ? 'Nom requis' : null,
+              (value == null || value.isEmpty) ? 'Nom requis' : null,
         ),
         const SizedBox(height: 16),
         Row(
@@ -98,7 +101,7 @@ class AssetFields extends StatelessWidget {
                 ),
                 textCapitalization: TextCapitalization.characters,
                 validator: (value) =>
-                (value == null || value.isEmpty) ? 'Requis' : null,
+                    (value == null || value.isEmpty) ? 'Requis' : null,
               ),
             ),
             const SizedBox(width: 16),
@@ -111,12 +114,13 @@ class AssetFields extends StatelessWidget {
                   border: const OutlineInputBorder(),
                 ),
                 keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+                    const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,8}')),
                 ],
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Requis (1.0 si identique)';
+                  if (value == null || value.isEmpty)
+                    return 'Requis (1.0 si identique)';
                   if (double.tryParse(value.replaceAll(',', '.')) == null) {
                     return 'Invalide';
                   }
@@ -137,7 +141,7 @@ class AssetFields extends StatelessWidget {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+                    const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,8}')),
                 ],
@@ -160,7 +164,7 @@ class AssetFields extends StatelessWidget {
                   suffixText: state.priceCurrencyController.text,
                 ),
                 keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+                    const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,4}')),
                 ],

@@ -73,11 +73,10 @@ class TransactionFormState extends ChangeNotifier {
   })  : _apiService = apiService,
         _settingsProvider = settingsProvider,
         _portfolioProvider = portfolioProvider,
-  // Initialisation des valeurs par défaut
+        // Initialisation des valeurs par défaut
         _selectedType = existingTransaction?.type ?? TransactionType.Deposit,
         _selectedDate = existingTransaction?.date ?? DateTime.now(),
-        _selectedAssetType =
-            existingTransaction?.assetType ?? AssetType.Stock {
+        _selectedAssetType = existingTransaction?.assetType ?? AssetType.Stock {
     // --- CHARGEMENT DES COMPTES ---
     final portfolio = _portfolioProvider.activePortfolio;
     if (portfolio != null) {
@@ -90,15 +89,15 @@ class TransactionFormState extends ChangeNotifier {
     if (tx != null) {
       try {
         _selectedAccount = _availableAccounts.firstWhere(
-              (acc) => acc.id == tx.accountId,
+          (acc) => acc.id == tx.accountId,
         );
       } catch (e) {
         _selectedAccount =
-        _availableAccounts.isNotEmpty ? _availableAccounts.first : null;
+            _availableAccounts.isNotEmpty ? _availableAccounts.first : null;
       }
     } else {
       _selectedAccount =
-      _availableAccounts.isNotEmpty ? _availableAccounts.first : null;
+          _availableAccounts.isNotEmpty ? _availableAccounts.first : null;
     }
 
     dateController.text = DateFormat('dd/MM/yyyy').format(_selectedDate);
@@ -170,7 +169,8 @@ class TransactionFormState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void onSuggestionSelected(TickerSuggestion suggestion, BuildContext context) async {
+  void onSuggestionSelected(
+      TickerSuggestion suggestion, BuildContext context) async {
     tickerController.removeListener(_onTickerChanged);
     tickerController.text = suggestion.ticker;
     nameController.text = suggestion.name;
@@ -180,6 +180,9 @@ class TransactionFormState extends ChangeNotifier {
 
     _suggestions = [];
     notifyListeners();
+
+    // Vérifier que le widget est toujours monté avant d'utiliser le context
+    if (!context.mounted) return;
     FocusScope.of(context).unfocus();
 
     if (_settingsProvider.isOnlineMode) {
@@ -201,7 +204,8 @@ class TransactionFormState extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<DropdownMenuItem<Account>> buildGroupedAccountItems(BuildContext context) {
+  List<DropdownMenuItem<Account>> buildGroupedAccountItems(
+      BuildContext context) {
     final List<DropdownMenuItem<Account>> items = [];
     final portfolio = _portfolioProvider.activePortfolio;
     if (portfolio == null) return items;
@@ -309,16 +313,16 @@ class TransactionFormState extends ChangeNotifier {
     final double amount =
         double.tryParse(amountController.text.replaceAll(',', '.')) ?? 0.0;
     final double? quantity =
-    double.tryParse(quantityController.text.replaceAll(',', '.'));
+        double.tryParse(quantityController.text.replaceAll(',', '.'));
     final double? price =
-    double.tryParse(priceController.text.replaceAll(',', '.'));
+        double.tryParse(priceController.text.replaceAll(',', '.'));
     final double fees =
         double.tryParse(feesController.text.replaceAll(',', '.')) ?? 0.0;
     final String? priceCurrency = priceCurrencyController.text.trim().isEmpty
         ? null
         : priceCurrencyController.text.trim().toUpperCase();
     final double? exchangeRate =
-    double.tryParse(exchangeRateController.text.replaceAll(',', '.'));
+        double.tryParse(exchangeRateController.text.replaceAll(',', '.'));
 
     double finalAmount = 0.0;
     String? assetTicker, assetName;
@@ -356,7 +360,7 @@ class TransactionFormState extends ChangeNotifier {
     }
 
     final String transactionId =
-    isEditing ? existingTransaction!.id : _uuid.v4();
+        isEditing ? existingTransaction!.id : _uuid.v4();
 
     final transaction = Transaction(
       id: transactionId,
@@ -381,6 +385,8 @@ class TransactionFormState extends ChangeNotifier {
       _portfolioProvider.addTransaction(transaction);
     }
 
+    // Vérifier que le widget est toujours monté avant de fermer
+    if (!context.mounted) return;
     Navigator.of(context).pop();
   }
 }

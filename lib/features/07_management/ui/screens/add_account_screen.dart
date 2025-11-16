@@ -1,5 +1,4 @@
 // lib/features/07_management/ui/screens/add_account_screen.dart
-// REMPLACEZ LE FICHIER COMPLET
 
 import 'package:flutter/material.dart';
 import 'package:portefeuille/core/data/models/account.dart';

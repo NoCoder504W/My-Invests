@@ -1,8 +1,8 @@
 // lib/features/00_app/providers/portfolio_migration_logic.dart
-// REMPLACEZ LE FICHIER COMPLET
 
 import 'package:flutter/material.dart';
-import 'package:portefeuille/core/data/models/account.dart'; // <-- NOUVEL IMPORT
+import 'package:portefeuille/core/data/models/account.dart';
+import 'package:portefeuille/core/data/models/institution.dart';
 import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/core/data/models/transaction.dart';
 import 'package:portefeuille/core/data/models/transaction_type.dart';
@@ -24,10 +24,10 @@ class PortfolioMigrationLogic {
 
   /// Convertit les champs `stale_` en transactions (Migration V1).
   Future<void> runDataMigrationV1(List<Portfolio> portfolios) async {
-    final bool needsMigration = portfolios.any((p) => p.institutions
-        .any((i) => i.accounts.any((a) =>
-    a.stale_cashBalance != null ||
-        (a.stale_assets?.isNotEmpty ?? false))));
+    final bool needsMigration = portfolios.any((p) => p.institutions.any((i) =>
+        i.accounts.any((a) =>
+            a.stale_cashBalance != null ||
+            (a.stale_assets?.isNotEmpty ?? false))));
     if (!needsMigration) {
       debugPrint("Migration V1 : Aucune donnée périmée trouvée. Ignoré.");
       await settingsProvider.setMigrationV1Done();
@@ -58,7 +58,7 @@ class PortfolioMigrationLogic {
           if (totalCashNeeded > 0) {
             debugPrint(
                 "Migration : Ajout Dépôt initial de ${totalCashNeeded.toStringAsFixed(2)}€ pour ${acc.name} "
-                    "(Liquidités: ${acc.stale_cashBalance?.toStringAsFixed(2) ?? '0.00'}€ + Actifs: ${totalCashFromAssets.toStringAsFixed(2)}€)");
+                "(Liquidités: ${acc.stale_cashBalance?.toStringAsFixed(2) ?? '0.00'}€ + Actifs: ${totalCashFromAssets.toStringAsFixed(2)}€)");
             newTransactions.add(Transaction(
               id: uuid.v4(),
               accountId: acc.id,
@@ -66,7 +66,7 @@ class PortfolioMigrationLogic {
               date: migrationDate,
               amount: totalCashNeeded,
               notes:
-              "Migration v1 - Dépôt initial (Solde: ${acc.stale_cashBalance?.toStringAsFixed(2) ?? '0.00'}€)",
+                  "Migration v1 - Dépôt initial (Solde: ${acc.stale_cashBalance?.toStringAsFixed(2) ?? '0.00'}€)",
             ));
             acc.stale_cashBalance = null;
             portfolioNeedsSave = true;
@@ -133,11 +133,16 @@ class PortfolioMigrationLogic {
     for (final portfolio in portfolios) {
       bool portfolioNeedsSave = false;
       for (final inst in portfolio.institutions) {
+        bool institutionNeedsUpdate = false;
+        final updatedAccounts = <Account>[];
+
         for (final acc in inst.accounts) {
           // Le constructeur Account a déjà 'EUR' par défaut, mais
-          // si le champ @HiveField(5) était absent, il sera null.
+          // si le champ @HiveField(5) était absent, Hive retournera une chaîne vide
+          // lors de la désérialisation. On vérifie aussi null par sécurité.
           if (acc.currency.isEmpty) {
-            debugPrint("Migration V2: Mise à jour devise pour le compte ${acc.name}");
+            debugPrint(
+                "Migration V2: Mise à jour devise pour le compte ${acc.name}");
             // Crée une NOUVELLE instance de compte avec la devise
             final updatedAccount = Account(
               id: acc.id,
@@ -148,17 +153,33 @@ class PortfolioMigrationLogic {
               stale_assets: acc.stale_assets,
               stale_cashBalance: acc.stale_cashBalance,
             );
-            // Remplacer l'ancien compte par le nouveau
-            final accIndex = inst.accounts.indexWhere((a) => a.id == acc.id);
-            if (accIndex != -1) {
-              inst.accounts[accIndex] = updatedAccount;
-              portfolioNeedsSave = true;
-            }
+            updatedAccounts.add(updatedAccount);
+            institutionNeedsUpdate = true;
+          } else {
+            updatedAccounts.add(acc);
+          }
+        }
+
+        // Si au moins un compte a été modifié, créer une nouvelle Institution
+        if (institutionNeedsUpdate) {
+          final updatedInstitution = Institution(
+            id: inst.id,
+            name: inst.name,
+            accounts: updatedAccounts,
+          );
+
+          // Remplacer l'institution dans le portfolio
+          final instIndex =
+              portfolio.institutions.indexWhere((i) => i.id == inst.id);
+          if (instIndex != -1) {
+            portfolio.institutions[instIndex] = updatedInstitution;
+            portfolioNeedsSave = true;
           }
         }
       }
       if (portfolioNeedsSave) {
-        debugPrint("Migration V2: Sauvegarde du portefeuille ${portfolio.name}");
+        debugPrint(
+            "Migration V2: Sauvegarde du portefeuille ${portfolio.name}");
         await repository.savePortfolio(portfolio);
       }
     }
@@ -167,7 +188,8 @@ class PortfolioMigrationLogic {
     final allMetadata = repository.getAllAssetMetadata().values.toList();
     for (final meta in allMetadata) {
       if (meta.priceCurrency.isEmpty) {
-        debugPrint("Migration V2: Mise à jour devise pour metadata ${meta.ticker}");
+        debugPrint(
+            "Migration V2: Mise à jour devise pour metadata ${meta.ticker}");
         meta.priceCurrency = 'EUR';
         await repository.saveAssetMetadata(meta);
       }
@@ -177,7 +199,8 @@ class PortfolioMigrationLogic {
     final allTransactions = repository.getAllTransactions();
     for (final tx in allTransactions) {
       if (tx.priceCurrency == null) {
-        debugPrint("Migration V2: Mise à jour devise pour transaction ${tx.id}");
+        debugPrint(
+            "Migration V2: Mise à jour devise pour transaction ${tx.id}");
         // Transaction est immuable, il faut recréer
         final updatedTx = Transaction(
           id: tx.id,
@@ -203,5 +226,4 @@ class PortfolioMigrationLogic {
     await settingsProvider.setMigrationV2Done();
     debugPrint("--- FIN MIGRATION V2 ---");
   }
-// --- FIN NOUVELLE MÉTHODE ---
 }

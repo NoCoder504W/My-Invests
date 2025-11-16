@@ -44,7 +44,8 @@ class PortfolioProvider extends ChangeNotifier {
   String? get syncMessage => _syncMessage;
 
   /// Expose toutes les métadonnées pour les écrans de statut (ex: Paramètres)
-  Map<String, AssetMetadata> get allMetadata => _repository.getAllAssetMetadata();
+  Map<String, AssetMetadata> get allMetadata =>
+      _repository.getAllAssetMetadata();
 
   PortfolioProvider({
     required PortfolioRepository repository,
@@ -54,7 +55,8 @@ class PortfolioProvider extends ChangeNotifier {
     // Initialiser les classes de logique
     _migrationLogic = PortfolioMigrationLogic(
       repository: _repository,
-      settingsProvider: _settingsProvider ?? SettingsProvider(), // Fournit un fallback
+      settingsProvider:
+          _settingsProvider ?? SettingsProvider(), // Fournit un fallback
       uuid: _uuid,
     );
     _syncLogic = PortfolioSyncLogic(
@@ -322,7 +324,7 @@ class PortfolioProvider extends ChangeNotifier {
     if (_activePortfolio == null) return;
     final updatedPortfolio = _activePortfolio!.deepCopy();
     final index =
-    updatedPortfolio.savingsPlans.indexWhere((p) => p.id == planId);
+        updatedPortfolio.savingsPlans.indexWhere((p) => p.id == planId);
     if (index != -1) {
       updatedPortfolio.savingsPlans[index] = updatedPlan;
       savePortfolio(updatedPortfolio);
@@ -345,11 +347,20 @@ class PortfolioProvider extends ChangeNotifier {
     await loadAllPortfolios();
   }
 
-  Future<void> updateAssetPrice(String ticker, double newPrice) async {
+  Future<void> updateAssetPrice(String ticker, double newPrice,
+      {String? currency}) async {
     final metadata = _repository.getOrCreateAssetMetadata(ticker);
-    // On suppose que la modification manuelle est en devise de base (EUR)
-    // ou dans la devise existante de l'actif.
-    metadata.updatePrice(newPrice, metadata.priceCurrency);
+
+    // Déterminer la devise à utiliser :
+    // 1. Si une devise est fournie en paramètre, l'utiliser
+    // 2. Sinon, utiliser la devise actuelle du metadata
+    // 3. Si celle-ci est vide (données legacy), utiliser la devise de base
+    final targetCurrency = currency ??
+        (metadata.priceCurrency.isEmpty
+            ? _settingsProvider!.baseCurrency
+            : metadata.priceCurrency);
+
+    metadata.updatePrice(newPrice, targetCurrency);
     await _repository.saveAssetMetadata(metadata);
     await loadAllPortfolios();
   }

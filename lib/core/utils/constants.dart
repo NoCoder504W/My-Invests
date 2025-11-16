@@ -6,8 +6,6 @@ class AppConstants {
   static const String kTransactionBoxName = 'transaction_box';
   static const String kAssetMetadataBoxName = 'asset_metadata_box';
 
-  // --- NOUVEAU ---
   static const String kPriceHistoryBoxName = 'price_history_box';
   static const String kExchangeRateHistoryBoxName = 'exchange_rate_history_box';
-// --- FIN NOUVEAU ---
 }

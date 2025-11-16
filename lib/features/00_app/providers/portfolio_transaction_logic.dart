@@ -1,5 +1,4 @@
 // lib/features/00_app/providers/portfolio_transaction_logic.dart
-// REMPLACEZ LE FICHIER COMPLET
 
 import 'package:portefeuille/core/data/models/asset_type.dart';
 import 'package:portefeuille/core/data/models/transaction.dart';
@@ -20,7 +19,7 @@ class PortfolioTransactionLogic {
         transaction.assetTicker != null &&
         transaction.price != null) {
       final metadata =
-      repository.getOrCreateAssetMetadata(transaction.assetTicker!);
+          repository.getOrCreateAssetMetadata(transaction.assetTicker!);
 
       // --- CORRECTION DE L'ERREUR ---
       // La devise est DANS la transaction que nous venons de créer
@@ -40,13 +39,14 @@ class PortfolioTransactionLogic {
   /// Met à jour une transaction existante et recharge les données.
   Future<void> updateTransaction(Transaction transaction) async {
     await repository.saveTransaction(transaction);
-    // (Optionnel) Mettre aussi à jour le prix des métadonnées lors de l'édition
+    // Mettre à jour le prix des métadonnées pour les achats ET les ventes.
+    // L'utilisateur saisit le prix réel de la transaction, qui est une information valide du marché.
     if ((transaction.type == TransactionType.Buy ||
-        transaction.type == TransactionType.Sell) &&
+            transaction.type == TransactionType.Sell) &&
         transaction.assetTicker != null &&
         transaction.price != null) {
       final metadata =
-      repository.getOrCreateAssetMetadata(transaction.assetTicker!);
+          repository.getOrCreateAssetMetadata(transaction.assetTicker!);
       final currency = transaction.priceCurrency ?? 'EUR';
       metadata.updatePrice(transaction.price!, currency);
       await repository.saveAssetMetadata(metadata);

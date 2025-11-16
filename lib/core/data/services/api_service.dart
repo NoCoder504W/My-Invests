@@ -53,9 +53,10 @@ class PriceResult {
   });
 
   // Constructeur d'échec
-  PriceResult.failure(this.ticker)
+  PriceResult.failure(this.ticker, {String? currency})
       : price = null,
-        currency = 'EUR', // Devise par défaut en cas d'échec
+        currency = currency ??
+            'EUR', // Utilise la devise fournie, sinon EUR par défaut
         source = ApiSource.None;
 }
 
@@ -108,11 +109,13 @@ class ApiService {
       }
 
       // 5. Échec complet
-      return PriceResult.failure(ticker);
+      return PriceResult.failure(ticker,
+          currency: _settingsProvider.baseCurrency);
     } catch (e) {
       debugPrint(
           "⚠️ Erreur inattendue lors de la récupération du prix pour $ticker : $e");
-      return PriceResult.failure(ticker);
+      return PriceResult.failure(ticker,
+          currency: _settingsProvider.baseCurrency);
     }
   }
 
@@ -126,7 +129,7 @@ class ApiService {
 
     try {
       final response =
-      await _httpClient.get(uri).timeout(const Duration(seconds: 5));
+          await _httpClient.get(uri).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data is List && data.isNotEmpty) {
@@ -136,9 +139,10 @@ class ApiService {
           // Pour l'instant, supposons "USD" pour les tickers non-européens
           // et "EUR" pour ceux finissant par .PA, .F, .DE, etc.
           // C'est une simplification, Yahoo est meilleur pour ça.
-          // NOTE : Pour ce projet, nous allons simplifier et utiliser "EUR" par défaut
-          // si FMP ne le fournit pas.
-          final currency = data[0]['currency'] ?? 'EUR'; // Simplification
+          // NOTE : FMP fournit parfois la devise dans sa réponse.
+          // Si elle est absente, on utilise la devise de base configurée par l'utilisateur.
+          final currency =
+              data[0]['currency'] ?? _settingsProvider.baseCurrency;
 
           if (price is num) {
             return PriceResult(
@@ -164,9 +168,9 @@ class ApiService {
     final yahooUrl = Uri.parse(
         'https://query1.finance.yahoo.com/v7/finance/spark?symbols=$ticker&range=1d&interval=1d');
     try {
-      final response = await _httpClient.get(yahooUrl,
-          headers: {'User-Agent': 'Mozilla/5.0'}).timeout(
-          const Duration(seconds: 8));
+      final response = await _httpClient.get(yahooUrl, headers: {
+        'User-Agent': 'Mozilla/5.0'
+      }).timeout(const Duration(seconds: 8));
 
       if (response.statusCode != 200) {
         debugPrint(
@@ -181,7 +185,7 @@ class ApiService {
         final result = results[0];
         final String? resultSymbol = result['symbol'];
         final num? newPriceNum =
-        result['response']?[0]?['meta']?['regularMarketPrice'];
+            result['response']?[0]?['meta']?['regularMarketPrice'];
         // NOUVEAU : Récupérer la devise
         final String currency =
             result['response']?[0]?['meta']?['currency'] ?? 'EUR';
@@ -210,19 +214,26 @@ class ApiService {
     // Si les devises sont identiques, le taux est 1
     if (from == to) return 1.0;
 
-    // Simulation pour le développement
-    // TODO: Remplacer par un appel API réel (ex: FMP ou Yahoo)
+    // ⚠️ ATTENTION : Cette implémentation utilise des taux de change SIMULÉS
+    // Ces taux sont fixes et ne reflètent PAS les taux de change réels du marché.
+    // TODO CRITIQUE : Remplacer par un appel API réel (ex: FMP, Yahoo Finance, ou ECB)
+    // avant toute utilisation en production !
+    debugPrint(
+        "⚠️ WARNING: Utilisation de taux de change SIMULÉS (non-production)");
+
     if (from == 'USD' && to == 'EUR') {
       debugPrint("API: Taux de change SIMULÉ USD->EUR: 0.92");
       return 0.92;
     }
     if (from == 'EUR' && to == 'USD') {
-      debugPrint("API: Taux de change SIMULÉ EUR->USD: 1.08");
-      return 1.08;
+      // Calcul mathématiquement cohérent : 1 / 0.92 ≈ 1.087
+      final rate = 1.0 / 0.92;
+      debugPrint(
+          "API: Taux de change SIMULÉ EUR->USD: ${rate.toStringAsFixed(4)}");
+      return rate;
     }
 
-    debugPrint(
-        "API: Taux de change SIMULÉ pour $from->$to: 1.0 (non géré)");
+    debugPrint("API: Taux de change SIMULÉ pour $from->$to: 1.0 (non géré)");
     // Retourne 1.0 si la paire n'est pas gérée par la simulation
     return 1.0;
   }
@@ -240,9 +251,9 @@ class ApiService {
         'https://query1.finance.yahoo.com/v1/finance/search?q=$query&lang=fr-FR&region=FR');
     try {
       debugPrint("🔍 Recherche de ticker: '$query' - URL: $url");
-      final response = await _httpClient.get(url,
-          headers: {'User-Agent': 'Mozilla/5.0'}).timeout(
-          const Duration(seconds: 5));
+      final response = await _httpClient.get(url, headers: {
+        'User-Agent': 'Mozilla/5.0'
+      }).timeout(const Duration(seconds: 5));
       debugPrint("✅ Réponse reçue - Status: ${response.statusCode}");
 
       if (response.statusCode != 200) {

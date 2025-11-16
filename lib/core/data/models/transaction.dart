@@ -1,5 +1,4 @@
 // lib/core/data/models/transaction.dart
-// REMPLACEZ LE FICHIER COMPLET
 
 import 'package:hive/hive.dart';
 import 'transaction_type.dart';
@@ -31,7 +30,8 @@ class Transaction {
   final double? quantity; // Quantité d'actifs (pour Achat/Vente)
 
   @HiveField(7)
-  final double? price; // Prix unitaire DANS LA DEVISE DE L'ACTIF (ex: 150.00 USD)
+  final double?
+      price; // Prix unitaire DANS LA DEVISE DE L'ACTIF (ex: 150.00 USD)
 
   @HiveField(8)
   final double amount; // Montant DANS LA DEVISE DU COMPTE (ex: -140.00 EUR)
@@ -47,12 +47,11 @@ class Transaction {
 
   // --- NOUVEAUX CHAMPS DEVISE ---
   @HiveField(12)
-  final String?
-  priceCurrency; // Devise du 'price' (ex: "USD" pour AAPL)
+  final String? priceCurrency; // Devise du 'price' (ex: "USD" pour AAPL)
 
   @HiveField(13)
   final double?
-  exchangeRate; // Taux de change (priceCurrency -> account.currency) ex: 1.08
+      exchangeRate; // Taux de change (priceCurrency -> account.currency) ex: 1.08
   // --- FIN NOUVEAUX CHAMPS ---
 
   Transaction({

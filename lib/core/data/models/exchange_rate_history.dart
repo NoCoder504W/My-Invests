@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 
 part 'exchange_rate_history.g.dart';
 
-@HiveType(typeId: 11) // <-- ID NON UTILISÉ
+@HiveType(typeId: 11)
 class ExchangeRateHistory {
   /// Paire de devises (ex: "USD-EUR")
   @HiveField(0)

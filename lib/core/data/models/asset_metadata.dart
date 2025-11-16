@@ -1,5 +1,4 @@
 // lib/core/data/models/asset_metadata.dart
-// REMPLACEZ LE FICHIER COMPLET
 
 import 'package:hive/hive.dart';
 

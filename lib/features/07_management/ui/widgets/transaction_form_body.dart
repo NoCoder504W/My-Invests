@@ -1,5 +1,4 @@
 // lib/features/07_management/ui/widgets/transaction_form_body.dart
-// REMPLACEZ LE FICHIER COMPLET
 
 import 'package:flutter/material.dart';
 import 'package:portefeuille/core/data/models/transaction.dart';

@@ -46,7 +46,8 @@ void main() {
   });
 
   group('ApiService - Tests de récupération de prix', () {
-    test('getPrice() retourne le prix depuis FMP si une clé API est configurée', () async {
+    test('getPrice() retourne le prix depuis FMP si une clé API est configurée',
+        () async {
       // Arrange
       final mockSettings = MockSettingsProvider();
       mockSettings.setMockFmpApiKey('test_api_key');
@@ -68,12 +69,13 @@ void main() {
       // Le service devrait automatiquement utiliser Yahoo
     });
 
-    test('getPrice() utilise le cache si le prix est récent (< 15 min)', () async {
+    test('getPrice() utilise le cache si le prix est récent (< 15 min)',
+        () async {
       // Ce test nécessiterait de pouvoir injecter le temps ou d'exposer le cache
       // Pour l'instant, on teste que le mode en ligne est activé
       final mockSettings = MockSettingsProvider();
       mockSettings.setMockOnlineMode(true);
-      
+
       // La première récupération devrait appeler l'API
       // La deuxième devrait utiliser le cache
       expect(mockSettings.isOnlineMode, isTrue);
@@ -82,13 +84,15 @@ void main() {
     test('Le mode hors ligne désactive les requêtes', () async {
       final mockSettings = MockSettingsProvider();
       mockSettings.setMockOnlineMode(false);
-      
+
       expect(mockSettings.isOnlineMode, isFalse);
     });
   });
 
   group('ApiService - Tests de recherche de tickers', () {
-    test('searchTicker() retourne une liste de suggestions pour une requête valide', () async {
+    test(
+        'searchTicker() retourne une liste de suggestions pour une requête valide',
+        () async {
       // Simuler une réponse de l'API Yahoo Search
       final mockYahooResponse = {
         'quotes': [
@@ -109,7 +113,8 @@ void main() {
 
       // Vérifier la structure des données
       expect(mockYahooResponse['quotes'], isNotEmpty);
-      expect((mockYahooResponse['quotes']! as List)[0]['symbol'], equals('AAPL'));
+      expect(
+          (mockYahooResponse['quotes']! as List)[0]['symbol'], equals('AAPL'));
     });
 
     test('searchTicker() filtre les résultats non pertinents', () async {
@@ -121,7 +126,8 @@ void main() {
       expect(invalidTypes, isNot(contains('EQUITY')));
     });
 
-    test('searchTicker() utilise le cache pour les recherches répétées (< 24h)', () async {
+    test('searchTicker() utilise le cache pour les recherches répétées (< 24h)',
+        () async {
       // La première recherche devrait appeler l'API
       // La deuxième (dans les 24h) devrait utiliser le cache
       // On teste ici que le mécanisme de cache ne cause pas d'erreur
@@ -185,7 +191,8 @@ void main() {
       });
 
       final decoded = json.decode(yahooResponse);
-      final price = decoded['spark']['result'][0]['response'][0]['meta']['regularMarketPrice'];
+      final price = decoded['spark']['result'][0]['response'][0]['meta']
+          ['regularMarketPrice'];
       expect(price, equals(150.25));
     });
 
@@ -226,7 +233,7 @@ void main() {
     test('Gère correctement un timeout', () async {
       // Simuler un timeout
       final future = Future.delayed(const Duration(seconds: 10));
-      
+
       expect(
         () => future.timeout(const Duration(seconds: 1)),
         throwsA(isA<TimeoutException>()),
@@ -240,11 +247,13 @@ void main() {
         ticker: 'AAPL',
         name: 'Apple Inc.',
         exchange: 'NASDAQ',
+        currency: 'USD',
       );
 
       expect(suggestion.ticker, equals('AAPL'));
       expect(suggestion.name, equals('Apple Inc.'));
       expect(suggestion.exchange, equals('NASDAQ'));
+      expect(suggestion.currency, equals('USD'));
     });
   });
 }

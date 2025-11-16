@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 
 part 'price_history_point.g.dart';
 
-@HiveType(typeId: 10) // <-- ID NON UTILISÉ
+@HiveType(typeId: 10)
 class PriceHistoryPoint {
   /// Ticker de l'actif
   @HiveField(0)
