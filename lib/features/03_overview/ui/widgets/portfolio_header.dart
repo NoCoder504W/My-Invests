@@ -5,32 +5,36 @@ import 'package:flutter/material.dart';
 // import 'package:portefeuille/core/data/models/portfolio.dart'; // Supprimé
 import 'package:portefeuille/core/utils/currency_formatter.dart';
 import 'package:intl/intl.dart';
+import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
 // Import pour le format pourcentage
 // NOUVEAUX IMPORTS
 import 'package:provider/provider.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
-// import 'package:portefeuille/features/00_app/providers/settings_provider.dart'; // Plus nécessaire
+// import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
+// Plus nécessaire
+import 'package:shimmer/shimmer.dart';
+// <-- NOUVEL IMPORT
 
 class PortfolioHeader extends StatelessWidget {
   // Le constructeur n'a plus besoin de 'portfolio'
   const PortfolioHeader({super.key});
-
+  @override
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // ▼▼▼ MODIFIÉ : Lecture depuis le Provider ▼▼▼
-    // Nous utilisons 'watch' pour que ce widget se reconstruise
-    // lorsque les valeurs converties changent.
     final provider = context.watch<PortfolioProvider>();
+    final settings = context.watch<SettingsProvider>();
+    // La devise que l'on VEUT afficher
+    final baseCurrency = settings.baseCurrency;
+    // --- MODIFIÉ ---
+    // Le provider est la SEULE source de vérité pour l'état de chargement.
+    final isProcessing = provider.isProcessingInBackground;
+    // --- FIN MODIFICATION ---
 
-    // Récupérer les valeurs CONVERTIES depuis le provider
-    final baseCurrency = provider.currentBaseCurrency;
     final totalValue = provider.activePortfolioTotalValue;
     final totalPL = provider.activePortfolioTotalPL;
     final totalPLPercentage = provider.activePortfolioTotalPLPercentage;
     final annualYield = provider.activePortfolioEstimatedAnnualYield;
-    // ▲▲▲ FIN MODIFICATION ▲▲▲
 
     return Card(
       child: Padding(
@@ -43,32 +47,49 @@ class PortfolioHeader extends StatelessWidget {
                   ?.copyWith(color: Colors.grey[400]),
             ),
             const SizedBox(height: 8),
-            Text(
-              // Utilise les valeurs converties
-              CurrencyFormatter.format(totalValue, baseCurrency),
-              style: theme.textTheme.headlineMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
+
+            // --- MODIFIÉ : Utilise isProcessing ---
+            if (isProcessing)
+              _buildShimmer(theme)
+            else
+              Text(
+                // Utilise les valeurs converties
+                CurrencyFormatter.format(totalValue, baseCurrency),
+                style: theme.textTheme.headlineMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            // --- FIN MODIFICATION ---
+
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 Expanded(
-                  child: _buildStat(
+                  // --- MODIFIÉ : Utilise isProcessing ---
+                  child: isProcessing
+                      ? _buildStatShimmer(theme)
+                      : _buildStat(
                     context,
                     'Plus/Moins-value',
                     // Utilise les valeurs converties
                     '${CurrencyFormatter.format(totalPL, baseCurrency)} (${NumberFormat.percentPattern().format(totalPLPercentage)})',
-                    totalPL >= 0 ? Colors.green[400]! : Colors.red[400]!,
+                    totalPL >= 0
+                        ? Colors.green[400]!
+                        : Colors.red[400]!,
                   ),
+                  // --- FIN MODIFICATION ---
                 ),
                 Expanded(
-                  child: _buildStat(
+                  // --- MODIFIÉ : Utilise isProcessing ---
+                  child: isProcessing
+                      ? _buildStatShimmer(theme)
+                      : _buildStat(
                     context,
                     'Rendement Annuel Estimé',
                     NumberFormat.percentPattern().format(annualYield),
                     Colors.deepPurple[400]!,
                   ),
+                  // --- FIN MODIFICATION ---
                 ),
               ],
             ),
@@ -77,6 +98,55 @@ class PortfolioHeader extends StatelessWidget {
       ),
     );
   }
+
+  // --- NOUVEAUX WIDGETS ---
+  Widget _buildShimmer(ThemeData theme) {
+    return Shimmer.fromColors(
+      baseColor: theme.colorScheme.surface,
+      highlightColor: theme.colorScheme.surfaceContainerHighest,
+      child: Container(
+        width: 200,
+        height: theme.textTheme.headlineMedium?.fontSize ?? 34,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatShimmer(ThemeData theme) {
+    return Column(
+      children: [
+        Shimmer.fromColors(
+          baseColor: theme.colorScheme.surface,
+          highlightColor: theme.colorScheme.surfaceContainerHighest,
+          child: Container(
+            width: 100,
+            height: theme.textTheme.bodySmall?.fontSize ?? 12,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Shimmer.fromColors(
+          baseColor: theme.colorScheme.surface,
+          highlightColor: theme.colorScheme.surfaceContainerHighest,
+          child: Container(
+            width: 130,
+            height: theme.textTheme.titleMedium?.fontSize ?? 16,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  // --- FIN NOUVEAUX WIDGETS ---
 
   Widget _buildStat(
       BuildContext context, String label, String value, Color valueColor) {

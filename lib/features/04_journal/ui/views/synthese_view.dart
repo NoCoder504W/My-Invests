@@ -12,12 +12,10 @@ import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:portefeuille/core/ui/theme/app_theme.dart';
-
 // --- (Le modèle AggregatedAsset a été déplacé dans core/data/models) ---
 
 class SyntheseView extends StatefulWidget {
   const SyntheseView({super.key});
-
   @override
   State<SyntheseView> createState() => _SyntheseViewState();
 }
@@ -30,12 +28,13 @@ class _SyntheseViewState extends State<SyntheseView> {
     final theme = Theme.of(context);
     // RÉCUPÉRER LA DEVISE DE BASE
     final baseCurrency = context.watch<SettingsProvider>().baseCurrency;
-
     return Consumer<PortfolioProvider>(
       builder: (context, provider, child) {
-        // ▼▼▼ MODIFIÉ : Lit l'agrégat pré-calculé et converti ▼▼▼
         final aggregatedAssets = provider.aggregatedAssets;
-        // ▲▲▲ FIN MODIFICATION ▲▲▲
+
+        // --- MODIFIÉ ---
+        final isProcessing = provider.isProcessingInBackground;
+        // --- FIN MODIFICATION ---
 
         if (provider.activePortfolio == null) {
           return const Center(child: CircularProgressIndicator());
@@ -73,167 +72,208 @@ class _SyntheseViewState extends State<SyntheseView> {
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minWidth: constraints.maxWidth,
-                            ),
-                            child: DataTable(
-                              columnSpacing: 20.0,
-                              headingRowColor: WidgetStateProperty.all(
-                                theme.colorScheme.surfaceContainerHighest
-                                    .withOpacity(0.3),
-                              ),
-                              columns: const [
-                                DataColumn(label: Text('Statut')),
-                                DataColumn(label: Text('Actif')),
-                                DataColumn(
-                                    label: Text('Quantité'), numeric: true),
-                                DataColumn(label: Text('PRU'), numeric: true),
-                                DataColumn(
-                                    label: Text('Prix actuel'), numeric: true),
-                                DataColumn(
-                                    label: Text('Valeur'), numeric: true),
-                                DataColumn(label: Text('P/L'), numeric: true),
-                                DataColumn(
-                                    label: Text('Rendement %'), numeric: true),
-                              ],
-                              rows: aggregatedAssets.map((asset) {
-                                // ▼▼▼ MODIFIÉ : Toutes les valeurs sont déjà en devise de base ▼▼▼
-                                final pnl = asset.profitAndLoss;
-                                final pnlColor = pnl >= 0
-                                    ? Colors.green.shade400
-                                    : Colors.red.shade400;
-                                // La devise d'affichage principale est la devise de BASE
-                                final String displayCurrency = baseCurrency;
-
-                                final syncStatus = asset.syncStatus;
-                                final tooltipMessage = _buildTooltipMessage(
-                                    syncStatus, asset.metadata, asset.assetCurrency);
-                                // ▲▲▲ FIN MODIFICATION ▲▲▲
-
-                                return DataRow(
-                                  cells: [
-                                    DataCell(
-                                      Tooltip(
-                                        message: tooltipMessage,
-                                        child: Text(
-                                          syncStatus.icon,
-                                          style: const TextStyle(fontSize: 18),
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      Column(
-                                        crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                        MainAxisAlignment.center,
-                                        children: [
-                                          Text(asset.name,
-                                              style: theme.textTheme.bodyMedium
-                                                  ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                              )),
-                                          Text(asset.ticker,
-                                              style: theme.textTheme.bodySmall
-                                                  ?.copyWith(
-                                                color: Colors.grey,
-                                              )),
-                                        ],
-                                      ),
-                                    ),
-                                    DataCell(Text(
-                                      // TODO: Formatter avec 'formatWithoutSymbol'
-                                        asset.quantity.toStringAsFixed(2))),
-                                    DataCell(Text(
-                                      // Affiche le PRU en devise de BASE
-                                        CurrencyFormatter.format(
-                                            asset.averagePrice,
-                                            displayCurrency))),
-                                    DataCell(
-                                      InkWell(
-                                        onTap: () => _showEditPriceDialog(
-                                            context,
-                                            asset,
-                                            provider,
-                                            // Le prix est édité dans sa devise NATIVE
-                                            asset.assetCurrency),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              // Affiche le prix en devise de BASE
-                                              CurrencyFormatter.format(
-                                                  asset.currentPrice,
-                                                  displayCurrency),
-                                              style: TextStyle(
-                                                color:
-                                                theme.colorScheme.primary,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Icon(
-                                              Icons.edit,
-                                              size: 16,
-                                              color: theme.colorScheme.primary,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(Text(
-                                      // Affiche la valeur en devise de BASE
-                                        CurrencyFormatter.format(
-                                            asset.totalValue, displayCurrency),
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ))),
-                                    DataCell(
-                                      Text(
-                                        // Affiche la P/L en devise de BASE
-                                        CurrencyFormatter.format(
-                                            pnl, displayCurrency),
-                                        style: TextStyle(color: pnlColor),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      InkWell(
-                                        onTap: () => _showEditYieldDialog(
-                                            context, asset, provider),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              '${(asset.estimatedAnnualYield * 100).toStringAsFixed(2)} %',
-                                              style: TextStyle(
-                                                  color: theme
-                                                      .colorScheme.primary),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Icon(Icons.edit,
-                                                size: 16,
-                                                color:
-                                                theme.colorScheme.primary),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
+                  // --- MODIFIÉ : Stack pour l'overlay ---
+                  child: Stack(
+                    children: [
+                      SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: constraints.maxWidth,
+                                ),
+                                child: DataTable(
+                                  columnSpacing: 20.0,
+                                  headingRowColor: WidgetStateProperty.all(
+                                    theme.colorScheme.surfaceContainerHighest
+                                        .withOpacity(0.3),
+                                  ),
+                                  columns: const [
+                                    DataColumn(label: Text('Statut')),
+                                    DataColumn(label: Text('Actif')),
+                                    DataColumn(
+                                        label: Text('Quantité'),
+                                        numeric: true),
+                                    DataColumn(
+                                        label: Text('PRU'), numeric: true),
+                                    DataColumn(
+                                        label: Text('Prix actuel'),
+                                        numeric: true),
+                                    DataColumn(
+                                        label: Text('Valeur'), numeric: true),
+                                    DataColumn(
+                                        label: Text('P/L'), numeric: true),
+                                    DataColumn(
+                                        label: Text('Rendement %'),
+                                        numeric: true),
                                   ],
-                                );
-                              }).toList(),
+                                  rows: aggregatedAssets.map((asset) {
+                                    // ▼▼▼ MODIFIÉ : Toutes les valeurs sont déjà en devise de base ▼▼▼
+                                    final pnl = asset.profitAndLoss;
+                                    final pnlColor = pnl >= 0
+                                        ? Colors.green.shade400
+                                        : Colors.red.shade400;
+                                    // La devise d'affichage principale est la devise de BASE
+                                    final String displayCurrency =
+                                        baseCurrency;
+                                    final syncStatus = asset.syncStatus;
+                                    final tooltipMessage =
+                                    _buildTooltipMessage(
+                                        syncStatus,
+                                        asset.metadata,
+                                        asset.assetCurrency);
+                                    // ▲▲▲ FIN MODIFICATION ▲▲▲
+
+                                    return DataRow(
+                                      cells: [
+                                        DataCell(
+                                          Tooltip(
+                                            message: tooltipMessage,
+                                            child: Text(
+                                              syncStatus.icon,
+                                              style:
+                                              const TextStyle(fontSize: 18),
+                                            ),
+                                          ),
+                                        ),
+                                        DataCell(
+                                          Column(
+                                            crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                            children: [
+                                              Text(asset.name,
+                                                  style: theme
+                                                      .textTheme.bodyMedium
+                                                      ?.copyWith(
+                                                    fontWeight: FontWeight.bold,
+                                                  )),
+                                              Text(asset.ticker,
+                                                  style: theme
+                                                      .textTheme.bodySmall
+                                                      ?.copyWith(
+                                                    color: Colors.grey,
+                                                  )),
+                                            ],
+                                          ),
+                                        ),
+                                        DataCell(Text(
+                                          // TODO: Formatter avec 'formatWithoutSymbol'
+                                            asset.quantity.toStringAsFixed(2))),
+                                        DataCell(Text(
+                                          // Affiche le PRU en devise de BASE
+                                            CurrencyFormatter.format(
+                                                asset.averagePrice,
+                                                displayCurrency))),
+                                        DataCell(
+                                          InkWell(
+                                            onTap: () => _showEditPriceDialog(
+                                                context,
+                                                asset,
+                                                provider,
+                                                // Le prix est édité dans sa devise NATIVE
+                                                asset.assetCurrency),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  // Affiche le prix en devise de BASE
+                                                  CurrencyFormatter.format(
+                                                      asset.currentPrice,
+                                                      displayCurrency),
+                                                  style: TextStyle(
+                                                    color: theme
+                                                        .colorScheme.primary,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.edit,
+                                                  size: 16,
+                                                  color:
+                                                  theme.colorScheme.primary,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        DataCell(Text(
+                                          // Affiche la valeur en devise de BASE
+                                            CurrencyFormatter.format(
+                                                asset.totalValue,
+                                                displayCurrency),
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ))),
+                                        DataCell(
+                                          Text(
+                                            // Affiche la P/L en devise de BASE
+                                            CurrencyFormatter.format(
+                                                pnl, displayCurrency),
+                                            style: TextStyle(color: pnlColor),
+                                          ),
+                                        ),
+                                        DataCell(
+                                          InkWell(
+                                            onTap: () => _showEditYieldDialog(
+                                                context, asset, provider),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  '${(asset.estimatedAnnualYield * 100).toStringAsFixed(2)} %',
+                                                  style: TextStyle(
+                                                      color: theme
+                                                          .colorScheme.primary),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Icon(Icons.edit,
+                                                    size: 16,
+                                                    color: theme
+                                                        .colorScheme.primary),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      // --- NOUVEAU : Overlay de chargement ---
+                      if (isProcessing)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color:
+                              theme.scaffoldBackgroundColor.withOpacity(0.7),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(height: 16),
+                                  Text('Recalcul des devises...'),
+                                ],
+                              ),
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      // --- FIN NOUVEAU ---
+                    ],
                   ),
+                  // --- FIN Stack ---
                 ),
               ],
             ),
@@ -285,9 +325,9 @@ class _SyntheseViewState extends State<SyntheseView> {
   // MODIFIÉ : Accepte la devise NATIVE de l'actif pour l'édition
   void _showEditPriceDialog(BuildContext context, AggregatedAsset asset,
       PortfolioProvider provider, String nativeCurrency) {
-
     // Doit trouver le prix natif actuel dans les métadonnées
-    final nativePrice = asset.metadata?.currentPrice ?? asset.currentPrice;
+    final nativePrice =
+        asset.metadata?.currentPrice ?? asset.currentPrice;
 
     final controller =
     TextEditingController(text: nativePrice.toStringAsFixed(2));

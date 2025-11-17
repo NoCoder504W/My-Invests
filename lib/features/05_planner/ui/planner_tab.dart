@@ -17,7 +17,6 @@ import '../../07_management/ui/screens/add_savings_plan_screen.dart';
 import 'package:portefeuille/core/ui/theme/app_theme.dart';
 import 'package:portefeuille/core/data/models/projection_data.dart';
 
-
 class PlannerTab extends StatefulWidget {
   const PlannerTab({super.key});
 
@@ -28,17 +27,8 @@ class PlannerTab extends StatefulWidget {
 class _PlannerTabState extends State<PlannerTab> {
   int _selectedDuration = 10;
   final List<int> _durations = [5, 10, 20, 30];
-
-  Asset? _findAssetByTicker(portfolio, String ticker) {
-    for (var institution in portfolio.institutions) {
-      for (var account in institution.accounts) {
-        for (var asset in account.assets) {
-          if (asset.ticker == ticker) return asset;
-        }
-      }
-    }
-    return null;
-  }
+  // --- SUPPRIMÉ : _findAssetByTicker est maintenant dans le PortfolioProvider ---
+  // --- SUPPRIMÉ : _generateProjectionData est maintenant dans le PortfolioProvider ---
 
   void _showDeleteConfirmation(BuildContext context, PortfolioProvider provider,
       String planId, String planName) {
@@ -76,41 +66,13 @@ class _PlannerTabState extends State<PlannerTab> {
     );
   }
 
-  List<ProjectionData> _generateProjectionData(Portfolio portfolio) {
-    final double initialPortfolioValue = portfolio.totalValue;
-    final double initialInvestedCapital = portfolio.totalInvestedCapital;
-    final double portfolioAnnualYield = portfolio.estimatedAnnualYield;
-
-    double totalMonthlyInvestment = 0;
-    double weightedPlansYield = 0;
-    for (var plan in portfolio.savingsPlans.where((p) => p.isActive)) {
-      final targetAsset = _findAssetByTicker(portfolio, plan.targetTicker);
-       final assetYield = (targetAsset?.estimatedAnnualYield ?? 0.0);
-    totalMonthlyInvestment += plan.monthlyAmount;
-    weightedPlansYield += plan.monthlyAmount * assetYield;
-     }
-
-    final double averagePlansYield = (totalMonthlyInvestment > 0)
-    ? weightedPlansYield / totalMonthlyInvestment
-        : 0.0;
-
-    // Utilise la classe de calcul dédiée (identique au Provider )
-    return ProjectionCalculator.generateProjectionData(
-    duration: _selectedDuration,
-    initialPortfolioValue: initialPortfolioValue,
-    initialInvestedCapital: initialInvestedCapital,
-    portfolioAnnualYield: portfolioAnnualYield,
-    totalMonthlyInvestment: totalMonthlyInvestment,
-    averagePlansYield: averagePlansYield,
-    );
-  }
+  // --- SUPPRIMÉ : _generateProjectionData a été déplacé vers le provider ---
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     // RÉCUPÉRER LA DEVISE DE BASE
     final baseCurrency = context.watch<SettingsProvider>().baseCurrency;
-
     return Consumer<PortfolioProvider>(
       builder: (context, portfolioProvider, child) {
         final portfolio = portfolioProvider.activePortfolio;
@@ -120,7 +82,12 @@ class _PlannerTabState extends State<PlannerTab> {
         }
 
         final savingsPlans = portfolio.savingsPlans;
-        final projectionData = _generateProjectionData(portfolio);
+        final projectionData =
+        portfolioProvider.getProjectionData(_selectedDuration);
+
+        // --- MODIFIÉ ---
+        final isProcessing = portfolioProvider.isProcessingInBackground;
+        // --- FIN MODIFICATION ---
 
         return CustomScrollView(
           slivers: [
@@ -191,8 +158,12 @@ class _PlannerTabState extends State<PlannerTab> {
                           ...savingsPlans.asMap().entries.map((entry) {
                             final index = entry.key;
                             final plan = entry.value;
-                            final targetAsset =
-                            _findAssetByTicker(portfolio, plan.targetTicker);
+
+                            // --- MODIFIÉ : Utilise le provider ---
+                            final targetAsset = portfolioProvider
+                                .findAssetByTicker(plan.targetTicker);
+                            // --- FIN MODIFICATION ---
+
                             final assetName =
                                 targetAsset?.name ?? 'Actif inconnu';
                             final assetYield =
@@ -321,11 +292,42 @@ class _PlannerTabState extends State<PlannerTab> {
                         const SizedBox(height: 16),
                         SizedBox(
                           height: 250,
-                          child: projectionData.isEmpty
-                              ? const Center(
-                              child: Text('Aucune donnée à projeter.'))
-                              : BarChart(_buildChartData(
-                              projectionData, theme, baseCurrency)),
+                          // --- MODIFIÉ : Stack pour l'overlay ---
+                          child: Stack(
+                            children: [
+                              if (projectionData.isEmpty)
+                                const Center(
+                                    child: Text('Aucune donnée à projeter.'))
+                              else
+                                BarChart(_buildChartData(
+                                    projectionData, theme, baseCurrency)),
+
+                              // --- NOUVEAU : Overlay ---
+                              if (isProcessing)
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: theme.scaffoldBackgroundColor
+                                          .withOpacity(0.7),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                        children: [
+                                          CircularProgressIndicator(),
+                                          SizedBox(height: 16),
+                                          Text('Recalcul des devises...'),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              // --- FIN NOUVEAU ---
+                            ],
+                          ),
+                          // --- FIN Stack ---
                         ),
                         const SizedBox(height: 16),
                         Wrap(
@@ -393,7 +395,6 @@ class _PlannerTabState extends State<PlannerTab> {
     final lastData = data.last;
     final maxValue = lastData.totalValue;
     final interval = maxValue > 0 ? maxValue / 5 : 1.0;
-
     final barGroups = data.map((d) {
       return BarChartGroupData(
         x: d.year,
@@ -496,7 +497,8 @@ class _PlannerTabState extends State<PlannerTab> {
           ),
         ),
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles:
+        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       ),
       borderData: FlBorderData(show: false),
       gridData: FlGridData(

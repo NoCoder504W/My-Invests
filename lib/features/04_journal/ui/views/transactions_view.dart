@@ -205,8 +205,7 @@ class _TransactionsViewState extends State<TransactionsView> {
                     child: TransactionListItem(
                       transaction: transaction,
                       accountName: accountName,
-                      accountCurrency:
-                      accountCurrency, // <-- MODIFIÉ : Paramètre ajouté
+                      accountCurrency: accountCurrency, // <-- MODIFIÉ : Paramètre ajouté
                       onDelete: () =>
                           _confirmDelete(context, provider, transaction),
                       onEdit: () => _editTransaction(context, transaction),
