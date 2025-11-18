@@ -1,5 +1,4 @@
 // lib/features/06_settings/ui/settings_screen.dart
-// REMPLACEZ LE FICHIER COMPLET
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
