@@ -9,7 +9,10 @@ import '../../00_app/providers/portfolio_provider.dart';
 // Ecrans des onglets
 import '../../03_overview/ui/overview_tab.dart';
 import '../../05_planner/ui/planner_tab.dart';
-import 'package:portefeuille/features/04_journal/ui/journal_tab.dart';
+// --- MODIFIÉ : Imports directs des vues ---
+import 'package:portefeuille/features/04_journal/ui/views/synthese_view.dart';
+import 'package:portefeuille/features/04_journal/ui/views/transactions_view.dart';
+// --- SUPPRIMÉ : import 'package:portefeuille/features/04_journal/ui/journal_tab.dart';
 import '../../06_settings/ui/settings_screen.dart';
 
 import '../../07_management/ui/screens/add_transaction_screen.dart';
@@ -24,11 +27,15 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+
+  // --- MODIFIÉ : La liste contient maintenant 4 widgets ---
   static const List<Widget> _widgetOptions = <Widget>[
     OverviewTab(),
     PlannerTab(),
-    JournalTab(),
+    SyntheseView(),
+    TransactionsView(),
   ];
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -88,6 +95,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       // --- FAB Supprimé ---
 
+      // --- MODIFIÉ : BottomNavigationBar avec 4 onglets ---
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
@@ -101,10 +109,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             activeIcon: Icon(Icons.calendar_today),
             label: 'Planificateur',
           ),
+          // --- NOUVEAU : Onglet Synthèse ---
           BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history),
-            label: 'Journal',
+            icon: Icon(Icons.account_balance_outlined),
+            activeIcon: Icon(Icons.account_balance),
+            label: 'Synthèse',
+          ),
+          // --- NOUVEAU : Onglet Transactions ---
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long_outlined),
+            activeIcon: Icon(Icons.receipt_long),
+            label: 'Transactions',
           ),
         ],
         currentIndex: _selectedIndex,
