@@ -72,9 +72,9 @@ class _PlannerTabState extends State<PlannerTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     // RÉCUPÉRER LA DEVISE DE BASE
-    final baseCurrency = context.watch<SettingsProvider>().baseCurrency;
     return Consumer<PortfolioProvider>(
       builder: (context, portfolioProvider, child) {
+        final baseCurrency = portfolioProvider.currentBaseCurrency;
         final portfolio = portfolioProvider.activePortfolio;
 
         if (portfolio == null) {

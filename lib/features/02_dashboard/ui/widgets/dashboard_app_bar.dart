@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/core/data/models/sync_status.dart';
 // NOUVEL IMPORT
-import 'package:portefeuille/features/00_app/providers/background_activity.dart';
+import 'package:portefeuille/features/00_app/models/background_activity.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
 import 'package:portefeuille/features/06_settings/ui/settings_screen.dart';
@@ -89,7 +89,7 @@ class _DashboardAppBarState extends State<DashboardAppBar> {
 
     Widget child;
     // --- MODIFIÉ : Utilise l'enum 'activity' ---
-    if (portfolio.activity == BackgroundActivity.syncing) {
+    if (portfolio.activity is Syncing) {
       child = Row(
         children: [
           const SizedBox(

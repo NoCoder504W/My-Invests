@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:portefeuille/core/data/models/sync_status.dart';
 import 'package:portefeuille/core/ui/theme/app_theme.dart';
 // NOUVEL IMPORT
-import 'package:portefeuille/features/00_app/providers/background_activity.dart';
+import 'package:portefeuille/features/00_app/models/background_activity.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -234,9 +234,9 @@ class SyncAlertsCard extends StatelessWidget {
                 )
                     : const Icon(Icons.sync),
                 label: Text(
-                  provider.activity == BackgroundActivity.syncing
+                  provider.activity is Syncing
                       ? 'Synchronisation...'
-                      : provider.activity == BackgroundActivity.recalculating
+                      : provider.activity is Recalculating
                       ? 'Recalcul...'
                       : 'Resynchroniser tout',
                 ),

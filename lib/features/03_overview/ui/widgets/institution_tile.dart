@@ -27,7 +27,8 @@ class InstitutionTile extends StatelessWidget {
     // Nous écoutons les deux providers
     final settings = context.watch<SettingsProvider>();
     // La devise que l'on VEUT afficher
-    final baseCurrency = settings.baseCurrency;
+    // Elle vient du provider, qui la stocke dans _aggregatedData
+    final baseCurrency = portfolioProvider.currentBaseCurrency;
     // --- MODIFIÉ ---
     final isProcessing = portfolioProvider.isProcessingInBackground;
     // --- FIN MODIFICATION ---

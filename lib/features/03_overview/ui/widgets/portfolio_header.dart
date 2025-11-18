@@ -25,9 +25,8 @@ class PortfolioHeader extends StatelessWidget {
     final provider = context.watch<PortfolioProvider>();
     final settings = context.watch<SettingsProvider>();
     // La devise que l'on VEUT afficher
-    final baseCurrency = settings.baseCurrency;
-    // --- MODIFIÉ ---
-    // Le provider est la SEULE source de vérité pour l'état de chargement.
+    // Elle vient du provider, qui la stocke dans _aggregatedData
+    final baseCurrency = provider.currentBaseCurrency;
     final isProcessing = provider.isProcessingInBackground;
     // --- FIN MODIFICATION ---
 

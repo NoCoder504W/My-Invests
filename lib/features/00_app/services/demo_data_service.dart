@@ -1,5 +1,4 @@
-// lib/features/00_app/providers/demo_data_service.dart
-// NOUVEAU FICHIER
+// lib/features/00_app/services/demo_data_service.dart
 
 import 'package:portefeuille/core/data/models/account.dart';
 import 'package:portefeuille/core/data/models/account_type.dart';
@@ -13,46 +12,32 @@ import 'package:portefeuille/core/data/models/transaction_type.dart';
 import 'package:portefeuille/core/data/repositories/portfolio_repository.dart';
 import 'package:uuid/uuid.dart';
 
-/// Ce service gère la création et l'injection des données de démonstration.
-/// Il a besoin du repository pour sauvegarder les données qu'il génère.
 class DemoDataService {
   final PortfolioRepository _repository;
-  final _uuid = const Uuid();
+  final Uuid _uuid;
 
-  DemoDataService({required PortfolioRepository repository})
-      : _repository = repository;
+  DemoDataService({
+    required PortfolioRepository repository,
+    Uuid? uuid,
+  })  : _repository = repository,
+        _uuid = uuid ?? const Uuid();
 
-  /// Crée un portefeuille de démonstration et le sauvegarde.
-  Portfolio createDemoPortfolio() {
-    // 1. Obtenir les données de démo
-    final demoData = _getDemoData();
-    final portfolio = demoData.portfolio;
-    final transactions = demoData.transactions;
-    final metadata = demoData.metadata;
+  /// Crée et sauvegarde un portefeuille de démo.
+  /// Retourne le portfolio créé.
+  Future<Portfolio> createDemoPortfolio() async {
+    final data = _generateDemoData();
 
-    // 2. Sauvegarder le portefeuille
-    _repository.savePortfolio(portfolio);
+    await _repository.savePortfolio(data.portfolio);
 
-    // 3. Sauvegarder les transactions
-    for (final tx in transactions) {
-      _repository.saveTransaction(tx);
-    }
+    await Future.wait([
+      ...data.transactions.map(_repository.saveTransaction),
+      ...data.metadata.map(_repository.saveAssetMetadata),
+    ]);
 
-    // 4. Sauvegarder les métadonnées (prix et rendements)
-    for (final meta in metadata) {
-      _repository.saveAssetMetadata(meta);
-    }
-
-    // 5. Retourner le portefeuille (il sera hydraté au prochain chargement)
-    return portfolio;
+    return data.portfolio;
   }
 
-  /// Logique de génération des données de démo, MISE À JOUR AVEC LES TRANSACTIONS.
-  ({
-  Portfolio portfolio,
-  List<Transaction> transactions,
-  List<AssetMetadata> metadata
-  }) _getDemoData() {
+  _DemoData _generateDemoData() {
     final demoPortfolioId = _uuid.v4();
     final ctoAccountId = _uuid.v4();
     final peaAccountId = _uuid.v4();
@@ -480,10 +465,22 @@ class DemoDataService {
       ),
     ];
 
-    return (
-    portfolio: demoPortfolio,
-    transactions: demoTransactions,
-    metadata: demoMetadata,
+    return _DemoData(
+      portfolio: demoPortfolio,
+      transactions: demoTransactions,
+      metadata: demoMetadata,
     );
   }
+}
+
+class _DemoData {
+  final Portfolio portfolio;
+  final List<Transaction> transactions;
+  final List<AssetMetadata> metadata;
+
+  const _DemoData({
+    required this.portfolio,
+    required this.transactions,
+    required this.metadata,
+  });
 }

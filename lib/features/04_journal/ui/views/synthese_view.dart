@@ -25,11 +25,12 @@ class _SyntheseViewState extends State<SyntheseView> {
 
   @override
   Widget build(BuildContext context) {
+
     final theme = Theme.of(context);
     // RÉCUPÉRER LA DEVISE DE BASE
-    final baseCurrency = context.watch<SettingsProvider>().baseCurrency;
     return Consumer<PortfolioProvider>(
       builder: (context, provider, child) {
+        final baseCurrency = provider.currentBaseCurrency;
         final aggregatedAssets = provider.aggregatedAssets;
 
         // --- MODIFIÉ ---
