@@ -104,6 +104,7 @@ class InstitutionTile extends StatelessWidget {
               // Passe la devise de BASE (pour les totaux)
               // et la devise du COMPTE (pour le cash)
               return AccountTile(
+                institutionId: institution.id,
                 account: account,
                 baseCurrency: baseCurrency,
                 accountCurrency: account.activeCurrency,
