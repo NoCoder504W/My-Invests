@@ -1,4 +1,5 @@
 // lib/features/00_app/services/calculation_service.dart
+// REMPLACEZ LE FICHIER COMPLET
 
 import 'package:flutter/material.dart';
 import 'package:portefeuille/core/data/models/aggregated_asset.dart';
@@ -76,11 +77,17 @@ class CalculationService {
             targetCurrency,
           );
         } catch (e) {
+          // --- ▼▼▼ CORRECTION : NE PLUS PROPAGER L'ERREUR ▼▼▼ ---
+          // (Notre ApiService a déjà essayé d'utiliser le cache obsolète)
+          // S'il y a toujours une erreur, c'est que le cache est vide ET l'API indisponible.
+          // On utilise 1.0 comme fallback pour ne pas bloquer le chargement.
           debugPrint(
-              "    -> ❌ ERREUR API Taux pour $accountCurrency -> $targetCurrency: $e");
-          debugPrint("    -> ⚠️ Utilisation du taux de 1.0 comme fallback");
+              "    -> ❌ ERREUR FATALE Taux pour $accountCurrency -> $targetCurrency: $e");
+          debugPrint(
+              "    -> ⚠️ (L'API a échoué ET le cache était vide). Utilisation du taux de 1.0 comme fallback.");
           rates[accountCurrency] = 1.0;
-          rethrow;
+          // rethrow; // <-- SUPPRIMÉ
+          // --- ▲▲▲ FIN CORRECTION ▲▲▲
         }
       }),
     );

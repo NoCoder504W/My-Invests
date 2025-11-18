@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:portefeuille/core/data/models/institution.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
+import 'package:portefeuille/features/07_management/ui/screens/add_account_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import 'account_tile.dart';
@@ -25,7 +26,7 @@ class InstitutionTile extends StatelessWidget {
     final portfolioProvider = context.watch<PortfolioProvider>();
     // ▼▼▼ MODIFICATION ICI ▼▼▼
     // Nous écoutons les deux providers
-    final settings = context.watch<SettingsProvider>();
+    context.watch<SettingsProvider>();
     // La devise que l'on VEUT afficher
     // Elle vient du provider, qui la stocke dans _aggregatedData
     final baseCurrency = portfolioProvider.currentBaseCurrency;
@@ -103,6 +104,7 @@ class InstitutionTile extends StatelessWidget {
               // Passe la devise de BASE (pour les totaux)
               // et la devise du COMPTE (pour le cash)
               return AccountTile(
+                institutionId: institution.id,
                 account: account,
                 baseCurrency: baseCurrency,
                 accountCurrency: account.activeCurrency,
@@ -120,7 +122,16 @@ class InstitutionTile extends StatelessWidget {
                 ),
               ),
               onTap: () {
-                // (Logique d'ajout inchangée)
+                showModalBottomSheet(
+                  context: context,
+                  // Permet au BottomSheet de prendre plus de place
+                  isScrollControlled: true,
+                  builder: (context) => AddAccountScreen(
+                    // On passe l'ID de l'institution,
+                    // comme requis par add_account_screen.dart
+                    institutionId: institution.id,
+                  ),
+                );
               },
             ),
           ],

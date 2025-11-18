@@ -8,35 +8,80 @@ import 'package:provider/provider.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/ui/widgets/account_type_chip.dart';
 import 'asset_list_item.dart';
-// NOUVEL IMPORT
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
+import 'package:portefeuille/features/07_management/ui/screens/add_account_screen.dart';
 
+// ▼▼▼ ENUM DÉPLACÉ ICI (EN DEHORS DE LA CLASSE) ▼▼▼
+enum _AccountAction { edit, delete }
+// ▲▲▲ FIN DÉPLACEMENT ▲▲▲
 
 class AccountTile extends StatelessWidget {
+  final String institutionId;
   final Account account;
+
   /// La devise de base de l'utilisateur (ex: "USD")
   final String baseCurrency;
+
   /// La devise native de ce compte (ex: "EUR")
   final String accountCurrency;
 
   const AccountTile({
     super.key,
+    required this.institutionId,
     required this.account,
     required this.baseCurrency,
     required this.accountCurrency,
   });
 
+  // Helper pour l'action "Supprimer"
+  void _onDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: Text(
+            'Voulez-vous vraiment supprimer le compte "${account.name}" et toutes ses transactions associées ?\n\nCette action est irréversible.'),
+        actions: [
+          TextButton(
+            child: const Text('Annuler'),
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Supprimer'),
+            onPressed: () {
+              Provider.of<PortfolioProvider>(context, listen: false)
+                  .deleteAccount(institutionId, account.id);
+              Navigator.of(ctx).pop();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper pour l'action "Modifier"
+  void _onEdit(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => AddAccountScreen(
+        institutionId: institutionId,
+        // On passe le compte à modifier
+        accountToEdit: account,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final settingsProvider = context.watch<SettingsProvider>();
-
-    // ▼▼▼ MODIFIÉ : Lecture depuis le Provider ▼▼▼
     final provider = context.watch<PortfolioProvider>();
 
-    // Récupère la valeur CONVERTIE de ce compte
     final convertedTotalValue = provider.getConvertedAccountValue(account.id);
-    // ▲▲▲ FIN MODIFICATION ▲▲▲
 
     return ExpansionTile(
       backgroundColor: theme.scaffoldBackgroundColor.withAlpha(20),
@@ -58,11 +103,48 @@ class AccountTile extends StatelessWidget {
           ),
         ],
       ),
-      trailing: Text(
-        // Affiche la valeur totale CONVERTIE
-        CurrencyFormatter.format(convertedTotalValue, baseCurrency),
-        style: theme.textTheme.bodyLarge,
-        overflow: TextOverflow.ellipsis,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            CurrencyFormatter.format(convertedTotalValue, baseCurrency),
+            style: theme.textTheme.bodyLarge,
+            overflow: TextOverflow.ellipsis,
+          ),
+          // Le code ici est maintenant correct car _AccountAction est défini
+          PopupMenuButton<_AccountAction>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (action) {
+              if (action == _AccountAction.edit) {
+                _onEdit(context);
+              } else if (action == _AccountAction.delete) {
+                _onDelete(context);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: _AccountAction.edit,
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined),
+                    SizedBox(width: 8),
+                    Text('Modifier'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: _AccountAction.delete,
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Supprimer', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       childrenPadding: const EdgeInsets.only(left: 16.0),
       children: [
@@ -74,7 +156,6 @@ class AccountTile extends StatelessWidget {
               style: TextStyle(
                   color: Colors.grey[400], fontStyle: FontStyle.italic)),
           trailing: Text(
-            // Affiche le solde de liquidités dans la devise NATIVE du compte
             CurrencyFormatter.format(account.cashBalance, accountCurrency),
             style:
             TextStyle(color: Colors.grey[300], fontStyle: FontStyle.italic),
@@ -82,12 +163,11 @@ class AccountTile extends StatelessWidget {
           ),
         ),
         const Divider(height: 1),
-        // AssetListItem doit être mis à jour pour utiliser les valeurs converties
         ...account.assets
             .map((asset) => AssetListItem(
           asset: asset,
-          accountCurrency: accountCurrency, // Devise du compte
-          baseCurrency: baseCurrency, // Devise de l'utilisateur
+          accountCurrency: accountCurrency,
+          baseCurrency: baseCurrency,
         ))
             .toList(),
       ],

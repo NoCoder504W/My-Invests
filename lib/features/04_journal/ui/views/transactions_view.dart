@@ -2,9 +2,7 @@
 // REMPLACEZ LE FICHIER COMPLET
 
 import 'package:flutter/material.dart';
-// NOUVEL IMPORT
 import 'package:portefeuille/core/data/models/account.dart';
-// FIN NOUVEL IMPORT
 import 'package:portefeuille/core/data/models/transaction.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/04_journal/ui/widgets/transaction_list_item.dart';
@@ -116,24 +114,42 @@ class _TransactionsViewState extends State<TransactionsView> {
         final sortedTransactions = _sortTransactions(allTransactions);
 
         if (allTransactions.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: AppTheme.buildEmptyStateCard(
-              context: context,
-              icon: Icons.receipt_long_outlined,
-              title: 'Aucune transaction',
-              subtitle:
-              'Utilisez le bouton "+" en bas de l\'écran pour ajouter votre première transaction.',
-              buttonLabel: 'Ajouter une transaction',
-              onPressed: () {
-                // TODO: Navigation vers l'ajout de transaction
-              },
-            ),
+          // --- MODIFIÉ : Ajout du titre même pour l'état vide ---
+          return Column(
+            children: [
+              AppTheme.buildScreenTitle(
+                context: context,
+                title: 'Transactions',
+                centered: true,
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: AppTheme.buildEmptyStateCard(
+                    context: context,
+                    icon: Icons.receipt_long_outlined,
+                    title: 'Aucune transaction',
+                    subtitle:
+                    'Utilisez le bouton "+" en bas de l\'écran pour ajouter votre première transaction.',
+                    buttonLabel: 'Ajouter une transaction',
+                    onPressed: () {
+                      // TODO: Navigation vers l'ajout de transaction
+                    },
+                  ),
+                ),
+              ),
+            ],
           );
         }
 
         return Column(
           children: [
+            // --- NOUVEAU : Titre de l'écran ---
+            AppTheme.buildScreenTitle(
+              context: context,
+              title: 'Transactions',
+              centered: true,
+            ),
             // Barre de tri
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -197,15 +213,16 @@ class _TransactionsViewState extends State<TransactionsView> {
                   // MODIFIÉ : Récupère le nom et la devise depuis la map
                   final account = accountsMap[transaction.accountId];
                   final accountName = account?.name ?? 'Compte inconnu';
-                  final accountCurrency = account?.activeCurrency ??
-                      'EUR'; // Fallback sur EUR
+                  final accountCurrency =
+                      account?.activeCurrency ?? 'EUR'; // Fallback sur EUR
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: TransactionListItem(
                       transaction: transaction,
                       accountName: accountName,
-                      accountCurrency: accountCurrency, // <-- MODIFIÉ : Paramètre ajouté
+                      accountCurrency:
+                      accountCurrency, // <-- MODIFIÉ : Paramètre ajouté
                       onDelete: () =>
                           _confirmDelete(context, provider, transaction),
                       onEdit: () => _editTransaction(context, transaction),

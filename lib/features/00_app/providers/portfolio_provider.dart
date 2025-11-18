@@ -503,6 +503,72 @@ class PortfolioProvider extends ChangeNotifier {
     }
   }
 
+  void updateAccount(String institutionId, Account updatedAccount) {
+    if (_activePortfolio == null) return;
+    debugPrint("🔄 [Provider] updateAccount");
+
+    final updatedPortfolio = _activePortfolio!.deepCopy();
+    try {
+      // 1. Trouver l'institution
+      final institution = updatedPortfolio.institutions
+          .firstWhere((inst) => inst.id == institutionId);
+
+      // 2. Trouver l'index de l'ancien compte
+      final accountIndex =
+      institution.accounts.indexWhere((acc) => acc.id == updatedAccount.id);
+
+      if (accountIndex != -1) {
+        // 3. Remplacer l'ancien compte par le nouveau
+        institution.accounts[accountIndex] = updatedAccount;
+        // 4. Sauvegarder
+        savePortfolio(updatedPortfolio);
+      } else {
+        debugPrint("Compte non trouvé : ${updatedAccount.id}");
+      }
+    } catch (e) {
+      debugPrint("Institution non trouvée : $institutionId");
+    }
+  }
+
+  Future<void> deleteAccount(String institutionId, String accountId) async {
+    if (_activePortfolio == null) return;
+    debugPrint("🔄 [Provider] deleteAccount");
+
+    final updatedPortfolio = _activePortfolio!.deepCopy();
+    try {
+      // 1. Trouver l'institution
+      final institution = updatedPortfolio.institutions
+          .firstWhere((inst) => inst.id == institutionId);
+
+      // 2. Trouver le compte à supprimer
+      Account? accountToDelete;
+      try {
+        accountToDelete =
+            institution.accounts.firstWhere((acc) => acc.id == accountId);
+      } catch (e) {
+        debugPrint("Compte non trouvé : $accountId");
+        return;
+      }
+
+      // 3. Supprimer toutes les transactions associées (TRÈS IMPORTANT)
+      final deleteFutures = <Future<void>>[];
+      for (final tx in accountToDelete.transactions) {
+        deleteFutures.add(_transactionService.delete(tx.id));
+      }
+      if (deleteFutures.isNotEmpty) {
+        await Future.wait(deleteFutures);
+      }
+
+      // 4. Supprimer le compte de la liste
+      institution.accounts.removeWhere((acc) => acc.id == accountId);
+
+      // 5. Sauvegarder
+      savePortfolio(updatedPortfolio);
+    } catch (e) {
+      debugPrint("Institution non trouvée : $institutionId");
+    }
+  }
+
   // ============================================================
   // SAVINGS PLANS
   // ============================================================
