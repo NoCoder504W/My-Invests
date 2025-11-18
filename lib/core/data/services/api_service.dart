@@ -136,7 +136,7 @@ class ApiService {
 
     try {
       final response =
-          await _httpClient.get(uri).timeout(const Duration(seconds: 5));
+      await _httpClient.get(uri).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data is List && data.isNotEmpty) {
@@ -216,7 +216,7 @@ class ApiService {
           final result = results[0];
           final String? resultSymbol = result['symbol'];
           final num? newPriceNum =
-              result['response']?[0]?['meta']?['regularMarketPrice'];
+          result['response']?[0]?['meta']?['regularMarketPrice'];
           final String currency =
               result['response']?[0]?['meta']?['currency'] ?? 'EUR';
 
@@ -298,7 +298,7 @@ class ApiService {
       debugPrint("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
       final response =
-          await _httpClient.get(url).timeout(const Duration(seconds: 5));
+      await _httpClient.get(url).timeout(const Duration(seconds: 5));
 
       debugPrint("📡 Réponse HTTP: ${response.statusCode}");
 
@@ -378,11 +378,20 @@ class ApiService {
       return rate;
     }
 
-    // --- CORRECTION ---
-    // Au lieu de retourner 1.0, on propage l'erreur.
-    debugPrint("❌ ERREUR CRITIQUE: Taux $from→$to indisponible. Propagation de l'erreur.");
+    // --- ▼▼▼ CORRECTION : LOGIQUE OFFLINE ▼▼▼ ---
+    debugPrint("⚠️ API a échoué pour $from→$to. Tentative d'utilisation du cache obsolète...");
+
+    // Vérifier le cache SANS limite de temps (obsolète)
+    final staleRate = _exchangeRateCache[cacheKey];
+    if (staleRate != null) {
+      debugPrint("💾 UTILISATION CACHE OBSOLÈTE: Taux $from→$to = $staleRate");
+      return staleRate;
+    }
+
+    // Si AUCUNE donnée (ni fraîche, ni obsolète) n'existe
+    debugPrint("❌ ERREUR CRITIQUE: Taux $from→$to indisponible (API échec ET cache vide).");
     throw Exception("Impossible d'obtenir le taux de change pour $from→$to");
-    // --- FIN CORRECTION ---
+    // --- ▲▲▲ FIN CORRECTION ▲▲▲
   }
 
   /// Recherche un ticker ou un ISIN
