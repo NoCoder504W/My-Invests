@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
+import 'package:portefeuille/core/data/abstractions/i_settings.dart';
 import 'dart:convert';
 
 /// Cache pour les prix (15 minutes)
@@ -66,7 +66,7 @@ class PriceResult {
 /// Service responsable des appels réseau pour les données financières.
 /// Gère la logique de cache et la stratégie FMP > Yahoo.
 class ApiService {
-  final SettingsProvider _settingsProvider;
+  final ISettings _settings;
   // MODIFIÉ : Le cache stocke <String, _CacheEntry>
   final Map<String, _CacheEntry> _priceCache = {};
   final http.Client _httpClient;
@@ -80,9 +80,9 @@ class ApiService {
   final Map<String, DateTime> _exchangeRateCacheTimestamps = {};
 
   ApiService({
-    required SettingsProvider settingsProvider,
+    required ISettings settings,
     http.Client? httpClient,
-  })  : _settingsProvider = settingsProvider,
+  })  : _settings = settings,
         _httpClient = httpClient ?? http.Client();
 
   /// Récupère le prix pour un ticker.
@@ -96,7 +96,7 @@ class ApiService {
 
       // 2. Si le cache est vide ou obsolète, appeler le réseau
       PriceResult? result;
-      final bool hasFmpKey = _settingsProvider.hasFmpApiKey;
+      final bool hasFmpKey = _settings.hasFmpApiKey;
 
       if (hasFmpKey) {
         result = await _fetchFromFmp(ticker);
@@ -117,19 +117,19 @@ class ApiService {
 
       // 5. Échec complet
       return PriceResult.failure(ticker,
-          currency: _settingsProvider.baseCurrency);
+          currency: _settings.baseCurrency);
     } catch (e) {
       debugPrint(
           "⚠️ Erreur inattendue lors de la récupération du prix pour $ticker : $e");
       return PriceResult.failure(ticker,
-          currency: _settingsProvider.baseCurrency);
+          currency: _settings.baseCurrency);
     }
   }
 
   /// Tente de récupérer un prix via FMP (Financial Modeling Prep)
   Future<PriceResult?> _fetchFromFmp(String ticker) async {
-    if (!_settingsProvider.hasFmpApiKey) return null;
-    final apiKey = _settingsProvider.fmpApiKey!;
+    if (!_settings.hasFmpApiKey) return null;
+    final apiKey = _settings.fmpApiKey!;
 
     final uri = Uri.parse(
         'https://financialmodelingprep.com/api/v3/quote/$ticker?apikey=$apiKey');
@@ -149,7 +149,7 @@ class ApiService {
           // NOTE : FMP fournit parfois la devise dans sa réponse.
           // Si elle est absente, on utilise la devise de base configurée par l'utilisateur.
           final currency =
-              data[0]['currency'] ?? _settingsProvider.baseCurrency;
+              data[0]['currency'] ?? _settings.baseCurrency;
 
           if (price is num) {
             return PriceResult(

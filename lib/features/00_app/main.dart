@@ -92,7 +92,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         Provider<ApiService>(
           create: (context) => ApiService(
-            settingsProvider: context.read<SettingsProvider>(),
+            settings: context.read<SettingsProvider>(),  // ✅ SettingsProvider implements ISettings
           ),
         ),
         ChangeNotifierProxyProvider<SettingsProvider, PortfolioProvider>(
