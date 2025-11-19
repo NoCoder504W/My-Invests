@@ -97,9 +97,23 @@ class RouteManager {
     RouteSettings settings,
     Widget page,
   ) {
+    final Widget finalPage = _wrapWithScaffoldIfNeeded(page);
     return MaterialPageRoute(
-      builder: (_) => page,
+      builder: (_) => finalPage,
       settings: settings,
+    );
+  }
+
+  /// Si la page n'est pas un Scaffold, l'enveloppe dans un Scaffold pour fournir
+  /// un ancêtre Material (utile pour les TextField, Dropdowns, etc.).
+  static Widget _wrapWithScaffoldIfNeeded(Widget page) {
+    if (page is Scaffold || page is Dialog || page is AlertDialog) {
+      return page;
+    }
+
+    // Envelopper sans AppBar afin de ne pas afficher une barre permanente.
+    return Scaffold(
+      body: SafeArea(child: page),
     );
   }
 
@@ -110,7 +124,6 @@ class RouteManager {
   ) {
     return MaterialPageRoute(
       builder: (_) => Scaffold(
-        appBar: AppBar(title: const Text('Erreur de navigation')),
         body: Center(
           child: Text(errorMessage),
         ),
@@ -119,4 +132,3 @@ class RouteManager {
     );
   }
 }
-

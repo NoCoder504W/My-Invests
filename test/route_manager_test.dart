@@ -1,0 +1,19 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:portefeuille/features/00_app/services/route_manager.dart';
+
+void main() {
+  testWidgets('Route addInstitution provides Material ancestor and contains TextFormField',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      onGenerateRoute: RouteManager.onGenerateRoute,
+      initialRoute: RouteManager.addInstitution,
+    ));
+
+    await tester.pumpAndSettle();
+
+    // Vérifie la présence d'au moins un TextFormField
+    expect(find.byType(TextFormField), findsOneWidget);
+  });
+}
+

@@ -4,11 +4,11 @@
 import 'package:flutter/material.dart';
 import 'package:portefeuille/core/data/models/account.dart';
 import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
-import 'package:portefeuille/features/00_app/services/route_manager.dart';
+import 'package:portefeuille/features/00_app/services/modal_service.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/ui/widgets/account_type_chip.dart';
-import 'asset_list_item.dart';
+import 'package:portefeuille/core/ui/widgets/asset_list_item.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 
 // ▼▼▼ ENUM DÉPLACÉ ICI (EN DEHORS DE LA CLASSE) ▼▼▼
@@ -65,13 +65,7 @@ class AccountTile extends StatelessWidget {
   // Helper pour l'action "Modifier"
   void _onEdit(BuildContext context) {
     // Utiliser route nommée avec arguments au lieu d'importer AddAccountScreen
-    Navigator.of(context).pushNamed(
-      RouteManager.addAccount,
-      arguments: {
-        'institutionId': institutionId,
-        'accountToEdit': account,
-      },
-    );
+    ModalService.showAddAccount(context, institutionId: institutionId, accountToEdit: account);
   }
 
   @override

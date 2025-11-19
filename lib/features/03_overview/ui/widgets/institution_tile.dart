@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:portefeuille/core/data/models/institution.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
-import 'package:portefeuille/features/00_app/services/route_manager.dart';
+import 'package:portefeuille/features/00_app/services/modal_service.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import 'account_tile.dart';
@@ -121,13 +121,8 @@ class InstitutionTile extends StatelessWidget {
                 ),
               ),
               onTap: () {
-                // Utiliser route nommée au lieu d'importer AddAccountScreen
-                Navigator.of(context).pushNamed(
-                  RouteManager.addAccount,
-                  arguments: {
-                    'institutionId': institution.id,
-                  },
-                );
+                // Présenter en BottomSheet via ModalService (respecte la constitution)
+                ModalService.showAddAccount(context, institutionId: institution.id);
               },
             ),
           ],

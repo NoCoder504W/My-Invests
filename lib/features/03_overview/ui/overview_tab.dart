@@ -4,8 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../00_app/providers/portfolio_provider.dart';
-import '../../00_app/services/route_manager.dart';
-import 'widgets/portfolio_header.dart';
+import '../../00_app/services/modal_service.dart';
+import 'package:portefeuille/core/ui/widgets/portfolio_header.dart';
 import 'widgets/allocation_chart.dart';
 import 'widgets/asset_type_allocation_chart.dart';
 import 'widgets/sync_alerts_card.dart';
@@ -125,10 +125,8 @@ class OverviewTab extends StatelessWidget {
                             icon: const Icon(Icons.add_circle_outline),
                             tooltip: 'Ajouter une institution',
                             onPressed: () {
-                              // Utiliser route nommée au lieu d'importer AddInstitutionScreen
-                              Navigator.of(context).pushNamed(
-                                RouteManager.addInstitution,
-                              );
+                              // Utiliser le ModalService centralisé pour ouvrir le bottom sheet
+                              ModalService.showAddInstitution(context);
                             },
                           ),
                         ),
