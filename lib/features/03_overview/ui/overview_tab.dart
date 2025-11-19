@@ -3,17 +3,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// NOUVEAUX IMPORTS
 import '../../00_app/providers/portfolio_provider.dart';
-// FIN NOUVEAUX IMPORTS
-import 'widgets/portfolio_header.dart';
+import '../../00_app/services/modal_service.dart';
+import 'package:portefeuille/core/ui/widgets/portfolio_header.dart';
 import 'widgets/allocation_chart.dart';
 import 'widgets/asset_type_allocation_chart.dart';
 import 'widgets/sync_alerts_card.dart';
-import 'package:portefeuille/features/07_management/ui/screens/add_institution_screen.dart';
 import 'package:portefeuille/core/ui/theme/app_theme.dart';
 import 'package:portefeuille/features/03_overview/ui/widgets/institution_tile.dart';
-// <-- NOUVEL IMPORT
 
 class OverviewTab extends StatelessWidget {
   const OverviewTab({super.key});
@@ -128,12 +125,8 @@ class OverviewTab extends StatelessWidget {
                             icon: const Icon(Icons.add_circle_outline),
                             tooltip: 'Ajouter une institution',
                             onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                builder: (context) =>
-                                const AddInstitutionScreen(),
-                              );
+                              // Utiliser le ModalService centralisé pour ouvrir le bottom sheet
+                              ModalService.showAddInstitution(context);
                             },
                           ),
                         ),

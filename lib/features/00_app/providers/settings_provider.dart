@@ -3,11 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:portefeuille/core/utils/constants.dart';
+import 'package:portefeuille/core/data/abstractions/i_settings.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 enum UserLevel { novice, expert }
 
-class SettingsProvider extends ChangeNotifier {
+class SettingsProvider extends ChangeNotifier implements ISettings {
   // Clés Hive
   static const String _kIsOnlineMode = 'isOnlineMode';
   static const String _kUserLevel = 'userLevel';
@@ -41,11 +42,18 @@ class SettingsProvider extends ChangeNotifier {
   bool get isOnlineMode => _isOnlineMode;
   UserLevel get userLevel => _userLevel;
   Color get appColor => _appColor;
+  @override
   String get baseCurrency => _baseCurrency;
+  @override
   String? get fmpApiKey => _fmpApiKey;
+  @override
   bool get hasFmpApiKey => _fmpApiKey != null && _fmpApiKey!.isNotEmpty;
   bool get migrationV1Done => _migrationV1Done;
   bool get migrationV2Done => _migrationV2Done;
+
+  /// Implémentation de ISettings - Propriété requise par l'interface
+  @override
+  int get appColorValue => _appColor.value;
 
   SettingsProvider() {
     _settingsBox = Hive.box(AppConstants.kSettingsBoxName);

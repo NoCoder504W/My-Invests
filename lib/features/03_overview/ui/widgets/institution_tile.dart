@@ -6,13 +6,12 @@ import 'package:intl/intl.dart';
 import 'package:portefeuille/core/data/models/institution.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
-import 'package:portefeuille/features/07_management/ui/screens/add_account_screen.dart';
+import 'package:portefeuille/features/00_app/services/modal_service.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import 'account_tile.dart';
 import 'package:portefeuille/core/ui/theme/app_theme.dart';
 import 'package:shimmer/shimmer.dart';
-// <-- NOUVEL IMPORT
 
 class InstitutionTile extends StatelessWidget {
   final Institution institution;
@@ -122,16 +121,8 @@ class InstitutionTile extends StatelessWidget {
                 ),
               ),
               onTap: () {
-                showModalBottomSheet(
-                  context: context,
-                  // Permet au BottomSheet de prendre plus de place
-                  isScrollControlled: true,
-                  builder: (context) => AddAccountScreen(
-                    // On passe l'ID de l'institution,
-                    // comme requis par add_account_screen.dart
-                    institutionId: institution.id,
-                  ),
-                );
+                // Présenter en BottomSheet via ModalService (respecte la constitution)
+                ModalService.showAddAccount(context, institutionId: institution.id);
               },
             ),
           ],
