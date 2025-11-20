@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:portefeuille/features/03_overview/ui/widgets/portfolio_history_chart.dart';
 import '../../00_app/providers/portfolio_provider.dart';
 import '../../00_app/services/modal_service.dart';
 import 'package:portefeuille/core/ui/widgets/portfolio_header.dart';
@@ -52,6 +53,13 @@ class OverviewTab extends StatelessWidget {
                   AppTheme.buildStyledCard(
                     context: context,
                     child: const PortfolioHeader(), // <-- MODIFIÉ
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Graphique d'évolution
+                  AppTheme.buildStyledCard(
+                    context: context,
+                    child: const PortfolioHistoryChart(),
                   ),
                   const SizedBox(height: 12),
 
