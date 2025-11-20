@@ -492,7 +492,6 @@ class DemoDataService {
 
       // On ajoute un bruit aléatoire pour simuler la volatilité du marché
       // Variation entre -1.5% et +1.6% par jour (légère tendance haussière globale)
-      final variationPercent = (random.nextDouble() * 0.031) - 0.015;
 
       history.add(PortfolioValueHistoryPoint(
         date: date,
