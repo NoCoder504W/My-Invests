@@ -11,8 +11,9 @@ import '../../06_settings/ui/settings_screen.dart';
 import '../../07_management/ui/screens/add_transaction_screen.dart';
 
 // UI Components
+import 'package:portefeuille/core/ui/theme/app_colors.dart'; // Pour le fond par défaut
 import 'package:portefeuille/core/ui/widgets/components/app_screen.dart';
-import 'package:portefeuille/core/ui/widgets/components/app_floating_nav_bar.dart'; // Import du nouveau widget
+import 'package:portefeuille/core/ui/widgets/components/app_floating_nav_bar.dart';
 import 'widgets/dashboard_app_bar.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -53,6 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Cas "Aucun portefeuille"
     if (portfolio == null) {
       return AppScreen(
+        // Ici on garde l'AppBar classique car l'écran est vide
         appBar: DashboardAppBar(onPressed: _openAddTransactionModal),
         body: Center(
           child: Column(
@@ -75,29 +77,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     // Dashboard complet
-    return AppScreen(
-      // On met withSafeArea à false pour que le contenu aille jusqu'en bas (sous la nav bar)
-      withSafeArea: false,
+    return Scaffold(
+      // On utilise un Scaffold simple ici.
+      // La couleur de fond assure qu'il n'y a pas de flash blanc,
+      // mais c'est l'AppScreen à l'intérieur des onglets (OverviewTab) qui fera le vrai gradient.
+      backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: false, // Évite que le clavier casse la layout
 
-      // L'AppBar reste gérée par le système standard pour l'instant
-      appBar: DashboardAppBar(
-        onPressed: _openAddTransactionModal,
-      ),
-
-      // Utilisation d'une Stack pour superposer la Nav Bar sur le contenu
       body: Stack(
         children: [
-          // 1. Le Contenu (IndexedStack)
-          // On lui donne un padding bas pour que le dernier élément ne soit pas caché par la barre
-          Padding(
-            padding: const EdgeInsets.only(bottom: 0), // Le padding est géré dans les listes (SliverPadding)
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: _widgetOptions,
+          // 1. Le Contenu (Les Onglets)
+          // CORRECTION : Plus de padding TOP ici. L'onglet prend tout l'écran.
+          IndexedStack(
+            index: _selectedIndex,
+            children: _widgetOptions,
+          ),
+
+          // 2. La Barre Supérieure (Flottante)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: DashboardAppBar(
+              onPressed: _openAddTransactionModal,
             ),
           ),
 
-          // 2. La Barre de Navigation Flottante
+          // 3. La Barre de Navigation (Flottante en bas)
           AppFloatingNavBar(
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,

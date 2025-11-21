@@ -1,19 +1,23 @@
-// lib/features/02_dashboard/ui/widgets/dashboard_app_bar.dart
-// REMPLACEZ LE FICHIER COMPLET
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+// 1. IMPORTS CORE UI (Centralisation)
+import 'package:portefeuille/core/ui/theme/app_colors.dart';
+import 'package:portefeuille/core/ui/theme/app_dimens.dart';
+import 'package:portefeuille/core/ui/theme/app_typography.dart';
+import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart'; // On utilise AppCard pour le style
+
+// 2. IMPORTS DATA & PROVIDERS
 import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/core/data/models/sync_status.dart';
-// NOUVEL IMPORT
 import 'package:portefeuille/features/00_app/models/background_activity.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
 import 'package:portefeuille/features/06_settings/ui/settings_screen.dart';
-import 'package:provider/provider.dart';
 
 class DashboardAppBar extends StatefulWidget implements PreferredSizeWidget {
-  // NOUVEAU : Ajout du paramètre (Correction Erreurs 4, 5, 6)
   final VoidCallback onPressed;
+
   const DashboardAppBar({
     super.key,
     required this.onPressed,
@@ -21,172 +25,273 @@ class DashboardAppBar extends StatefulWidget implements PreferredSizeWidget {
 
   @override
   State<DashboardAppBar> createState() => _DashboardAppBarState();
+
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(80); // Hauteur adaptée au style flottant
 }
 
 class _DashboardAppBarState extends State<DashboardAppBar> {
-  // Gère l'état de la SnackBar
   bool _isSnackBarVisible = false;
+
   /// Calcule les statistiques de synchronisation
   Map<String, int> _getSyncStats(PortfolioProvider portfolio) {
     final metadata = portfolio.allMetadata;
     int synced = 0;
     int errors = 0;
     int manual = 0;
-    int never = 0;
     int unsyncable = 0;
     for (final meta in metadata.values) {
       final status = meta.syncStatus ?? SyncStatus.never;
       switch (status) {
-        case SyncStatus.synced:
-          synced++;
-          break;
-        case SyncStatus.error:
-          errors++;
-          break;
-        case SyncStatus.manual:
-          manual++;
-          break;
-        case SyncStatus.never:
-          never++;
-          break;
-        case SyncStatus.unsyncable:
-          unsyncable++;
-          break;
+        case SyncStatus.synced: synced++; break;
+        case SyncStatus.error: errors++; break;
+        case SyncStatus.manual: manual++; break;
+        case SyncStatus.unsyncable: unsyncable++; break;
+        default: break;
       }
     }
-
-    // Total = seulement les actifs synchronisables (exclut unsyncable)
     final total = metadata.length - unsyncable;
-    // Considérer synced + manual comme "OK" (car manual est volontaire)
-    final syncedOk = synced + manual;
     return {
-      'synced': syncedOk,
+      'synced': synced + manual,
       'errors': errors,
-      'manual': manual,
-      'never': never,
-      'unsyncable': unsyncable,
       'total': total,
     };
   }
 
-  /// Construit l'indicateur d'état pour l'AppBar.
-  Widget _buildStatusIndicator(
-      SettingsProvider settings, PortfolioProvider portfolio) {
-    final theme = Theme.of(context);
-    final textStyle = theme.appBarTheme.titleTextStyle?.copyWith(
-      fontSize: 12,
-      fontWeight: FontWeight.normal,
-    ) ??
-        const TextStyle(color: Colors.white, fontSize: 12);
+  @override
+  Widget build(BuildContext context) {
+    final portfolioProvider = context.watch<PortfolioProvider>();
+    final settingsProvider = context.read<SettingsProvider>();
+    final portfolio = portfolioProvider.activePortfolio;
 
-    // Calcul des stats de synchro
-    final stats = _getSyncStats(portfolio);
-    final syncedCount = stats['synced']!;
-    final totalCount = stats['total']!;
-    final errorsCount = stats['errors']!;
+    // Gestion SnackBar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleSyncMessage(context, portfolioProvider);
+    });
 
-    Widget child;
-    // --- MODIFIÉ : Utilise l'enum 'activity' ---
-    if (portfolio.activity is Syncing) {
-      child = Row(
-        children: [
-          const SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.white,
-            ),
+    // 1. Cas : Aucun portefeuille sélectionné
+    if (portfolio == null) {
+      return AppBar(
+        title: Text('Portefeuille', style: AppTypography.h3),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: AppColors.textPrimary),
+            onPressed: () => _openSettings(context),
           ),
-          const SizedBox(width: 8),
-          Text("Synchro...", style: textStyle),
         ],
       );
     }
-    // --- FIN MODIFICATION ---
-    else if (settings.isOnlineMode) {
-      child = Row(
+
+    // 2. Cas Normal : Barre Flottante utilisant AppCard
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        height: 60,
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppDimens.paddingM,
+          vertical: AppDimens.paddingS / 2,
+        ),
+        // ICI : On utilise AppCard pour déléguer le style au Core UI
+        child: AppCard(
+          isGlass: true, // Active le flou géré par core/ui
+          withShadow: true, // Active l'ombre gérée par core/ui
+          backgroundColor: AppColors.surface.withOpacity(0.85), // Respect du thème
+          padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingS), // Padding interne
+          child: Row(
+            children: [
+              // Bouton "Ajouter Transaction"
+              IconButton(
+                icon: const Icon(Icons.add_circle, color: AppColors.primary),
+                tooltip: 'Ajouter une transaction',
+                onPressed: widget.onPressed,
+              ),
+
+              // Sélecteur de Portefeuille (Centré)
+              Expanded(
+                child: Center(
+                  child: _buildPortfolioSelector(portfolioProvider, portfolio),
+                ),
+              ),
+
+              // Indicateur Statut + Paramètres
+              _buildStatusIndicator(settingsProvider, portfolioProvider),
+              IconButton(
+                icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary, size: 22),
+                onPressed: () => _openSettings(context),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- WIDGETS INTERNES (Logique conservée) ---
+
+  Widget _buildStatusIndicator(SettingsProvider settings, PortfolioProvider portfolio) {
+    final textStyle = AppTypography.caption.copyWith(
+      color: AppColors.textPrimary,
+      fontWeight: FontWeight.w500,
+    );
+
+    final stats = _getSyncStats(portfolio);
+    final totalCount = stats['total']!;
+    final errorsCount = stats['errors']!;
+    final syncedCount = stats['synced']!;
+
+    Widget content;
+
+    if (portfolio.activity is Syncing) {
+      content = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
+          const SizedBox(width: 6),
+          Text("Synchro...", style: textStyle),
+        ],
+      );
+    } else if (settings.isOnlineMode) {
+      content = Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.cloud_queue_outlined, size: 16, color: textStyle.color),
-          const SizedBox(width: 8),
-          Text("En ligne", style: textStyle),
+          if (totalCount == 0) ...[
+            const SizedBox(width: 6),
+            Text("En ligne", style: textStyle),
+          ],
           if (totalCount > 0) ...[
-            const SizedBox(width: 8),
-            // Badge avec compteur
+            const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: errorsCount > 0
-                    ? Colors.orange.shade700
-                    : Colors.green.shade700,
-                borderRadius: BorderRadius.circular(12),
+                color: errorsCount > 0 ? AppColors.error : AppColors.success,
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '$syncedCount/$totalCount',
-                style: textStyle.copyWith(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: textStyle.copyWith(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ],
       );
     } else {
-      child = Row(
+      content = Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.cloud_off_outlined,
-              size: 16, color: textStyle.color?.withOpacity(0.7)),
-          const SizedBox(width: 8),
+          Icon(Icons.cloud_off_outlined, size: 16, color: textStyle.color?.withOpacity(0.6)),
+          const SizedBox(width: 6),
           Text("Hors ligne", style: textStyle),
         ],
       );
     }
 
-    // Rendre le statut cliquable
     return InkWell(
-      onTap: () {
-        _showStatusMenu(context, settings, portfolio);
-      },
+      onTap: () => _showStatusMenu(context, settings, portfolio),
+      borderRadius: BorderRadius.circular(AppDimens.radiusS),
       child: Padding(
-        padding: const EdgeInsets.all(8.0), // Zone de clic élargie
-        child: child,
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        child: content,
       ),
     );
   }
 
-  // Menu pour le statut (Online/Offline/Synchro)
-  void _showStatusMenu(BuildContext context, SettingsProvider settingsProvider,
-      PortfolioProvider portfolioProvider) {
+  Widget _buildPortfolioSelector(PortfolioProvider provider, Portfolio activePortfolio) {
+    return PopupMenuButton<Portfolio>(
+      color: AppColors.surfaceLight,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimens.radiusM)),
+      onSelected: (portfolio) => provider.setActivePortfolio(portfolio.id),
+      itemBuilder: (context) {
+        return provider.portfolios.map((portfolio) {
+          final isSelected = portfolio.id == activePortfolio.id;
+          return PopupMenuItem<Portfolio>(
+            value: portfolio,
+            child: Row(
+              children: [
+                Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                    size: 18, color: isSelected ? AppColors.primary : AppColors.textSecondary),
+                const SizedBox(width: 12),
+                Text(portfolio.name, style: isSelected ? AppTypography.bodyBold : AppTypography.body),
+              ],
+            ),
+          );
+        }).toList();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                activePortfolio.name,
+                style: AppTypography.h3.copyWith(fontSize: 18),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openSettings(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      builder: (context) => const SettingsScreen(),
+    );
+  }
+
+  void _handleSyncMessage(BuildContext context, PortfolioProvider provider) {
+    final message = provider.syncMessage;
+    if (message != null && !_isSnackBarVisible) {
+      setState(() => _isSnackBarVisible = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message, style: AppTypography.body),
+          backgroundColor: AppColors.surface,
+          duration: const Duration(seconds: 4),
+          showCloseIcon: true,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimens.radiusS)),
+        ),
+      ).closed.then((_) {
+        if (mounted) {
+          provider.clearSyncMessage();
+          setState(() => _isSnackBarVisible = false);
+        }
+      });
+    }
+  }
+
+  void _showStatusMenu(BuildContext context, SettingsProvider settings, PortfolioProvider portfolio) {
+    // Logique identique au fichier précédent, mais utilisation de AppColors/AppTypography si besoin
+    // (Omise pour brièveté car purement logique, mais incluse dans le code complet si vous copiez-collez)
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
       builder: (ctx) {
         return Wrap(
           children: [
             ListTile(
-              leading: Icon(settingsProvider.isOnlineMode
-                  ? Icons.cloud_off_outlined
-                  : Icons.cloud_queue_outlined),
-              title: Text(settingsProvider.isOnlineMode
-                  ? 'Passer en mode "Hors ligne"'
-                  : 'Passer en mode "En ligne"'),
-              onTap: () {
-                Navigator.of(ctx).pop(); // Ferme le sheet
-                _confirmToggleOnline(context, settingsProvider);
-              },
+              leading: Icon(settings.isOnlineMode ? Icons.cloud_off_outlined : Icons.cloud_queue_outlined, color: AppColors.textPrimary),
+              title: Text(settings.isOnlineMode ? 'Passer "Hors ligne"' : 'Passer "En ligne"', style: AppTypography.body),
+              onTap: () { Navigator.of(ctx).pop(); _confirmToggleOnline(context, settings); },
             ),
-            if (settingsProvider.isOnlineMode)
+            if (settings.isOnlineMode)
               ListTile(
-                leading: const Icon(Icons.sync),
-                title: const Text('Forcer la synchronisation'),
-                subtitle: const Text(
-                    'Vide le cache et recharge tous les prix (utilise les crédits API).'),
-                onTap: () {
-                  Navigator.of(ctx).pop(); // Ferme le sheet
-                  _confirmForceSync(context, portfolioProvider);
-                },
+                leading: const Icon(Icons.sync, color: AppColors.textPrimary),
+                title: Text('Forcer la synchronisation', style: AppTypography.body),
+                subtitle: Text('Vide le cache et recharge les prix.', style: AppTypography.caption),
+                onTap: () { Navigator.of(ctx).pop(); _confirmForceSync(context, portfolio); },
               ),
           ],
         );
@@ -194,29 +299,19 @@ class _DashboardAppBarState extends State<DashboardAppBar> {
     );
   }
 
-  // Confirmation pour le changement de mode
-  void _confirmToggleOnline(
-      BuildContext context, SettingsProvider settingsProvider) {
-    final isCurrentlyOnline = settingsProvider.isOnlineMode;
+  void _confirmToggleOnline(BuildContext context, SettingsProvider settings) {
+    final isOnline = settings.isOnlineMode;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isCurrentlyOnline
-            ? 'Passer "Hors ligne" ?'
-            : 'Passer "En ligne" ?'),
-        content: Text(isCurrentlyOnline
-            ? 'L\'application n\'essaiera plus de mettre à jour les prix.'
-            : 'L\'application utilisera les données réseau pour mettre à jour les prix.'),
+        backgroundColor: AppColors.surface,
+        title: Text(isOnline ? 'Passer Hors ligne ?' : 'Passer En ligne ?', style: AppTypography.h3),
+        content: Text(isOnline ? 'Les prix ne seront plus mis à jour.' : 'Les données réseau seront utilisées.', style: AppTypography.body),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Annuler'),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Annuler')),
           FilledButton(
-            onPressed: () {
-              settingsProvider.toggleOnlineMode(!isCurrentlyOnline);
-              Navigator.of(ctx).pop();
-            },
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () { settings.toggleOnlineMode(!isOnline); Navigator.of(ctx).pop(); },
             child: const Text('Confirmer'),
           ),
         ],
@@ -224,156 +319,22 @@ class _DashboardAppBarState extends State<DashboardAppBar> {
     );
   }
 
-  // Confirmation pour la synchro forcée
-  void _confirmForceSync(
-      BuildContext context, PortfolioProvider portfolioProvider) {
+  void _confirmForceSync(BuildContext context, PortfolioProvider provider) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Forcer la synchronisation ?'),
-        content: const Text(
-            'Cela videra le cache des prix et forcera une nouvelle récupération de toutes les données. Cette action peut consommer vos crédits API (FMP).'),
+        backgroundColor: AppColors.surface,
+        title: Text('Forcer la synchronisation ?', style: AppTypography.h3),
+        content: Text('Ceci consommera des crédits API.', style: AppTypography.body),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Annuler'),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Annuler')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.deepOrange),
-            onPressed: () {
-              // MODIFIÉ : Utilise context.read pour appeler la fonction
-              context.read<PortfolioProvider>().forceSynchroniserLesPrix();
-              Navigator.of(ctx).pop();
-            },
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () { provider.forceSynchroniserLesPrix(); Navigator.of(ctx).pop(); },
             child: const Text('Forcer'),
           ),
         ],
       ),
-    );
-  }
-
-  // Construit le sélecteur de portefeuille (le titre)
-  Widget _buildPortfolioSelector(
-      PortfolioProvider provider, Portfolio activePortfolio) {
-    return PopupMenuButton<Portfolio>(
-      onSelected: (portfolio) {
-        provider.setActivePortfolio(portfolio.id);
-      },
-      itemBuilder: (context) {
-        return provider.portfolios.map((portfolio) {
-          return PopupMenuItem<Portfolio>(
-            value: portfolio,
-            child: Row(
-              children: [
-                if (portfolio.id == activePortfolio.id)
-                  const Icon(Icons.check, size: 20)
-                else
-                  const SizedBox(width: 20),
-                const SizedBox(width: 8),
-                Text(portfolio.name),
-              ],
-            ),
-          );
-        }).toList();
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: Text(
-              activePortfolio.name,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const Icon(Icons.arrow_drop_down),
-        ],
-      ),
-    );
-  }
-
-  // Gère l'affichage de la SnackBar de notification
-  void _handleSyncMessage(BuildContext context, PortfolioProvider provider) {
-    final message = provider.syncMessage;
-    if (message != null && !_isSnackBarVisible) {
-      // Afficher la SnackBar
-      setState(() {
-        _isSnackBarVisible = true;
-      });
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 4), // <-- DURÉE MODIFIÉE
-          showCloseIcon: true,
-        ),
-      )
-          .closed
-          .then((_) {
-        // S'assurer que le drapeau est remis à false
-        if (mounted) {
-          provider.clearSyncMessage();
-          setState(() {
-            _isSnackBarVisible = false;
-          });
-        }
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Écoute les changements pour la SnackBar et le titre
-    final portfolioProvider = context.watch<PortfolioProvider>();
-    // Ne 'listen' pas, car le clic déclenche la propre reconstruction du menu
-    final settingsProvider = context.read<SettingsProvider>();
-    final portfolio = portfolioProvider.activePortfolio;
-
-    // Logique de la SnackBar
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handleSyncMessage(context, portfolioProvider);
-    });
-    if (portfolio == null) {
-      // AppBar pour l'état sans portefeuille
-      return AppBar(
-        title: const Text('Portefeuille'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (context) => const SettingsScreen(),
-              );
-            },
-          ),
-        ],
-      );
-    }
-
-    // AppBar principale
-    return AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.add_circle_outline),
-        tooltip: 'Ajouter une transaction',
-        // MODIFIÉ : Utilise le paramètre (Correction Erreurs 4, 5, 6)
-        onPressed: widget.onPressed,
-      ),
-      title: _buildPortfolioSelector(portfolioProvider, portfolio),
-      centerTitle: true,
-      actions: [
-        _buildStatusIndicator(settingsProvider, portfolioProvider),
-        IconButton(
-          icon: const Icon(Icons.settings_outlined),
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (context) => const SettingsScreen(),
-            );
-          },
-        ),
-      ],
     );
   }
 }
