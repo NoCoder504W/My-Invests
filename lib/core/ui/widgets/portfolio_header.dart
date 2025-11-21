@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/ui/widgets/primitives/app_animated_value.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
@@ -44,13 +45,12 @@ class PortfolioHeader extends StatelessWidget {
           if (isProcessing)
             _buildShimmer()
           else
-            Text(
-              CurrencyFormatter.format(totalValue, baseCurrency),
+            AppAnimatedValue(
+              value: totalValue,
+              currency: baseCurrency,
               style: AppTypography.hero.copyWith(
                 fontSize: 36,
               ),
-              // ▼▼▼ AJOUT : Centrage du texte ▼▼▼
-              textAlign: TextAlign.center,
             ),
 
           const SizedBox(height: AppDimens.paddingM),
