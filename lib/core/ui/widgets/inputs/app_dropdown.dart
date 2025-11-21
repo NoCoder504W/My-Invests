@@ -39,7 +39,12 @@ class AppDropdown<T> extends StatelessWidget {
           onChanged: onChanged,
           validator: validator,
           isExpanded: isExpanded,
-          dropdownColor: AppColors.surfaceLight, // Menu sombre
+          // --- Personnalisation du menu (Popup) ---
+          dropdownColor: AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(AppDimens.radiusS), // Arrondis du menu
+          elevation: 4, // Ombre plus douce (8 par défaut)
+          menuMaxHeight: 300, // Limite la hauteur pour éviter de couvrir tout l'écran
+          // ----------------------------------------
           style: AppTypography.body.copyWith(color: AppColors.textPrimary),
           icon: const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
           decoration: InputDecoration(
