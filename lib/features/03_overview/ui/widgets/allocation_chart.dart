@@ -23,6 +23,10 @@ class _AllocationChartState extends State<AllocationChart> {
     final bool hasData = widget.portfolio.institutions.isNotEmpty &&
         widget.portfolio.totalValue > 0;
 
+    // MÊME LOGIQUE RESPONSIVE que PortfolioHistoryChart
+    final screenHeight = MediaQuery.of(context).size.height;
+    final double chartHeight = (screenHeight * 0.25).clamp(200.0, 350.0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -34,8 +38,9 @@ class _AllocationChartState extends State<AllocationChart> {
         const SizedBox(height: 24),
 
         if (hasData) ...[
+          // Zone graphique à hauteur fixe/uniforme
           SizedBox(
-            height: 200,
+            height: chartHeight,
             child: PieChart(
               PieChartData(
                 pieTouchData: PieTouchData(
@@ -63,14 +68,18 @@ class _AllocationChartState extends State<AllocationChart> {
           ),
           const SizedBox(height: AppDimens.paddingL),
 
+          // Légende en dessous (hauteur libre pour tout afficher)
           _buildLegend(widget.portfolio.institutions, widget.portfolio.totalValue),
         ] else
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppDimens.paddingL),
-              child: Text(
-                'Aucune donnée',
-                style: AppTypography.caption,
+          SizedBox(
+            height: chartHeight, // On garde la hauteur même vide pour l'alignement
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppDimens.paddingL),
+                child: Text(
+                  'Aucune donnée',
+                  style: AppTypography.caption,
+                ),
               ),
             ),
           ),
@@ -87,7 +96,7 @@ class _AllocationChartState extends State<AllocationChart> {
       final institution = institutions[i];
       final percentage = (institution.totalValue / totalValue) * 100;
 
-      final radius = isTouched ? 30.0 : 20.0; // Grossit légèrement au touché
+      final radius = isTouched ? 30.0 : 20.0;
       final opacity = isTouched ? 1.0 : 0.8;
 
       if (institution.totalValue <= 0) return PieChartSectionData(value: 0);
@@ -97,19 +106,16 @@ class _AllocationChartState extends State<AllocationChart> {
         value: percentage,
         title: '',
         radius: radius,
-        // ▼▼▼ MODIFICATION : Badge visible uniquement si touché ▼▼▼
         badgeWidget: isTouched ? _buildBadge(
             institution.name,
             percentage,
             AppColors.charts[i % AppColors.charts.length]
         ) : null,
-        badgePositionPercentageOffset: 1.9, // Position assez éloignée
-        // ▲▲▲ FIN MODIFICATION ▲▲▲
+        badgePositionPercentageOffset: 1.9,
       );
     }).where((section) => section.value > 0).toList();
   }
 
-  // Widget d'étiquette flottante (Badge)
   Widget _buildBadge(String name, double percentage, Color color) {
     return Container(
       padding: const EdgeInsets.all(6),
@@ -162,7 +168,6 @@ class _AllocationChartState extends State<AllocationChart> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
           decoration: BoxDecoration(
-            // Surligne la ligne dans la légende quand le secteur est touché
             color: isTouched ? AppColors.surfaceLight : Colors.transparent,
             borderRadius: BorderRadius.circular(AppDimens.radiusS),
           ),
