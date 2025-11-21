@@ -25,6 +25,7 @@ import 'package:portefeuille/core/data/models/asset_type.dart';
 import 'package:portefeuille/core/data/models/asset_metadata.dart';
 
 // --- NOUVEAUX IMPORTS ---
+import 'package:portefeuille/core/data/models/portfolio_value_history_point.dart';
 import 'package:portefeuille/core/data/models/price_history_point.dart';
 import 'package:portefeuille/core/data/models/exchange_rate_history.dart';
 import 'package:portefeuille/core/data/models/sync_status.dart';
@@ -56,6 +57,7 @@ void main() async {
   Hive.registerAdapter(AssetTypeAdapter());
   Hive.registerAdapter(AssetMetadataAdapter());
   // --- NOUVEAUX ADAPTERS ---
+  Hive.registerAdapter(PortfolioValueHistoryPointAdapter());
   Hive.registerAdapter(PriceHistoryPointAdapter());
   Hive.registerAdapter(ExchangeRateHistoryAdapter());
   Hive.registerAdapter(SyncStatusAdapter());
