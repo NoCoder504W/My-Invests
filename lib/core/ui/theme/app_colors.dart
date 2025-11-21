@@ -36,8 +36,12 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
-  static const LinearGradient surfaceGradient = LinearGradient(
-    colors: [Color(0xFF15151E), Color(0xFF101016)],
+  // MODIFIÉ : Plus de transparence pour l'effet Glassmorphism
+  static LinearGradient surfaceGradient = LinearGradient(
+    colors: [
+      surface.withOpacity(0.70), // 70% d'opacité (Haut gauche)
+      surface.withOpacity(0.40), // 40% d'opacité (Bas droite)
+    ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

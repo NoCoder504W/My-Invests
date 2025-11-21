@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:portefeuille/core/data/models/institution.dart';
 import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
+import 'package:portefeuille/core/ui/theme/app_dimens.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
 
 class AllocationChart extends StatefulWidget {
@@ -23,49 +24,56 @@ class _AllocationChartState extends State<AllocationChart> {
         widget.portfolio.totalValue > 0;
 
     return Column(
-      // ▼▼▼ MODIFICATION : Centrage du titre ▼▼▼
       crossAxisAlignment: CrossAxisAlignment.center,
-      // ▲▲▲ FIN MODIFICATION ▲▲▲
       children: [
         Text(
           'Répartition par banque',
           style: AppTypography.h3,
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
-        SizedBox(
-          height: 200,
-          child: hasData
-              ? PieChart(
-            PieChartData(
-              pieTouchData: PieTouchData(
-                touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                  setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        pieTouchResponse == null ||
-                        pieTouchResponse.touchedSection == null) {
-                      touchedIndex = -1;
-                      return;
-                    }
-                    touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                  });
-                },
+
+        if (hasData) ...[
+          SizedBox(
+            height: 200,
+            child: PieChart(
+              PieChartData(
+                pieTouchData: PieTouchData(
+                  touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                    setState(() {
+                      if (!event.isInterestedForInteractions ||
+                          pieTouchResponse == null ||
+                          pieTouchResponse.touchedSection == null) {
+                        touchedIndex = -1;
+                        return;
+                      }
+                      touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                    });
+                  },
+                ),
+                sections: _generateSections(
+                  widget.portfolio.institutions,
+                  widget.portfolio.totalValue,
+                ),
+                centerSpaceRadius: 60,
+                sectionsSpace: 4,
+                startDegreeOffset: -90,
               ),
-              sections: _generateSections(
-                widget.portfolio.institutions,
-                widget.portfolio.totalValue,
-              ),
-              centerSpaceRadius: 60,
-              sectionsSpace: 4,
-              startDegreeOffset: -90,
-            ),
-          )
-              : Center(
-            child: Text(
-              'Aucune donnée',
-              style: AppTypography.caption,
             ),
           ),
-        ),
+          const SizedBox(height: AppDimens.paddingL),
+
+          _buildLegend(widget.portfolio.institutions, widget.portfolio.totalValue),
+        ] else
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppDimens.paddingL),
+              child: Text(
+                'Aucune donnée',
+                style: AppTypography.caption,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -79,38 +87,43 @@ class _AllocationChartState extends State<AllocationChart> {
       final institution = institutions[i];
       final percentage = (institution.totalValue / totalValue) * 100;
 
-      final radius = isTouched ? 25.0 : 20.0;
+      final radius = isTouched ? 30.0 : 20.0; // Grossit légèrement au touché
+      final opacity = isTouched ? 1.0 : 0.8;
 
-      if (institution.totalValue <= 0) {
-        return PieChartSectionData(value: 0);
-      }
+      if (institution.totalValue <= 0) return PieChartSectionData(value: 0);
 
       return PieChartSectionData(
-        color: AppColors.charts[i % AppColors.charts.length],
+        color: AppColors.charts[i % AppColors.charts.length].withOpacity(opacity),
         value: percentage,
         title: '',
         radius: radius,
-        badgeWidget: _buildBadge(
+        // ▼▼▼ MODIFICATION : Badge visible uniquement si touché ▼▼▼
+        badgeWidget: isTouched ? _buildBadge(
             institution.name,
             percentage,
-            isTouched,
             AppColors.charts[i % AppColors.charts.length]
-        ),
-        // ▼▼▼ MODIFICATION : Écartement des étiquettes (2.2 au lieu de 1.6) ▼▼▼
-        badgePositionPercentageOffset: 2.2,
+        ) : null,
+        badgePositionPercentageOffset: 1.9, // Position assez éloignée
         // ▲▲▲ FIN MODIFICATION ▲▲▲
       );
     }).where((section) => section.value > 0).toList();
   }
 
-  Widget _buildBadge(String name, double percentage, bool isTouched, Color color) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: EdgeInsets.all(isTouched ? 8 : 4),
+  // Widget d'étiquette flottante (Badge)
+  Widget _buildBadge(String name, double percentage, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: isTouched ? AppColors.surfaceLight : Colors.transparent,
+        color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(4),
-        border: isTouched ? Border.all(color: color) : null,
+        border: Border.all(color: color),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          )
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -118,20 +131,68 @@ class _AllocationChartState extends State<AllocationChart> {
           Text(
             name,
             style: AppTypography.caption.copyWith(
-              color: isTouched ? AppColors.textPrimary : AppColors.textSecondary,
-              fontWeight: isTouched ? FontWeight.bold : FontWeight.normal,
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 10,
             ),
-            textAlign: TextAlign.center,
           ),
           Text(
             '${percentage.toStringAsFixed(1)}%',
             style: AppTypography.label.copyWith(
               color: color,
-              fontSize: isTouched ? 12 : 10,
+              fontSize: 10,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLegend(List<Institution> institutions, double totalValue) {
+    return Column(
+      children: List.generate(institutions.length, (i) {
+        final institution = institutions[i];
+        if (institution.totalValue <= 0) return const SizedBox.shrink();
+
+        final percentage = (institution.totalValue / totalValue) * 100;
+        final color = AppColors.charts[i % AppColors.charts.length];
+        final isTouched = i == touchedIndex;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          decoration: BoxDecoration(
+            // Surligne la ligne dans la légende quand le secteur est touché
+            color: isTouched ? AppColors.surfaceLight : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppDimens.radiusS),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 4)],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  institution.name,
+                  style: isTouched ? AppTypography.bodyBold : AppTypography.body,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                '${percentage.toStringAsFixed(1)}%',
+                style: AppTypography.bodyBold.copyWith(color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/ui/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 
 // Core UI
@@ -8,7 +9,7 @@ import 'package:portefeuille/core/ui/widgets/components/app_screen.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_icon.dart';
 import 'package:portefeuille/core/ui/widgets/fade_in_slide.dart';
-import 'package:portefeuille/core/ui/widgets/portfolio_header.dart'; // Notre nouveau header
+import 'package:portefeuille/core/ui/widgets/portfolio_header.dart';
 
 // Features
 import '../../00_app/providers/portfolio_provider.dart';
@@ -34,9 +35,8 @@ class OverviewTab extends StatelessWidget {
 
         final institutions = portfolio.institutions;
 
-        // On utilise AppScreen pour avoir le fond "Midnight" automatiquement
         return AppScreen(
-          withSafeArea: false, // Déjà géré par le parent (Dashboard)
+          withSafeArea: false,
           body: CustomScrollView(
             slivers: [
               // En-tête avec titre
@@ -48,10 +48,13 @@ class OverviewTab extends StatelessWidget {
                       AppDimens.paddingL,
                       AppDimens.paddingM
                   ),
-                  child: Text(
-                    'Vue d\'ensemble',
-                    style: AppTypography.h1,
-                    textAlign: TextAlign.center,
+                  child: FadeInSlide(
+                    delay: 0.0,
+                    child: Text(
+                      'Vue d\'ensemble',
+                      style: AppTypography.h1,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
               ),
@@ -68,7 +71,7 @@ class OverviewTab extends StatelessWidget {
                     ),
                     const SizedBox(height: AppDimens.paddingM),
 
-                    // 2. Graphique
+                    // 2. Graphique Historique
                     FadeInSlide(
                       delay: 0.2,
                       child: AppCard(
@@ -78,77 +81,108 @@ class OverviewTab extends StatelessWidget {
                     const SizedBox(height: AppDimens.paddingM),
 
                     // 3. Allocations
-                    FadeInSlide(
-                      delay: 0.3,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          // Responsive layout
-                          if (constraints.maxWidth >= 800) {
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(child: _buildAllocationCard(portfolio, portfolioProvider)),
-                                const SizedBox(width: AppDimens.paddingM),
-                                Expanded(child: _buildAssetTypeCard(portfolioProvider)),
-                              ],
-                            );
-                          }
-                          return Column(
+                    // CORRECTION : On utilise LayoutBuilder uniquement si nécessaire
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (constraints.maxWidth >= 800) {
+                          // Mode Tablette / Desktop
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildAllocationCard(portfolio, portfolioProvider),
-                              const SizedBox(height: AppDimens.paddingM),
-                              _buildAssetTypeCard(portfolioProvider),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: AppDimens.paddingM),
-
-                    // 4. Institutions (Section)
-                    FadeInSlide(
-                      delay: 0.4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionTitle(
-                            context,
-                            'Structure du Portefeuille',
-                            Icons.account_balance,
-                            onAdd: () => ModalService.showAddInstitution(context),
-                          ),
-                          const SizedBox(height: AppDimens.paddingS),
-
-                          if (institutions.isEmpty)
-                            const AppCard(
-                              child: Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(16.0),
-                                  child: Text('Aucune institution. Ajoutez-en une pour commencer.'),
+                              Expanded(
+                                child: FadeInSlide(
+                                    delay: 0.3,
+                                    child: _buildAllocationCard(portfolio)
                                 ),
                               ),
-                            )
-                          else
-                            ...institutions.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final institution = entry.value;
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: AppDimens.paddingS),
-                                child: InstitutionTile(institution: institution),
-                              );
-                            }),
-                        ],
+                              const SizedBox(width: AppDimens.paddingM),
+                              Expanded(
+                                child: FadeInSlide(
+                                    delay: 0.35,
+                                    child: _buildAssetTypeCard(portfolioProvider)
+                                ),
+                              ),
+                            ],
+                          );
+                        } else {
+                          // Mode Mobile : Pas de LayoutBuilder complexe qui casse l'animation
+                          return Column(
+                            children: [
+                              FadeInSlide(
+                                  key: const ValueKey('alloc_chart'), // Clé pour préserver l'état
+                                  delay: 0.3,
+                                  child: _buildAllocationCard(portfolio)
+                              ),
+                              const SizedBox(height: AppDimens.paddingM),
+                              FadeInSlide(
+                                  key: const ValueKey('asset_chart'), // Clé pour préserver l'état
+                                  delay: 0.35,
+                                  child: _buildAssetTypeCard(portfolioProvider)
+                              ),
+                            ],
+                          );
+                        }
+                      },
+                    ),
+                    const SizedBox(height: AppDimens.paddingM),
+
+                    // 4. Institutions
+                    FadeInSlide(
+                      delay: 0.4,
+                      child: _buildSectionTitle(
+                        context,
+                        'Structure du Portefeuille',
+                        Icons.account_balance,
+                        onAdd: () => ModalService.showAddInstitution(context),
                       ),
                     ),
+                    const SizedBox(height: AppDimens.paddingS),
+
+                    if (institutions.isEmpty)
+                      const FadeInSlide(
+                        delay: 0.45,
+                        child: AppCard(
+                          child: Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text('Aucune institution. Ajoutez-en une pour commencer.'),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ...institutions.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final institution = entry.value;
+
+                        // Délai progressif
+                        final double itemDelay = 0.45 + (index * 0.05);
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppDimens.paddingS),
+                          child: FadeInSlide(
+                            delay: itemDelay,
+                            child: InstitutionTile(institution: institution),
+                          ),
+                        );
+                      }),
 
                     // 5. Alertes
-                    const SizedBox(height: AppDimens.paddingM),
-                    FadeInSlide(
-                      delay: 0.5,
-                      child: const SyncAlertsCard(), // À migrer plus tard vers AppCard en interne
+                    Builder(
+                        builder: (context) {
+                          final double alertsDelay = 0.45 + (institutions.length * 0.05) + 0.05;
+                          return Column(
+                            children: [
+                              const SizedBox(height: AppDimens.paddingM),
+                              FadeInSlide(
+                                delay: alertsDelay > 0.8 ? 0.8 : alertsDelay,
+                                child: const SyncAlertsCard(),
+                              ),
+                              const SizedBox(height: 100), // Espace pour la nav bar flottante
+                            ],
+                          );
+                        }
                     ),
-
-                    const SizedBox(height: 100),
                   ]),
                 ),
               ),
@@ -159,7 +193,7 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildAllocationCard(dynamic portfolio, PortfolioProvider provider) {
+  Widget _buildAllocationCard(dynamic portfolio) {
     return AppCard(
       child: AllocationChart(portfolio: portfolio),
     );
@@ -182,8 +216,8 @@ class OverviewTab extends StatelessWidget {
         children: [
           Row(
             children: [
-              AppIcon(icon: icon, size: 18),
-              const SizedBox(width: 12),
+              AppIcon(icon: icon, size: 18, color: AppColors.primary, backgroundColor: Colors.transparent),
+              const SizedBox(width: 8),
               Text(
                 title.toUpperCase(),
                 style: AppTypography.label.copyWith(
@@ -193,11 +227,17 @@ class OverviewTab extends StatelessWidget {
             ],
           ),
           if (onAdd != null)
-            AppIcon(
-              icon: Icons.add,
+            GestureDetector(
               onTap: onAdd,
-              backgroundColor: Colors.transparent,
-              size: 20,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Icon(Icons.add, size: 16, color: AppColors.textPrimary),
+              ),
             ),
         ],
       ),

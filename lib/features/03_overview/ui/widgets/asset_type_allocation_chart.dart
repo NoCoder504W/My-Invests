@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:portefeuille/core/data/models/asset_type.dart';
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
+import 'package:portefeuille/core/ui/theme/app_dimens.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
 
 class AssetTypeAllocationChart extends StatefulWidget {
@@ -26,49 +27,56 @@ class _AssetTypeAllocationChartState extends State<AssetTypeAllocationChart> {
     final bool hasData = widget.allocationData.isNotEmpty && widget.totalValue > 0;
 
     return Column(
-      // ▼▼▼ MODIFICATION : Centrage du titre ▼▼▼
       crossAxisAlignment: CrossAxisAlignment.center,
-      // ▲▲▲ FIN MODIFICATION ▲▲▲
       children: [
         Text(
           'Répartition par actifs',
           style: AppTypography.h3,
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
-        SizedBox(
-          height: 200,
-          child: hasData
-              ? PieChart(
-            PieChartData(
-              pieTouchData: PieTouchData(
-                touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                  setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        pieTouchResponse == null ||
-                        pieTouchResponse.touchedSection == null) {
-                      touchedIndex = -1;
-                      return;
-                    }
-                    touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                  });
-                },
+
+        if (hasData) ...[
+          SizedBox(
+            height: 200,
+            child: PieChart(
+              PieChartData(
+                pieTouchData: PieTouchData(
+                  touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                    setState(() {
+                      if (!event.isInterestedForInteractions ||
+                          pieTouchResponse == null ||
+                          pieTouchResponse.touchedSection == null) {
+                        touchedIndex = -1;
+                        return;
+                      }
+                      touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                    });
+                  },
+                ),
+                sections: _generateSections(
+                  widget.allocationData,
+                  widget.totalValue,
+                ),
+                centerSpaceRadius: 60,
+                sectionsSpace: 4,
+                startDegreeOffset: -90,
               ),
-              sections: _generateSections(
-                widget.allocationData,
-                widget.totalValue,
-              ),
-              centerSpaceRadius: 60,
-              sectionsSpace: 4,
-              startDegreeOffset: -90,
-            ),
-          )
-              : Center(
-            child: Text(
-              'Aucune donnée',
-              style: AppTypography.caption,
             ),
           ),
-        ),
+          const SizedBox(height: AppDimens.paddingL),
+
+          _buildLegend(widget.allocationData, widget.totalValue),
+        ] else
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppDimens.paddingL),
+              child: Text(
+                'Aucune donnée',
+                style: AppTypography.caption,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -86,36 +94,43 @@ class _AssetTypeAllocationChartState extends State<AssetTypeAllocationChart> {
       final isTouched = i == touchedIndex;
       final entry = entries[i];
       final percentage = (entry.value / totalValue) * 100;
-      final radius = isTouched ? 25.0 : 20.0;
+
+      final radius = isTouched ? 30.0 : 20.0;
+      final opacity = isTouched ? 1.0 : 0.8;
 
       if (entry.value <= 0) return PieChartSectionData(value: 0);
 
       return PieChartSectionData(
-        color: AppColors.charts[i % AppColors.charts.length],
+        color: AppColors.charts[i % AppColors.charts.length].withOpacity(opacity),
         value: entry.value,
         title: '',
         radius: radius,
-        badgeWidget: _buildBadge(
+        // ▼▼▼ MODIFICATION : Badge visible uniquement si touché ▼▼▼
+        badgeWidget: isTouched ? _buildBadge(
             entry.key.displayName,
             percentage,
-            isTouched,
             AppColors.charts[i % AppColors.charts.length]
-        ),
-        // ▼▼▼ MODIFICATION : Écartement des étiquettes (2.2 au lieu de 1.6) ▼▼▼
-        badgePositionPercentageOffset: 2.2,
+        ) : null,
+        badgePositionPercentageOffset: 1.9,
         // ▲▲▲ FIN MODIFICATION ▲▲▲
       );
     }).where((section) => section.value > 0).toList();
   }
 
-  Widget _buildBadge(String name, double percentage, bool isTouched, Color color) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: EdgeInsets.all(isTouched ? 8 : 4),
+  Widget _buildBadge(String name, double percentage, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: isTouched ? AppColors.surfaceLight : Colors.transparent,
+        color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(4),
-        border: isTouched ? Border.all(color: color) : null,
+        border: Border.all(color: color),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          )
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -123,20 +138,69 @@ class _AssetTypeAllocationChartState extends State<AssetTypeAllocationChart> {
           Text(
             name,
             style: AppTypography.caption.copyWith(
-              color: isTouched ? AppColors.textPrimary : AppColors.textSecondary,
-              fontWeight: isTouched ? FontWeight.bold : FontWeight.normal,
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 10,
             ),
-            textAlign: TextAlign.center,
           ),
           Text(
             '${percentage.toStringAsFixed(1)}%',
             style: AppTypography.label.copyWith(
               color: color,
-              fontSize: isTouched ? 12 : 10,
+              fontSize: 10,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLegend(Map<AssetType, double> allocationData, double totalValue) {
+    final entries = allocationData.entries.toList();
+    entries.sort((a, b) => b.value.compareTo(a.value));
+
+    return Column(
+      children: List.generate(entries.length, (i) {
+        final entry = entries[i];
+        if (entry.value <= 0) return const SizedBox.shrink();
+
+        final percentage = (entry.value / totalValue) * 100;
+        final color = AppColors.charts[i % AppColors.charts.length];
+        final isTouched = i == touchedIndex;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isTouched ? AppColors.surfaceLight : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppDimens.radiusS),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 4)],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  entry.key.displayName,
+                  style: isTouched ? AppTypography.bodyBold : AppTypography.body,
+                ),
+              ),
+              Text(
+                '${percentage.toStringAsFixed(1)}%',
+                style: AppTypography.bodyBold.copyWith(color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 }

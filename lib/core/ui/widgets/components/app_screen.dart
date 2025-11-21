@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_colors.dart';
+// import '../../theme/app_colors.dart'; // Plus besoin si on utilise le fond animé
+import 'app_animated_background.dart'; // Import du nouveau widget
 
 class AppScreen extends StatelessWidget {
   final Widget body;
@@ -19,27 +20,27 @@ class AppScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Structure de base
+    // 1. Contenu principal (Scaffold transparent)
     Widget content = Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent, // Important : transparent pour voir le fond animé
       appBar: appBar,
       body: body,
       bottomNavigationBar: bottomNavigationBar,
       floatingActionButton: floatingActionButton,
-      extendBody: true, // Permet au contenu de passer sous la navbar si elle est transparente
+      extendBody: true,
     );
 
-    // Gestion sécurisée des encoches (iPhone)
+    // 2. Gestion SafeArea
     if (withSafeArea) {
-      return Container(
-        color: AppColors.background,
-        child: SafeArea(
-          bottom: false, // On laisse le bas pour la nav bar
-          child: content,
-        ),
+      content = SafeArea(
+        bottom: false,
+        child: content,
       );
     }
 
-    return content;
+    // 3. Wrapper avec le fond animé "Aurora"
+    return AppAnimatedBackground(
+      child: content,
+    );
   }
 }
