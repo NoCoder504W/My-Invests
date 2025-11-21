@@ -148,7 +148,7 @@ class OverviewTab extends StatelessWidget {
                       child: const SyncAlertsCard(), // À migrer plus tard vers AppCard en interne
                     ),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 100),
                   ]),
                 ),
               ),
