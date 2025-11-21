@@ -146,9 +146,17 @@ class PortfolioCard extends StatelessWidget {
             child: const Text('Assistant'),
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) => InitialSetupWizard(portfolioName: nameController.text),
-              ));
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => InitialSetupWizard(portfolioName: name),
+                ),
+              );
+              
+              // Si le wizard a terminé avec succès, on ferme les paramètres pour revenir à l'accueil
+              if (result == true && context.mounted) {
+                Navigator.of(context).pop();
+              }
             },
           ),
         ],
