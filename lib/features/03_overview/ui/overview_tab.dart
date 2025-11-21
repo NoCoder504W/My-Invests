@@ -35,25 +35,32 @@ class OverviewTab extends StatelessWidget {
 
         final institutions = portfolio.institutions;
 
+        // Calcul de l'espace nécessaire en haut pour la barre flottante
+        // Hauteur Barre (60) + Marge (4) + SafeArea + un peu d'air (20)
+        final double topPadding = MediaQuery.of(context).padding.top + 90;
+
         return AppScreen(
-          withSafeArea: false,
+          withSafeArea: false, // Important pour que le gradient monte tout en haut
           body: CustomScrollView(
             slivers: [
-              // En-tête avec titre
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      AppDimens.paddingL,
-                      AppDimens.paddingL,
-                      AppDimens.paddingL,
-                      AppDimens.paddingM
-                  ),
-                  child: FadeInSlide(
-                    delay: 0.0,
-                    child: Text(
-                      'Vue d\'ensemble',
-                      style: AppTypography.h1,
-                      textAlign: TextAlign.center,
+              // CORRECTION : On pousse le contenu vers le bas ICI
+              SliverPadding(
+                padding: EdgeInsets.only(top: topPadding),
+                sliver: SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppDimens.paddingL,
+                        0, // On a déjà géré le top avec le SliverPadding
+                        AppDimens.paddingL,
+                        AppDimens.paddingM
+                    ),
+                    child: FadeInSlide(
+                      delay: 0.0,
+                      child: Text(
+                        'Vue d\'ensemble',
+                        style: AppTypography.h1,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
                 ),
@@ -81,11 +88,9 @@ class OverviewTab extends StatelessWidget {
                     const SizedBox(height: AppDimens.paddingM),
 
                     // 3. Allocations
-                    // CORRECTION : On utilise LayoutBuilder uniquement si nécessaire
                     LayoutBuilder(
                       builder: (context, constraints) {
                         if (constraints.maxWidth >= 800) {
-                          // Mode Tablette / Desktop
                           return Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -105,17 +110,16 @@ class OverviewTab extends StatelessWidget {
                             ],
                           );
                         } else {
-                          // Mode Mobile : Pas de LayoutBuilder complexe qui casse l'animation
                           return Column(
                             children: [
                               FadeInSlide(
-                                  key: const ValueKey('alloc_chart'), // Clé pour préserver l'état
+                                  key: const ValueKey('alloc_chart'),
                                   delay: 0.3,
                                   child: _buildAllocationCard(portfolio)
                               ),
                               const SizedBox(height: AppDimens.paddingM),
                               FadeInSlide(
-                                  key: const ValueKey('asset_chart'), // Clé pour préserver l'état
+                                  key: const ValueKey('asset_chart'),
                                   delay: 0.35,
                                   child: _buildAssetTypeCard(portfolioProvider)
                               ),
@@ -155,7 +159,6 @@ class OverviewTab extends StatelessWidget {
                         final index = entry.key;
                         final institution = entry.value;
 
-                        // Délai progressif
                         final double itemDelay = 0.45 + (index * 0.05);
 
                         return Padding(
@@ -167,7 +170,7 @@ class OverviewTab extends StatelessWidget {
                         );
                       }),
 
-                    // 5. Alertes
+                    // 5. Alertes + Espace Nav Bar
                     Builder(
                         builder: (context) {
                           final double alertsDelay = 0.45 + (institutions.length * 0.05) + 0.05;
@@ -178,7 +181,7 @@ class OverviewTab extends StatelessWidget {
                                 delay: alertsDelay > 0.8 ? 0.8 : alertsDelay,
                                 child: const SyncAlertsCard(),
                               ),
-                              const SizedBox(height: 100), // Espace pour la nav bar flottante
+                              const SizedBox(height: 100), // Espace pour la nav bar flottante du BAS
                             ],
                           );
                         }

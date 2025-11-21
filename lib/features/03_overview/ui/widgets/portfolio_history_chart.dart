@@ -6,7 +6,7 @@ import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/core/data/models/portfolio_value_history_point.dart';
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
-import 'package:portefeuille/core/utils/currency_formatter.dart'; // Assurez-vous que cet import existe
+import 'package:portefeuille/core/utils/currency_formatter.dart';
 
 class PortfolioHistoryChart extends StatefulWidget {
   const PortfolioHistoryChart({super.key});
@@ -18,20 +18,24 @@ class PortfolioHistoryChart extends StatefulWidget {
 class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
   @override
   Widget build(BuildContext context) {
+    // Calcul responsive de la hauteur : 25% de l'écran, borné entre 200 et 350px
+    final screenHeight = MediaQuery.of(context).size.height;
+    final double chartHeight = (screenHeight * 0.25).clamp(200.0, 350.0);
+
     return Consumer<PortfolioProvider>(
       builder: (context, provider, child) {
         final history = provider.activePortfolio?.valueHistory ?? [];
         final currencyCode = provider.currentBaseCurrency;
 
         if (history.isEmpty) {
-          return _buildPlaceholder("Pas encore d'historique.");
+          return _buildPlaceholder("Pas encore d'historique.", chartHeight);
         }
         if (history.length < 2) {
-          return _buildPlaceholder("Données insuffisantes pour le graphique.");
+          return _buildPlaceholder("Données insuffisantes pour le graphique.", chartHeight);
         }
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -40,10 +44,12 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
                 style: AppTypography.h3,
               ),
             ),
-            AspectRatio(
-              aspectRatio: 1.70,
+            // Remplacement de AspectRatio par SizedBox avec hauteur dynamique uniforme
+            SizedBox(
+              height: chartHeight,
+              width: double.infinity,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 24, 24, 10),
+                padding: const EdgeInsets.fromLTRB(0, 12, 24, 10),
                 child: LineChart(
                   _mainData(history, currencyCode),
                 ),
@@ -55,9 +61,9 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
     );
   }
 
-  Widget _buildPlaceholder(String message) {
+  Widget _buildPlaceholder(String message, double height) {
     return Container(
-      height: 200,
+      height: height,
       alignment: Alignment.center,
       child: Text(
         message,
@@ -93,27 +99,19 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return LineChartData(
-      // Suppression des grilles pour un look clean
       gridData: FlGridData(show: false),
-
-      // Bordures invisibles
       borderData: FlBorderData(show: false),
-
       titlesData: FlTitlesData(
         show: true,
         rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-
-        // Dates en bas (stylisées)
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 30,
             interval: _calculateDateInterval(history),
             getTitlesWidget: (value, meta) {
-              // Pas de label si trop proche de la fin
               if (value == spots.last.x) return const SizedBox.shrink();
-
               final date = DateTime.fromMillisecondsSinceEpoch(value.toInt());
               return Padding(
                 padding: const EdgeInsets.only(top: 8.0),
@@ -125,13 +123,11 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
             },
           ),
         ),
-
-        // Montants à gauche (stylisés)
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 45,
-            interval: (maxY - minY) / 3, // Seulement 3-4 labels Y
+            interval: (maxY - minY) / 3,
             getTitlesWidget: (value, meta) {
               if (value == minY || value == maxY) return const SizedBox.shrink();
               return Text(
@@ -143,30 +139,24 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
           ),
         ),
       ),
-
       minX: spots.first.x,
       maxX: spots.last.x,
       minY: minY,
       maxY: maxY,
-
       lineBarsData: [
         LineChartBarData(
           spots: spots,
           isCurved: true,
           curveSmoothness: 0.35,
-          color: primaryColor, // Bleu électrique
+          color: primaryColor,
           barWidth: 3,
           isStrokeCapRound: true,
           dotData: const FlDotData(show: false),
-
-          // EFFET NEON (Ombre portée)
           shadow: Shadow(
             color: AppColors.primary.withOpacity(0.6),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
-
-          // Dégradé sous la courbe
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
@@ -180,8 +170,6 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
           ),
         ),
       ],
-
-      // Tooltip au survol
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
           getTooltipColor: (touchedSpot) => AppColors.surfaceLight,
@@ -191,7 +179,6 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
             return touchedSpots.map((LineBarSpot touchedSpot) {
               final date = DateTime.fromMillisecondsSinceEpoch(touchedSpot.x.toInt());
               final formattedValue = CurrencyFormatter.format(touchedSpot.y, currencyCode);
-
               return LineTooltipItem(
                 '${DateFormat('dd MMM', 'fr_FR').format(date)}\n',
                 AppTypography.caption,

@@ -26,6 +26,10 @@ class _AssetTypeAllocationChartState extends State<AssetTypeAllocationChart> {
   Widget build(BuildContext context) {
     final bool hasData = widget.allocationData.isNotEmpty && widget.totalValue > 0;
 
+    // MÊME LOGIQUE RESPONSIVE
+    final screenHeight = MediaQuery.of(context).size.height;
+    final double chartHeight = (screenHeight * 0.25).clamp(200.0, 350.0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -38,7 +42,7 @@ class _AssetTypeAllocationChartState extends State<AssetTypeAllocationChart> {
 
         if (hasData) ...[
           SizedBox(
-            height: 200,
+            height: chartHeight,
             child: PieChart(
               PieChartData(
                 pieTouchData: PieTouchData(
@@ -68,12 +72,15 @@ class _AssetTypeAllocationChartState extends State<AssetTypeAllocationChart> {
 
           _buildLegend(widget.allocationData, widget.totalValue),
         ] else
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppDimens.paddingL),
-              child: Text(
-                'Aucune donnée',
-                style: AppTypography.caption,
+          SizedBox(
+            height: chartHeight,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppDimens.paddingL),
+                child: Text(
+                  'Aucune donnée',
+                  style: AppTypography.caption,
+                ),
               ),
             ),
           ),
@@ -105,14 +112,12 @@ class _AssetTypeAllocationChartState extends State<AssetTypeAllocationChart> {
         value: entry.value,
         title: '',
         radius: radius,
-        // ▼▼▼ MODIFICATION : Badge visible uniquement si touché ▼▼▼
         badgeWidget: isTouched ? _buildBadge(
             entry.key.displayName,
             percentage,
             AppColors.charts[i % AppColors.charts.length]
         ) : null,
         badgePositionPercentageOffset: 1.9,
-        // ▲▲▲ FIN MODIFICATION ▲▲▲
       );
     }).where((section) => section.value > 0).toList();
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_dimens.dart';
+import '../../theme/app_typography.dart'; // Nécessaire pour le style du Tooltip
 
 class AppFloatingNavBar extends StatelessWidget {
   final int currentIndex;
@@ -18,22 +19,19 @@ class AppFloatingNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // On utilise Align pour positionner la barre en bas au centre
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        // Marges pour l'effet "flottant"
         margin: const EdgeInsets.fromLTRB(
             AppDimens.paddingL,
             0,
             AppDimens.paddingL,
-            AppDimens.paddingL // Marge du bas
+            AppDimens.paddingL
         ),
-        height: 64, // Hauteur compacte
+        height: 64,
         decoration: BoxDecoration(
-          // Fond semi-transparent
           color: AppColors.surface.withOpacity(0.85),
-          borderRadius: BorderRadius.circular(32), // Forme de pilule
+          borderRadius: BorderRadius.circular(32),
           border: Border.all(color: AppColors.border, width: 1),
           boxShadow: [
             BoxShadow(
@@ -43,7 +41,6 @@ class AppFloatingNavBar extends StatelessWidget {
             ),
           ],
         ),
-        // ClipRRect + BackdropFilter pour l'effet de flou (Glassmorphism)
         child: ClipRRect(
           borderRadius: BorderRadius.circular(32),
           child: BackdropFilter(
@@ -56,7 +53,7 @@ class AppFloatingNavBar extends StatelessWidget {
                 final isSelected = currentIndex == index;
 
                 return _buildNavItem(context, item, isSelected, () {
-                  HapticFeedback.selectionClick(); // Retour haptique
+                  HapticFeedback.selectionClick();
                   onTap(index);
                 });
               }).toList(),
@@ -68,20 +65,48 @@ class AppFloatingNavBar extends StatelessWidget {
   }
 
   Widget _buildNavItem(BuildContext context, AppNavItem item, bool isSelected, VoidCallback onTap) {
-    // Animation de changement de couleur
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 60, // Zone de touche large
-        height: double.infinity,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
+    // On utilise Tooltip pour afficher le nom au survol
+    return Tooltip(
+      message: item.label,
+      // Personnalisation du Tooltip pour coller au thème de l'app
+      decoration: BoxDecoration(
+        color: AppColors.surface, // Fond sombre
+        borderRadius: BorderRadius.circular(AppDimens.radiusS),
+        border: Border.all(color: AppColors.border), // Bordure subtile
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      textStyle: AppTypography.caption.copyWith(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w500,
+      ),
+      waitDuration: const Duration(milliseconds: 500), // Léger délai avant affichage
+
+      // Zone interactive
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          // Effet circulaire comme sur l'AppBar
+          customBorder: const CircleBorder(),
+          // Couleur de survol (hover) subtile
+          hoverColor: AppColors.primary.withOpacity(0.1),
+          splashColor: AppColors.primary.withOpacity(0.2),
+
+          child: Container(
+            width: 60, // Zone de touche large
+            height: double.infinity,
+            alignment: Alignment.center,
+            child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10), // Padding interne de l'icône
               decoration: BoxDecoration(
+                // Si sélectionné : fond subtil. Sinon transparent.
                 color: isSelected ? AppColors.primary.withOpacity(0.15) : Colors.transparent,
                 shape: BoxShape.circle,
               ),
@@ -91,14 +116,13 @@ class AppFloatingNavBar extends StatelessWidget {
                 size: 24,
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-// Classe de configuration simple pour les items
 class AppNavItem {
   final IconData icon;
   final IconData selectedIcon;
