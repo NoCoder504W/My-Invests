@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/ui/widgets/inputs/app_dropdown.dart';
 import 'package:provider/provider.dart';
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
 import 'package:portefeuille/core/ui/theme/app_dimens.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_icon.dart';
-import 'package:portefeuille/core/ui/widgets/components/app_tile.dart';
 import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
 
 class GeneralSettingsCard extends StatelessWidget {
@@ -28,56 +28,40 @@ class GeneralSettingsCard extends StatelessWidget {
               Text('Préférences', style: AppTypography.h3),
             ],
           ),
-          const SizedBox(height: AppDimens.paddingM),
+          const SizedBox(height: AppDimens.paddingL),
 
-          // Devise
-          AppTile(
-            title: 'Devise de base',
-            subtitle: 'Devise principale pour les totaux',
-            leading: const Icon(Icons.currency_exchange, color: AppColors.textSecondary, size: 20),
-            trailing: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: settingsProvider.baseCurrency,
-                dropdownColor: AppColors.surfaceLight,
-                style: AppTypography.bodyBold,
-                icon: const Icon(Icons.arrow_drop_down, color: AppColors.textTertiary),
-                onChanged: (val) {
-                  if (val != null) settingsProvider.setBaseCurrency(val);
-                },
-                items: _baseCurrencies.map((currency) {
-                  return DropdownMenuItem(
-                    value: currency,
-                    child: Text(currency),
-                  );
-                }).toList(),
-              ),
-            ),
+          // Devise de base
+          AppDropdown<String>(
+            label: 'Devise de base',
+            value: settingsProvider.baseCurrency,
+            items: _baseCurrencies.map((currency) {
+              return DropdownMenuItem(
+                value: currency,
+                child: Text(currency),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) settingsProvider.setBaseCurrency(val);
+            },
+            prefixIcon: Icons.currency_exchange,
           ),
 
-          Divider(height: 1, color: AppColors.border),
+          const SizedBox(height: AppDimens.paddingM),
 
-          // Niveau
-          AppTile(
-            title: 'Niveau utilisateur',
-            subtitle: 'Affiche des aides contextuelles',
-            leading: const Icon(Icons.person_outline, color: AppColors.textSecondary, size: 20),
-            trailing: DropdownButtonHideUnderline(
-              child: DropdownButton<UserLevel>(
-                value: settingsProvider.userLevel,
-                dropdownColor: AppColors.surfaceLight,
-                style: AppTypography.bodyBold,
-                icon: const Icon(Icons.arrow_drop_down, color: AppColors.textTertiary),
-                onChanged: (val) {
-                  if (val != null) settingsProvider.setUserLevel(val);
-                },
-                items: UserLevel.values.map((level) {
-                  return DropdownMenuItem(
-                    value: level,
-                    child: Text(level.name.toUpperCase()),
-                  );
-                }).toList(),
-              ),
-            ),
+          // Niveau Utilisateur
+          AppDropdown<UserLevel>(
+            label: 'Niveau utilisateur',
+            value: settingsProvider.userLevel,
+            items: UserLevel.values.map((level) {
+              return DropdownMenuItem(
+                value: level,
+                child: Text(level.name.toUpperCase()),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) settingsProvider.setUserLevel(val);
+            },
+            prefixIcon: Icons.person_outline,
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/ui/widgets/inputs/app_dropdown.dart';
 import 'package:provider/provider.dart';
 import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
@@ -26,29 +27,19 @@ class PortfolioCard extends StatelessWidget {
               const AppIcon(icon: Icons.account_balance_wallet_outlined, color: AppColors.primary),
               const SizedBox(width: AppDimens.paddingM),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Portefeuille Actif', style: AppTypography.caption),
-                    DropdownButtonHideUnderline(
-                      child: DropdownButton<Portfolio>(
-                        value: provider.activePortfolio,
-                        isDense: true,
-                        dropdownColor: AppColors.surfaceLight,
-                        style: AppTypography.h3.copyWith(color: AppColors.textPrimary),
-                        icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
-                        onChanged: (newValue) {
-                          if (newValue != null) provider.setActivePortfolio(newValue.id);
-                        },
-                        items: provider.portfolios.map((p) {
-                          return DropdownMenuItem(
-                            value: p,
-                            child: Text(p.name, overflow: TextOverflow.ellipsis),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
+                // Refactoring : Utilisation de AppDropdown
+                child: AppDropdown<Portfolio>(
+                  label: 'Portefeuille Actif',
+                  value: provider.activePortfolio,
+                  items: provider.portfolios.map((p) {
+                    return DropdownMenuItem(
+                      value: p,
+                      child: Text(p.name, overflow: TextOverflow.ellipsis),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    if (newValue != null) provider.setActivePortfolio(newValue.id);
+                  },
                 ),
               ),
             ],
@@ -77,7 +68,7 @@ class PortfolioCard extends StatelessWidget {
               AppButton(
                 label: 'Supprimer',
                 icon: Icons.delete_outline,
-                type: AppButtonType.ghost, // Style discret pour la suppression
+                type: AppButtonType.ghost,
                 isFullWidth: false,
                 onPressed: provider.activePortfolio == null ? null : () => provider.deletePortfolio(provider.activePortfolio!.id),
               ),
@@ -88,10 +79,6 @@ class PortfolioCard extends StatelessWidget {
     );
   }
 
-  // (Les méthodes _showRenameDialog et _showNewPortfolioDialog peuvent rester telles quelles 
-  // si vous acceptez qu'elles utilisent les Dialogs Flutter par défaut, 
-  // sinon il faudrait aussi refactorer les AlertDialog. Pour l'instant, ça passe.)
-  // ... Copiez ici les méthodes _showRenameDialog et _showNewPortfolioDialog de l'ancien fichier ...
   void _showRenameDialog(BuildContext context, PortfolioProvider provider) {
     final nameController = TextEditingController(text: provider.activePortfolio?.name ?? '');
     showDialog(
@@ -144,18 +131,23 @@ class PortfolioCard extends StatelessWidget {
           ),
           FilledButton(
             child: const Text('Assistant'),
-            onPressed: () {
+            onPressed: () async { // Async ajouté
               Navigator.pop(ctx);
+
+              // Appel asynchrone de l'assistant
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => InitialSetupWizard(portfolioName: name),
+                  builder: (_) => InitialSetupWizard(portfolioName: nameController.text),
                 ),
               );
-              
-              // Si le wizard a terminé avec succès, on ferme les paramètres pour revenir à l'accueil
+
+              // Vérification du résultat
               if (result == true && context.mounted) {
-                Navigator.of(context).pop();
+                // On ferme la modale parente ou on effectue une autre action si nécessaire
+                // Note: Ici on est déjà sorti du dialog par le premier Navigator.pop(ctx).
+                // Si vous vouliez fermer l'écran Settings, vous pourriez faire Navigator.of(context).pop();
+                // Mais généralement on veut juste rester sur l'écran Settings avec le nouveau portefeuille sélectionné.
               }
             },
           ),

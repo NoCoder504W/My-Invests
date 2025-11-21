@@ -31,7 +31,7 @@ class SettingsScreen extends StatelessWidget {
       withSafeArea: false, // Géré par le modal ou le parent
       body: Column(
         children: [
-          // Header personnalisé avec bouton de fermeture
+          // Header personnalisé avec Stack pour un centrage parfait
           Padding(
             padding: const EdgeInsets.fromLTRB(
                 AppDimens.paddingL,
@@ -39,15 +39,30 @@ class SettingsScreen extends StatelessWidget {
                 AppDimens.paddingM,
                 AppDimens.paddingM
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                Text('Paramètres', style: AppTypography.h1),
-                AppIcon(
-                  icon: Icons.close,
-                  onTap: () => Navigator.of(context).pop(),
-                  backgroundColor: Colors.transparent,
-                  size: 24,
+                // 1. Le titre centré
+                // On utilise SizedBox pour s'assurer qu'il prend toute la largeur
+                // et permettre au texte de se centrer dedans
+                SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    'Paramètres',
+                    style: AppTypography.h1,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                // 2. Le bouton fermer aligné à droite
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: AppIcon(
+                    icon: Icons.close,
+                    onTap: () => Navigator.of(context).pop(),
+                    backgroundColor: Colors.transparent,
+                    size: 24,
+                  ),
                 ),
               ],
             ),
