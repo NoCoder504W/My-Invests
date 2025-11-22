@@ -72,6 +72,8 @@ class PortfolioProvider extends ChangeNotifier {
   // Getters - Données calculées
   String get currentBaseCurrency => _aggregatedData.baseCurrency;
   double get activePortfolioTotalValue => _aggregatedData.totalValue;
+  double get activePortfolioTotalInvested => _aggregatedData.totalInvested; // AJOUT
+  double get activePortfolioCashValue => _aggregatedData.valueByAssetType[AssetType.Cash] ?? 0.0; // AJOUT
   double get activePortfolioTotalPL => _aggregatedData.totalPL;
   double get activePortfolioTotalPLPercentage {
     if (_aggregatedData.totalInvested == 0.0) return 0.0;
