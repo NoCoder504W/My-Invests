@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import 'package:portefeuille/core/ui/theme/app_dimens.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/components/app_screen.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_icon.dart';
 import 'package:portefeuille/core/ui/widgets/fade_in_slide.dart';
-
-import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
-import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
 
 import 'widgets/appearance_card.dart';
 import 'widgets/general_settings_card.dart';
@@ -23,10 +19,6 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // On consomme les providers pour que la page se rafraîchisse si besoin
-    context.watch<PortfolioProvider>();
-    context.watch<SettingsProvider>();
-
     // CORRECTION : Ajout de ClipRRect pour arrondir les coins supérieurs
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(

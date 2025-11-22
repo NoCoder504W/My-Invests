@@ -22,10 +22,14 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
     final screenHeight = MediaQuery.of(context).size.height;
     final double chartHeight = (screenHeight * 0.25).clamp(200.0, 350.0);
 
-    return Consumer<PortfolioProvider>(
-      builder: (context, provider, child) {
-        final history = provider.activePortfolio?.valueHistory ?? [];
-        final currencyCode = provider.currentBaseCurrency;
+    return Selector<PortfolioProvider, ({List<PortfolioValueHistoryPoint> history, String currency})>(
+      selector: (context, provider) => (
+        history: provider.activePortfolio?.valueHistory ?? [],
+        currency: provider.currentBaseCurrency
+      ),
+      builder: (context, data, child) {
+        final history = data.history;
+        final currencyCode = data.currency;
 
         if (history.isEmpty) {
           return _buildPlaceholder("Pas encore d'historique.", chartHeight);

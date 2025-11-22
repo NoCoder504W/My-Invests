@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:provider/provider.dart';
 
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
@@ -25,11 +26,18 @@ class ProjectionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PortfolioProvider>(
-      builder: (context, provider, child) {
-        final projectionData = provider.getProjectionData(selectedDuration);
-        final baseCurrency = provider.currentBaseCurrency;
-        final isProcessing = provider.isProcessingInBackground;
+    return Selector<PortfolioProvider, ({Portfolio? portfolio, String currency, bool isProcessing, int duration})>(
+      selector: (context, provider) => (
+        portfolio: provider.activePortfolio,
+        currency: provider.currentBaseCurrency,
+        isProcessing: provider.isProcessingInBackground,
+        duration: selectedDuration
+      ),
+      builder: (context, data, child) {
+        final provider = Provider.of<PortfolioProvider>(context, listen: false);
+        final projectionData = provider.getProjectionData(data.duration);
+        final baseCurrency = data.currency;
+        final isProcessing = data.isProcessing;
 
         return AppCard(
           child: Column(

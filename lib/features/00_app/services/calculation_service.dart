@@ -104,6 +104,7 @@ class CalculationService {
     double totalValue = 0.0;
     double totalPL = 0.0;
     double totalInvested = 0.0;
+    double weightedYieldSum = 0.0; // NOUVEAU
 
     final accountValues = <String, double>{};
     final accountPLs = <String, double>{};
@@ -149,6 +150,9 @@ class CalculationService {
           assetValues[asset.id] = assetValueConverted;
           assetPLs[asset.id] = assetPLConverted;
 
+          // Calcul du rendement pondéré
+          weightedYieldSum += assetValueConverted * asset.estimatedAnnualYield;
+
           aggregatedValueByType.update(
             asset.type,
                 (value) => value + assetValueConverted,
@@ -169,6 +173,9 @@ class CalculationService {
       allMetadata: allMetadata,
     );
 
+    // Calcul final du rendement
+    final estimatedAnnualYield = totalValue > 0 ? weightedYieldSum / totalValue : 0.0;
+
     return AggregatedPortfolioData(
       baseCurrency: targetCurrency,
       totalValue: totalValue,
@@ -181,6 +188,7 @@ class CalculationService {
       assetPLs: assetPLs,
       aggregatedAssets: aggregatedAssets,
       valueByAssetType: aggregatedValueByType,
+      estimatedAnnualYield: estimatedAnnualYield,
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:provider/provider.dart';
 
 // Core UI
@@ -97,14 +98,15 @@ class _TransactionsViewState extends State<TransactionsView> {
     // Calcul de l'espace nécessaire en haut
     final double topPadding = MediaQuery.of(context).padding.top + 90;
 
-    return Consumer<PortfolioProvider>(
-      builder: (context, provider, child) {
-        final portfolio = provider.activePortfolio;
+    return Selector<PortfolioProvider, Portfolio?>(
+      selector: (context, provider) => provider.activePortfolio,
+      builder: (context, portfolio, child) {
         if (portfolio == null) {
           return const Center(child: Text("Aucun portefeuille."));
         }
 
         final accountsMap = <String, Account>{};
+        final provider = Provider.of<PortfolioProvider>(context, listen: false);
         for (var inst in portfolio.institutions) {
           for (var acc in inst.accounts) {
             accountsMap[acc.id] = acc;

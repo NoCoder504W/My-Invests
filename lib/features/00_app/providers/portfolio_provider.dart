@@ -52,6 +52,9 @@ class PortfolioProvider extends ChangeNotifier {
   BackgroundActivity _activity = const Idle();
   String? _syncMessage;
   AggregatedPortfolioData _aggregatedData = AggregatedPortfolioData.empty;
+  
+  // Cache pour optimisation O(1)
+  final Map<String, Asset> _assetMap = {};
 
   // Getters - État brut
   List<Portfolio> get portfolios => _portfolios;
@@ -73,7 +76,7 @@ class PortfolioProvider extends ChangeNotifier {
   }
 
   double get activePortfolioEstimatedAnnualYield =>
-      _activePortfolio?.estimatedAnnualYield ?? 0.0;
+      _aggregatedData.estimatedAnnualYield;
 
   double getConvertedAccountValue(String accountId) =>
       _aggregatedData.accountValues[accountId] ?? 0.0;
@@ -91,6 +94,9 @@ class PortfolioProvider extends ChangeNotifier {
       _aggregatedData.aggregatedAssets;
   Map<AssetType, double> get aggregatedValueByAssetType =>
       _aggregatedData.valueByAssetType;
+
+  bool get hasCrowdfunding =>
+      (_aggregatedData.valueByAssetType[AssetType.RealEstateCrowdfunding] ?? 0.0) > 0;
 
   PortfolioProvider({
     required PortfolioRepository repository,
@@ -270,8 +276,11 @@ class PortfolioProvider extends ChangeNotifier {
 
     // 4. Calcul
     await _recalculateAggregatedData();
+    
+    // 5. Reconstruire le cache des actifs
+    _rebuildAssetMap();
 
-    // 5. Sauvegarder le choix actuel pour la prochaine fois
+    // 6. Sauvegarder le choix actuel pour la prochaine fois
     if (_activePortfolio != null) {
       _settingsProvider?.setLastPortfolioId(_activePortfolio!.id);
     }
@@ -662,16 +671,21 @@ class PortfolioProvider extends ChangeNotifier {
   // ASSETS
   // ============================================================
 
-  Asset? findAssetByTicker(String ticker) {
-    if (_activePortfolio == null) return null;
+  void _rebuildAssetMap() {
+    _assetMap.clear();
+    if (_activePortfolio == null) return;
+    
     for (var institution in _activePortfolio!.institutions) {
       for (var account in institution.accounts) {
         for (var asset in account.assets) {
-          if (asset.ticker == ticker) return asset;
+          _assetMap[asset.ticker] = asset;
         }
       }
     }
-    return null;
+  }
+
+  Asset? findAssetByTicker(String ticker) {
+    return _assetMap[ticker];
   }
 
   Future<void> updateAssetYield(String ticker, double newYield) async {

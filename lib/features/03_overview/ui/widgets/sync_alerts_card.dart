@@ -10,14 +10,21 @@ import 'package:portefeuille/core/ui/widgets/primitives/app_icon.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_button.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 
+import 'package:portefeuille/core/data/models/asset_metadata.dart';
+
 class SyncAlertsCard extends StatelessWidget {
   const SyncAlertsCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PortfolioProvider>(
-      builder: (context, provider, child) {
-        final metadata = provider.allMetadata;
+    return Selector<PortfolioProvider, ({Map<String, AssetMetadata> metadata, bool isProcessing})>(
+      selector: (context, provider) => (
+        metadata: provider.allMetadata,
+        isProcessing: provider.isProcessingInBackground
+      ),
+      builder: (context, data, child) {
+        final metadata = data.metadata;
+        final isProcessing = data.isProcessing;
 
         // Filtrer les actifs
         final assetsWithErrors = metadata.entries
@@ -85,11 +92,11 @@ class SyncAlertsCard extends StatelessWidget {
 
               // Bouton d'action
               AppButton(
-                label: provider.isProcessingInBackground ? 'TRAITEMENT...' : 'TOUT RESYNCHRONISER',
-                isLoading: provider.isProcessingInBackground,
-                onPressed: provider.isProcessingInBackground
+                label: isProcessing ? 'TRAITEMENT...' : 'TOUT RESYNCHRONISER',
+                isLoading: isProcessing,
+                onPressed: isProcessing
                     ? null
-                    : () => provider.synchroniserLesPrix(),
+                    : () => Provider.of<PortfolioProvider>(context, listen: false).synchroniserLesPrix(),
               ),
             ],
           ),

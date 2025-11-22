@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:provider/provider.dart';
 
 // Core UI
@@ -27,10 +28,9 @@ class _PlannerTabState extends State<PlannerTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PortfolioProvider>(
-      builder: (context, portfolioProvider, child) {
-        final portfolio = portfolioProvider.activePortfolio;
-
+    return Selector<PortfolioProvider, Portfolio?>(
+      selector: (context, provider) => provider.activePortfolio,
+      builder: (context, portfolio, child) {
         if (portfolio == null) {
           return const Center(child: Text("Aucun portefeuille sélectionné."));
         }
