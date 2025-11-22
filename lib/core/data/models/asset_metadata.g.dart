@@ -29,13 +29,22 @@ class AssetMetadataAdapter extends TypeAdapter<AssetMetadata> {
       isin: fields[9] as String?,
       assetTypeDetailed: fields[10] as String?,
       lastSyncSource: fields[11] as String?,
+      platform: fields[12] as String?,
+      projectName: fields[13] as String?,
+      location: fields[14] as String?,
+      minDuration: fields[15] as int?,
+      targetDuration: fields[16] as int?,
+      maxDuration: fields[17] as int?,
+      expectedYield: fields[18] as double?,
+      repaymentType: fields[19] as RepaymentType?,
+      riskRating: fields[20] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AssetMetadata obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.ticker)
       ..writeByte(1)
@@ -59,7 +68,25 @@ class AssetMetadataAdapter extends TypeAdapter<AssetMetadata> {
       ..writeByte(10)
       ..write(obj.assetTypeDetailed)
       ..writeByte(11)
-      ..write(obj.lastSyncSource);
+      ..write(obj.lastSyncSource)
+      ..writeByte(12)
+      ..write(obj.platform)
+      ..writeByte(13)
+      ..write(obj.projectName)
+      ..writeByte(14)
+      ..write(obj.location)
+      ..writeByte(15)
+      ..write(obj.minDuration)
+      ..writeByte(16)
+      ..write(obj.targetDuration)
+      ..writeByte(17)
+      ..write(obj.maxDuration)
+      ..writeByte(18)
+      ..write(obj.expectedYield)
+      ..writeByte(19)
+      ..write(obj.repaymentType)
+      ..writeByte(20)
+      ..write(obj.riskRating);
   }
 
   @override

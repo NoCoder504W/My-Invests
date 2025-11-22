@@ -696,6 +696,15 @@ class PortfolioProvider extends ChangeNotifier {
   }
 
   // ============================================================
+  // ASSET METADATA
+  // ============================================================
+
+  Future<void> updateAssetMetadata(AssetMetadata metadata) async {
+    await _repository.saveAssetMetadata(metadata);
+    notifyListeners();
+  }
+
+  // ============================================================
   // PROJECTIONS
   // ============================================================
 

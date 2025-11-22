@@ -8,6 +8,8 @@ import 'package:portefeuille/core/data/models/account.dart';
 import 'package:portefeuille/core/data/models/transaction.dart';
 import 'package:portefeuille/core/data/models/transaction_type.dart';
 import 'package:portefeuille/core/data/models/asset_type.dart';
+import 'package:portefeuille/core/data/models/repayment_type.dart';
+import 'package:portefeuille/core/data/models/asset_metadata.dart';
 import 'package:portefeuille/core/data/services/api_service.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
@@ -32,6 +34,7 @@ class TransactionFormState extends ChangeNotifier
   TransactionType _selectedType;
   DateTime _selectedDate;
   AssetType _selectedAssetType;
+  RepaymentType? _selectedRepaymentType;
   List<Account> _availableAccounts = [];
 
   bool get isEditing => existingTransaction != null;
@@ -39,6 +42,7 @@ class TransactionFormState extends ChangeNotifier
   TransactionType get selectedType => _selectedType;
   DateTime get selectedDate => _selectedDate;
   AssetType get selectedAssetType => _selectedAssetType;
+  RepaymentType? get selectedRepaymentType => _selectedRepaymentType;
   List<Account> get availableAccounts => _availableAccounts;
 
   @override
@@ -94,6 +98,22 @@ class TransactionFormState extends ChangeNotifier
       amountController.text = tx.amount.abs().toStringAsFixed(2);
       priceCurrencyController.text = tx.priceCurrency ?? accountCurrency;
       exchangeRateController.text = tx.exchangeRate?.toString() ?? '1.0';
+
+      // --- CROWDFUNDING ---
+      if (tx.assetType == AssetType.RealEstateCrowdfunding && tx.assetTicker != null) {
+        final metadata = _portfolioProvider.allMetadata[tx.assetTicker];
+        if (metadata != null) {
+          platformController.text = metadata.platform ?? '';
+          locationController.text = metadata.location ?? '';
+          minDurationController.text = metadata.minDuration?.toString() ?? '';
+          targetDurationController.text = metadata.targetDuration?.toString() ?? '';
+          maxDurationController.text = metadata.maxDuration?.toString() ?? '';
+          expectedYieldController.text = metadata.expectedYield?.toString() ?? '';
+          riskRatingController.text = metadata.riskRating ?? '';
+          _selectedRepaymentType = metadata.repaymentType;
+        }
+      }
+      // --- FIN CROWDFUNDING ---
     } else {
       feesController.text = '0.0';
       exchangeRateController.text = '1.0';
@@ -133,6 +153,11 @@ class TransactionFormState extends ChangeNotifier
   @override
   void setDate(DateTime date) {
     _selectedDate = date;
+    notifyListeners();
+  }
+
+  void setRepaymentType(RepaymentType? type) {
+    _selectedRepaymentType = type;
     notifyListeners();
   }
 
@@ -233,6 +258,7 @@ class TransactionFormState extends ChangeNotifier
         finalAmount = -amount;
         break;
       case TransactionType.Dividend:
+      case TransactionType.InterestPayment:
         finalAmount = amount;
         assetTicker = tickerController.text.toUpperCase();
         assetName = nameController.text;
@@ -243,6 +269,8 @@ class TransactionFormState extends ChangeNotifier
         assetName = nameController.text;
         break;
       case TransactionType.Sell:
+      case TransactionType.CapitalRepayment:
+      case TransactionType.EarlyRepayment:
         finalAmount = (quantity! * price! * (exchangeRate ?? 1.0));
         assetTicker = tickerController.text.toUpperCase();
         assetName = nameController.text;
@@ -276,6 +304,28 @@ class TransactionFormState extends ChangeNotifier
     } else {
       _portfolioProvider.addTransaction(transaction);
     }
+
+    // --- CROWDFUNDING METADATA ---
+    if (finalAssetType == AssetType.RealEstateCrowdfunding && assetTicker != null) {
+       // Fetch existing or create new
+       var metadata = _portfolioProvider.allMetadata[assetTicker] ?? AssetMetadata(ticker: assetTicker);
+       
+       // Update fields
+       metadata = metadata.copyWith(
+         platform: platformController.text.trim().isEmpty ? null : platformController.text.trim(),
+         location: locationController.text.trim().isEmpty ? null : locationController.text.trim(),
+         minDuration: int.tryParse(minDurationController.text),
+         targetDuration: int.tryParse(targetDurationController.text),
+         maxDuration: int.tryParse(maxDurationController.text),
+         expectedYield: double.tryParse(expectedYieldController.text.replaceAll(',', '.')),
+         riskRating: riskRatingController.text.trim().isEmpty ? null : riskRatingController.text.trim(),
+         repaymentType: _selectedRepaymentType,
+         assetTypeDetailed: 'RealEstateCrowdfunding',
+       );
+       
+       _portfolioProvider.updateAssetMetadata(metadata);
+    }
+    // --- FIN CROWDFUNDING METADATA ---
 
     if (hasPendingTransactions) {
       final remaining = remainingTransactions;

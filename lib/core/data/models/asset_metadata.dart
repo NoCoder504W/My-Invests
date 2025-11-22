@@ -3,6 +3,7 @@
 import 'package:hive/hive.dart';
 import 'package:portefeuille/core/utils/enum_helpers.dart'; // NOUVEL IMPORT
 import 'sync_status.dart';
+import 'repayment_type.dart';
 
 part 'asset_metadata.g.dart';
 
@@ -44,6 +45,35 @@ class AssetMetadata {
   @HiveField(11)
   String? lastSyncSource;
 
+  // --- CROWDFUNDING ---
+  @HiveField(12)
+  String? platform;
+
+  @HiveField(13)
+  String? projectName;
+
+  @HiveField(14)
+  String? location;
+
+  @HiveField(15)
+  int? minDuration;
+
+  @HiveField(16)
+  int? targetDuration;
+
+  @HiveField(17)
+  int? maxDuration;
+
+  @HiveField(18)
+  double? expectedYield;
+
+  @HiveField(19)
+  RepaymentType? repaymentType;
+
+  @HiveField(20)
+  String? riskRating;
+  // --- FIN CROWDFUNDING ---
+
   String get activeCurrency => priceCurrency ?? 'EUR';
   SyncStatus get activeStatus => syncStatus ?? SyncStatus.never;
 
@@ -60,6 +90,17 @@ class AssetMetadata {
     this.isin,
     this.assetTypeDetailed,
     this.lastSyncSource,
+    // --- CROWDFUNDING ---
+    this.platform,
+    this.projectName,
+    this.location,
+    this.minDuration,
+    this.targetDuration,
+    this.maxDuration,
+    this.expectedYield,
+    this.repaymentType,
+    this.riskRating,
+    // --- FIN CROWDFUNDING ---
   }) : lastUpdated = lastUpdated ?? DateTime.now();
 
   // ... (toutes vos méthodes existantes : updatePrice, markSyncError, etc. restent inchangées) ...
@@ -105,6 +146,17 @@ class AssetMetadata {
     String? isin,
     String? assetTypeDetailed,
     String? lastSyncSource,
+    // --- CROWDFUNDING ---
+    String? platform,
+    String? projectName,
+    String? location,
+    int? minDuration,
+    int? targetDuration,
+    int? maxDuration,
+    double? expectedYield,
+    RepaymentType? repaymentType,
+    String? riskRating,
+    // --- FIN CROWDFUNDING ---
   }) {
     return AssetMetadata(
       ticker: ticker ?? this.ticker,
@@ -119,6 +171,17 @@ class AssetMetadata {
       isin: isin ?? this.isin,
       assetTypeDetailed: assetTypeDetailed ?? this.assetTypeDetailed,
       lastSyncSource: lastSyncSource ?? this.lastSyncSource,
+      // --- CROWDFUNDING ---
+      platform: platform ?? this.platform,
+      projectName: projectName ?? this.projectName,
+      location: location ?? this.location,
+      minDuration: minDuration ?? this.minDuration,
+      targetDuration: targetDuration ?? this.targetDuration,
+      maxDuration: maxDuration ?? this.maxDuration,
+      expectedYield: expectedYield ?? this.expectedYield,
+      repaymentType: repaymentType ?? this.repaymentType,
+      riskRating: riskRating ?? this.riskRating,
+      // --- FIN CROWDFUNDING ---
     );
   }
 
@@ -137,6 +200,17 @@ class AssetMetadata {
       'isin': isin,
       'assetTypeDetailed': assetTypeDetailed,
       'lastSyncSource': lastSyncSource,
+      // --- CROWDFUNDING ---
+      'platform': platform,
+      'projectName': projectName,
+      'location': location,
+      'minDuration': minDuration,
+      'targetDuration': targetDuration,
+      'maxDuration': maxDuration,
+      'expectedYield': expectedYield,
+      'repaymentType': enumToString(repaymentType),
+      'riskRating': riskRating,
+      // --- FIN CROWDFUNDING ---
     };
   }
 
@@ -163,6 +237,21 @@ class AssetMetadata {
       isin: json['isin'] as String?,
       assetTypeDetailed: json['assetTypeDetailed'] as String?,
       lastSyncSource: json['lastSyncSource'] as String?,
+      // --- CROWDFUNDING ---
+      platform: json['platform'] as String?,
+      projectName: json['projectName'] as String?,
+      location: json['location'] as String?,
+      minDuration: json['minDuration'] as int?,
+      targetDuration: json['targetDuration'] as int?,
+      maxDuration: json['maxDuration'] as int?,
+      expectedYield: (json['expectedYield'] as num?)?.toDouble(),
+      repaymentType: enumFromString(
+        RepaymentType.values,
+        json['repaymentType'],
+        fallback: null,
+      ),
+      riskRating: json['riskRating'] as String?,
+      // --- FIN CROWDFUNDING ---
     );
   }
 // --- FIN NOUVELLES MÉTHODES JSON ---

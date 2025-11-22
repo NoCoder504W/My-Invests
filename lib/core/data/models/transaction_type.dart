@@ -24,6 +24,15 @@ enum TransactionType {
 
   @HiveField(6)
   Fees, // Frais (débités des liquidités)
+
+  @HiveField(7)
+  InterestPayment, // Intérêts reçus (Crowdfunding)
+
+  @HiveField(8)
+  CapitalRepayment, // Remboursement de capital (Crowdfunding)
+
+  @HiveField(9)
+  EarlyRepayment, // Remboursement anticipé (Crowdfunding)
 }
 /// Extension pour la traduction et les métadonnées de TransactionType
 extension TransactionTypeExtension on TransactionType {
@@ -43,6 +52,12 @@ extension TransactionTypeExtension on TransactionType {
         return 'Intérêts';
       case TransactionType.Fees:
         return 'Frais';
+      case TransactionType.InterestPayment:
+        return 'Intérêts (Immo)';
+      case TransactionType.CapitalRepayment:
+        return 'Remboursement Capital';
+      case TransactionType.EarlyRepayment:
+        return 'Remboursement Anticipé';
     }
   }
 }

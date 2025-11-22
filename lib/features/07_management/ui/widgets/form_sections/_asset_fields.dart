@@ -12,6 +12,7 @@ import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/inputs/app_dropdown.dart';
 import 'package:portefeuille/core/ui/widgets/inputs/app_text_field.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
+import '_crowdfunding_fields.dart';
 
 class AssetFields extends StatelessWidget {
   const AssetFields({super.key});
@@ -190,6 +191,10 @@ class AssetFields extends StatelessWidget {
             ),
           ],
         ),
+
+        // Crowdfunding fields
+        if (state.selectedAssetType == AssetType.RealEstateCrowdfunding)
+          const CrowdfundingFields(),
       ],
     );
   }

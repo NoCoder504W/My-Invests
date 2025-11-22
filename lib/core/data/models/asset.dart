@@ -5,6 +5,7 @@ import 'package:hive/hive.dart';
 import 'transaction.dart';
 import 'transaction_type.dart';
 import 'asset_type.dart';
+import 'repayment_type.dart';
 
 part 'asset.g.dart';
 
@@ -45,6 +46,35 @@ class Asset {
 
   @HiveField(7)
   final AssetType type;
+
+  // --- CROWDFUNDING IMMOBILIER ---
+  @HiveField(8)
+  String? platform;
+
+  @HiveField(9)
+  String? projectName;
+
+  @HiveField(10)
+  String? location;
+
+  @HiveField(11)
+  int? minDuration;
+
+  @HiveField(12)
+  int? targetDuration;
+
+  @HiveField(13)
+  int? maxDuration;
+
+  @HiveField(14)
+  double? expectedYield;
+
+  @HiveField(15)
+  RepaymentType? repaymentType;
+
+  @HiveField(16)
+  String? riskRating;
+  // --- FIN CROWDFUNDING ---
 
   // Injecté par le getter `Account.assets`
   List<Transaction> transactions = [];
@@ -105,6 +135,18 @@ class Asset {
     this.currentExchangeRate = 1.0,
     // --- FIN NOUVEAUX CHAMPS ---
 
+    // --- CROWDFUNDING ---
+    this.platform,
+    this.projectName,
+    this.location,
+    this.minDuration,
+    this.targetDuration,
+    this.maxDuration,
+    this.expectedYield,
+    this.repaymentType,
+    this.riskRating,
+    // --- FIN CROWDFUNDING ---
+
     // Champs de migration
     this.stale_quantity,
     this.stale_averagePrice,
@@ -158,6 +200,18 @@ class Asset {
       priceCurrency: priceCurrency, // <-- AJOUT
       currentExchangeRate: currentExchangeRate, // <-- AJOUT
       transactions: List.from(transactions),
+
+      // --- CROWDFUNDING ---
+      platform: platform,
+      projectName: projectName,
+      location: location,
+      minDuration: minDuration,
+      targetDuration: targetDuration,
+      maxDuration: maxDuration,
+      expectedYield: expectedYield,
+      repaymentType: repaymentType,
+      riskRating: riskRating,
+      // --- FIN CROWDFUNDING ---
 
       // Champs de migration
       stale_quantity: stale_quantity,
