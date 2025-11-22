@@ -150,6 +150,61 @@ class InstitutionTile extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: AppDimens.paddingS),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    ModalService.showAddInstitution(context, institutionToEdit: institution);
+                  } else if (value == 'delete') {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: AppColors.surfaceLight,
+                        title: Text('Supprimer ${institution.name} ?', style: AppTypography.h3),
+                        content: Text(
+                          'Cette action supprimera également tous les comptes et transactions associés. Cette action est irréversible.',
+                          style: AppTypography.body,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            child: Text('Annuler', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              provider.deleteInstitution(institution.id);
+                              Navigator.of(ctx).pop();
+                            },
+                            child: Text('Supprimer', style: AppTypography.label.copyWith(color: AppColors.error)),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, size: 20, color: AppColors.textPrimary),
+                        SizedBox(width: 8),
+                        Text('Modifier'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, size: 20, color: AppColors.error),
+                        SizedBox(width: 8),
+                        Text('Supprimer', style: TextStyle(color: AppColors.error)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               const Icon(Icons.expand_more, color: AppColors.textTertiary),
             ],
           ),
