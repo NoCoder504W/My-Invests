@@ -37,13 +37,15 @@ class AssetMetadataAdapter extends TypeAdapter<AssetMetadata> {
       expectedYield: fields[18] as double?,
       repaymentType: fields[19] as RepaymentType?,
       riskRating: fields[20] as String?,
+      latitude: fields[21] as double?,
+      longitude: fields[22] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AssetMetadata obj) {
     writer
-      ..writeByte(20)
+      ..writeByte(22)
       ..writeByte(0)
       ..write(obj.ticker)
       ..writeByte(1)
@@ -83,7 +85,11 @@ class AssetMetadataAdapter extends TypeAdapter<AssetMetadata> {
       ..writeByte(19)
       ..write(obj.repaymentType)
       ..writeByte(20)
-      ..write(obj.riskRating);
+      ..write(obj.riskRating)
+      ..writeByte(21)
+      ..write(obj.latitude)
+      ..writeByte(22)
+      ..write(obj.longitude);
   }
 
   @override

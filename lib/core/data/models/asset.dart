@@ -71,6 +71,12 @@ class Asset {
 
   @HiveField(16)
   String? riskRating;
+
+  @HiveField(17)
+  double? latitude;
+
+  @HiveField(18)
+  double? longitude;
   // --- FIN CROWDFUNDING ---
 
   // Injecté par le getter `Account.assets`

@@ -71,6 +71,12 @@ class AssetMetadata {
 
   @HiveField(20)
   String? riskRating;
+
+  @HiveField(21)
+  double? latitude;
+
+  @HiveField(22)
+  double? longitude;
   // --- FIN CROWDFUNDING ---
 
   String get activeCurrency => priceCurrency ?? 'EUR';
@@ -98,6 +104,8 @@ class AssetMetadata {
     this.expectedYield,
     this.repaymentType,
     this.riskRating,
+    this.latitude,
+    this.longitude,
     // --- FIN CROWDFUNDING ---
   }) : lastUpdated = lastUpdated ?? DateTime.now();
 
@@ -154,6 +162,8 @@ class AssetMetadata {
     double? expectedYield,
     RepaymentType? repaymentType,
     String? riskRating,
+    double? latitude,
+    double? longitude,
     // --- FIN CROWDFUNDING ---
   }) {
     return AssetMetadata(
@@ -178,6 +188,8 @@ class AssetMetadata {
       expectedYield: expectedYield ?? this.expectedYield,
       repaymentType: repaymentType ?? this.repaymentType,
       riskRating: riskRating ?? this.riskRating,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       // --- FIN CROWDFUNDING ---
     );
   }
@@ -206,6 +218,8 @@ class AssetMetadata {
       'expectedYield': expectedYield,
       'repaymentType': enumToString(repaymentType),
       'riskRating': riskRating,
+      'latitude': latitude,
+      'longitude': longitude,
       // --- FIN CROWDFUNDING ---
     };
   }
@@ -246,6 +260,8 @@ class AssetMetadata {
         fallback: null,
       ),
       riskRating: json['riskRating'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       // --- FIN CROWDFUNDING ---
     );
   }

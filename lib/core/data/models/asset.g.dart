@@ -31,13 +31,15 @@ class AssetAdapter extends TypeAdapter<Asset> {
       riskRating: fields[16] as String?,
       stale_quantity: fields[2] as double?,
       stale_averagePrice: fields[3] as double?,
-    );
+    )
+      ..latitude = fields[17] as double?
+      ..longitude = fields[18] as double?;
   }
 
   @override
   void write(BinaryWriter writer, Asset obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -65,7 +67,11 @@ class AssetAdapter extends TypeAdapter<Asset> {
       ..writeByte(15)
       ..write(obj.repaymentType)
       ..writeByte(16)
-      ..write(obj.riskRating);
+      ..write(obj.riskRating)
+      ..writeByte(17)
+      ..write(obj.latitude)
+      ..writeByte(18)
+      ..write(obj.longitude);
   }
 
   @override

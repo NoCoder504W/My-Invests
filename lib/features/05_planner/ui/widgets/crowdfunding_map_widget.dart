@@ -1,47 +1,126 @@
 import 'package:flutter/material.dart';
-import 'package:portefeuille/core/ui/theme/app_colors.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:portefeuille/core/data/models/asset.dart';
 import 'package:portefeuille/core/ui/theme/app_dimens.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
 
 class CrowdfundingMapWidget extends StatelessWidget {
-  const CrowdfundingMapWidget({super.key});
+  final List<Asset> assets;
+
+  const CrowdfundingMapWidget({
+    super.key,
+    required this.assets,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Placeholder pour la future intégration de la carte
-    // Nécessite un package comme google_maps_flutter ou flutter_map
+    // Filtrer les actifs qui ont des coordonnées valides
+    final validAssets = assets.where((asset) {
+      return asset.latitude != null && asset.longitude != null;
+    }).toList();
+
+    if (validAssets.isEmpty) {
+      return const SizedBox.shrink(); // Ne rien afficher s'il n'y a pas de projets géolocalisés
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingL),
           child: Text(
-            "Carte des Projets (Bientôt)",
+            "Carte des Projets",
             style: AppTypography.h3,
           ),
         ),
         const SizedBox(height: AppDimens.paddingM),
         Container(
-          height: 200,
+          height: 400,
           margin: const EdgeInsets.symmetric(horizontal: AppDimens.paddingM),
           decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
             borderRadius: BorderRadius.circular(16),
-          ),
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.map_outlined, size: 48, color: AppColors.textSecondary),
-              const SizedBox(height: 8),
-              Text(
-                "Visualisation géographique à venir",
-                style: AppTypography.body,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: FlutterMap(
+              options: MapOptions(
+                initialCenter: const LatLng(46.603354, 1.888334), // Centre de la France
+                initialZoom: 5.5,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.myinvests.app',
+                ),
+                MarkerLayer(
+                  markers: validAssets.map((asset) {
+                    return Marker(
+                      point: LatLng(asset.latitude!, asset.longitude!),
+                      width: 40,
+                      height: 40,
+                      child: GestureDetector(
+                        onTap: () {
+                          _showAssetDetails(context, asset);
+                        },
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Colors.red,
+                          size: 40,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  void _showAssetDetails(BuildContext context, Asset asset) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                asset.projectName ?? asset.name,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text('Localisation: ${asset.location ?? "Inconnue"}'),
+              Text('Rendement: ${asset.estimatedAnnualYield.toStringAsFixed(2)}%'),
+              if (asset.riskRating != null)
+                Text('Risque: ${asset.riskRating}'),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Fermer'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

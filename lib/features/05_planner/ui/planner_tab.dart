@@ -16,6 +16,7 @@ import 'widgets/projection_section.dart';
 import 'widgets/crowdfunding_planner_widget.dart'; // AJOUT
 import 'widgets/crowdfunding_timeline_widget.dart';
 import 'widgets/crowdfunding_map_widget.dart';
+import 'widgets/crowdfunding_projection_chart.dart';
 
 class PlannerTab extends StatefulWidget {
   const PlannerTab({super.key});
@@ -62,23 +63,7 @@ class _PlannerTabState extends State<PlannerTab> {
 
                     const SizedBox(height: AppDimens.paddingM),
 
-                    // 2. Section Crowdfunding (NOUVEAU)
-                    const FadeInSlide(
-                      delay: 0.15,
-                      child: Column(
-                        children: [
-                          CrowdfundingPlannerWidget(),
-                          SizedBox(height: AppDimens.paddingM),
-                          CrowdfundingTimelineWidget(),
-                          SizedBox(height: AppDimens.paddingM),
-                          CrowdfundingMapWidget(),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: AppDimens.paddingM),
-
-                    // 3. Section Projection (Graphique + Stats)
+                    // 2. Section Projection (Graphique + Stats)
                     FadeInSlide(
                       delay: 0.2,
                       child: ProjectionSection(
@@ -86,6 +71,34 @@ class _PlannerTabState extends State<PlannerTab> {
                         onDurationChanged: (duration) {
                           setState(() => _selectedDuration = duration);
                         },
+                      ),
+                    ),
+
+                    const SizedBox(height: AppDimens.paddingM),
+
+                    // 3. Section Crowdfunding (DÉPLACÉ)
+                    FadeInSlide(
+                      delay: 0.3,
+                      child: Column(
+                        children: [
+                          const CrowdfundingPlannerWidget(),
+                          const SizedBox(height: AppDimens.paddingM),
+                          const CrowdfundingTimelineWidget(),
+                          const SizedBox(height: AppDimens.paddingM),
+                          CrowdfundingProjectionChart(
+                            assets: portfolio.institutions
+                                .expand((i) => i.accounts)
+                                .expand((a) => a.assets)
+                                .toList(),
+                          ),
+                          const SizedBox(height: AppDimens.paddingM),
+                          CrowdfundingMapWidget(
+                            assets: portfolio.institutions
+                                .expand((i) => i.accounts)
+                                .expand((a) => a.assets)
+                                .toList(),
+                          ),
+                        ],
                       ),
                     ),
 
