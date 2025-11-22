@@ -35,6 +35,9 @@ class AggregatedPortfolioData {
   /// Map des valeurs agrégées par type (pour AllocationChart)
   final Map<AssetType, double> valueByAssetType;
 
+  /// Rendement annuel estimé du portefeuille (pondéré)
+  final double estimatedAnnualYield;
+
   AggregatedPortfolioData({
     required this.baseCurrency,
     required this.totalValue,
@@ -47,6 +50,7 @@ class AggregatedPortfolioData {
     required this.assetPLs,
     required this.aggregatedAssets,
     required this.valueByAssetType,
+    this.estimatedAnnualYield = 0.0,
   });
 
   /// Construit une instance vide par défaut.
@@ -62,5 +66,6 @@ class AggregatedPortfolioData {
     assetPLs: {},
     aggregatedAssets: [],
     valueByAssetType: {},
+    estimatedAnnualYield: 0.0,
   );
 }

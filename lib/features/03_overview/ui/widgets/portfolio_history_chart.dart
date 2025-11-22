@@ -22,10 +22,14 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
     final screenHeight = MediaQuery.of(context).size.height;
     final double chartHeight = (screenHeight * 0.25).clamp(200.0, 350.0);
 
-    return Consumer<PortfolioProvider>(
-      builder: (context, provider, child) {
-        final history = provider.activePortfolio?.valueHistory ?? [];
-        final currencyCode = provider.currentBaseCurrency;
+    return Selector<PortfolioProvider, ({List<PortfolioValueHistoryPoint> history, String currency})>(
+      selector: (context, provider) => (
+        history: provider.activePortfolio?.valueHistory ?? [],
+        currency: provider.currentBaseCurrency
+      ),
+      builder: (context, data, child) {
+        final history = data.history;
+        final currencyCode = data.currency;
 
         if (history.isEmpty) {
           return _buildPlaceholder("Pas encore d'historique.", chartHeight);
@@ -99,7 +103,7 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return LineChartData(
-      gridData: FlGridData(show: false),
+      gridData: const FlGridData(show: false),
       borderData: FlBorderData(show: false),
       titlesData: FlTitlesData(
         show: true,
@@ -153,7 +157,7 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
           isStrokeCapRound: true,
           dotData: const FlDotData(show: false),
           shadow: Shadow(
-            color: AppColors.primary.withOpacity(0.6),
+            color: AppColors.primary.withValues(alpha: 0.6),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -161,8 +165,8 @@ class _PortfolioHistoryChartState extends State<PortfolioHistoryChart> {
             show: true,
             gradient: LinearGradient(
               colors: [
-                AppColors.primary.withOpacity(0.3),
-                AppColors.primary.withOpacity(0.0),
+                AppColors.primary.withValues(alpha: 0.3),
+                AppColors.primary.withValues(alpha: 0.0),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/data/models/asset_type.dart';
+import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -25,9 +27,14 @@ class OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PortfolioProvider>(
-      builder: (context, portfolioProvider, child) {
-        final portfolio = portfolioProvider.activePortfolio;
+    return Selector<PortfolioProvider, ({Portfolio? portfolio, Map<AssetType, double> allocation, double totalValue})>(
+      selector: (context, provider) => (
+        portfolio: provider.activePortfolio,
+        allocation: provider.aggregatedValueByAssetType,
+        totalValue: provider.activePortfolioTotalValue
+      ),
+      builder: (context, data, child) {
+        final portfolio = data.portfolio;
 
         if (portfolio == null) {
           return const Center(child: Text("Aucun portefeuille sélectionné."));
@@ -72,17 +79,17 @@ class OverviewTab extends StatelessWidget {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     // 1. Header (Total)
-                    FadeInSlide(
+                    const FadeInSlide(
                       delay: 0.1,
-                      child: const PortfolioHeader(),
+                      child: PortfolioHeader(),
                     ),
                     const SizedBox(height: AppDimens.paddingM),
 
                     // 2. Graphique Historique
-                    FadeInSlide(
+                    const FadeInSlide(
                       delay: 0.2,
                       child: AppCard(
-                        child: const PortfolioHistoryChart(),
+                        child: PortfolioHistoryChart(),
                       ),
                     ),
                     const SizedBox(height: AppDimens.paddingM),
@@ -104,7 +111,7 @@ class OverviewTab extends StatelessWidget {
                               Expanded(
                                 child: FadeInSlide(
                                     delay: 0.35,
-                                    child: _buildAssetTypeCard(portfolioProvider)
+                                    child: _buildAssetTypeCard(data.allocation, data.totalValue)
                                 ),
                               ),
                             ],
@@ -121,7 +128,7 @@ class OverviewTab extends StatelessWidget {
                               FadeInSlide(
                                   key: const ValueKey('asset_chart'),
                                   delay: 0.35,
-                                  child: _buildAssetTypeCard(portfolioProvider)
+                                  child: _buildAssetTypeCard(data.allocation, data.totalValue)
                               ),
                             ],
                           );
@@ -202,11 +209,11 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildAssetTypeCard(PortfolioProvider provider) {
+  Widget _buildAssetTypeCard(Map<AssetType, double> allocation, double totalValue) {
     return AppCard(
       child: AssetTypeAllocationChart(
-        allocationData: provider.aggregatedValueByAssetType,
-        totalValue: provider.activePortfolioTotalValue,
+        allocationData: allocation,
+        totalValue: totalValue,
       ),
     );
   }
@@ -224,7 +231,7 @@ class OverviewTab extends StatelessWidget {
               Text(
                 title.toUpperCase(),
                 style: AppTypography.label.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],

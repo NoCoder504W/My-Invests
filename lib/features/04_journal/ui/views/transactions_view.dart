@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:provider/provider.dart';
 
 // Core UI
@@ -49,7 +50,6 @@ class _TransactionsViewState extends State<TransactionsView> {
       case TransactionSortOption.type:
         transactions.sort((a, b) => a.type.name.compareTo(b.type.name));
         break;
-      case TransactionSortOption.dateDesc:
       default:
         transactions.sort((a, b) => b.date.compareTo(a.date));
         break;
@@ -98,14 +98,15 @@ class _TransactionsViewState extends State<TransactionsView> {
     // Calcul de l'espace nécessaire en haut
     final double topPadding = MediaQuery.of(context).padding.top + 90;
 
-    return Consumer<PortfolioProvider>(
-      builder: (context, provider, child) {
-        final portfolio = provider.activePortfolio;
+    return Selector<PortfolioProvider, Portfolio?>(
+      selector: (context, provider) => provider.activePortfolio,
+      builder: (context, portfolio, child) {
         if (portfolio == null) {
           return const Center(child: Text("Aucun portefeuille."));
         }
 
         final accountsMap = <String, Account>{};
+        final provider = Provider.of<PortfolioProvider>(context, listen: false);
         for (var inst in portfolio.institutions) {
           for (var acc in inst.accounts) {
             accountsMap[acc.id] = acc;
@@ -127,7 +128,9 @@ class _TransactionsViewState extends State<TransactionsView> {
               children: [
                 Padding(
                   padding: EdgeInsets.only(top: topPadding, bottom: AppDimens.paddingL),
-                  child: Text('Historique', style: AppTypography.h2),
+                  child: Center(
+                    child: Text('Historique', style: AppTypography.h2),
+                  ),
                 ),
                 Expanded(
                   child: Padding(
@@ -136,7 +139,7 @@ class _TransactionsViewState extends State<TransactionsView> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          AppIcon(
+                          const AppIcon(
                             icon: Icons.receipt_long_outlined,
                             size: 48,
                             backgroundColor: AppColors.surfaceLight,
@@ -167,7 +170,9 @@ class _TransactionsViewState extends State<TransactionsView> {
               // Titre avec padding haut
               Padding(
                 padding: EdgeInsets.only(top: topPadding, bottom: AppDimens.paddingL),
-                child: Text('Transactions', style: AppTypography.h2),
+                child: Center(
+                  child: Text('Transactions', style: AppTypography.h2),
+                ),
               ),
 
               // Barre de tri

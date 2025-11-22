@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:provider/provider.dart';
 import '../../00_app/providers/portfolio_provider.dart';
 
@@ -12,7 +13,6 @@ import '../../06_settings/ui/settings_screen.dart';
 import '../../07_management/ui/screens/add_transaction_screen.dart';
 
 // UI Components
-import 'package:portefeuille/core/data/models/asset_type.dart'; // NOUVEL IMPORT
 import 'package:portefeuille/core/ui/theme/app_colors.dart'; // Pour le fond par défaut
 import 'package:portefeuille/core/ui/widgets/components/app_screen.dart';
 import 'package:portefeuille/core/ui/widgets/components/app_floating_nav_bar.dart';
@@ -43,8 +43,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final portfolioProvider = context.watch<PortfolioProvider>();
-    final portfolio = portfolioProvider.activePortfolio;
+    final portfolio = context.select<PortfolioProvider, Portfolio?>((p) => p.activePortfolio);
+    final hasCrowdfunding = context.select<PortfolioProvider, bool>((p) => p.hasCrowdfunding);
 
     // Cas "Aucun portefeuille"
     if (portfolio == null) {
@@ -70,12 +70,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       );
     }
-
-    // Vérifier si on a du Crowdfunding
-    final hasCrowdfunding = portfolio.institutions
-        .expand((i) => i.accounts)
-        .expand((a) => a.assets)
-        .any((asset) => asset.type == AssetType.RealEstateCrowdfunding);
 
     // Construire les onglets dynamiquement
     final List<Widget> tabs = [

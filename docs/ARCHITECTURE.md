@@ -631,6 +631,8 @@ final totalValue = provider.totalValue; // Calculé une fois
 ```dart
 // ✅ Utiliser le provider existant
 context.watch<PortfolioProvider>();
+// OU MIEUX (Optimisation) :
+context.select<PortfolioProvider, Portfolio?>((p) => p.activePortfolio);
 ```
 
 **Exception** : Providers locaux pour état de formulaire complexe (ex: `transaction_form_state.dart`).

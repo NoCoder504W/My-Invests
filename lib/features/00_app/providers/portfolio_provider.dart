@@ -25,6 +25,7 @@ import 'package:portefeuille/features/00_app/services/hydration_service.dart';
 import 'package:portefeuille/features/00_app/services/migration_service.dart';
 import 'package:portefeuille/features/00_app/services/sync_service.dart';
 import 'package:portefeuille/features/00_app/services/transaction_service.dart';
+import 'package:portefeuille/features/00_app/services/institution_service.dart';
 import 'package:uuid/uuid.dart';
 
 class PortfolioProvider extends ChangeNotifier {
@@ -40,6 +41,7 @@ class PortfolioProvider extends ChangeNotifier {
   late final DemoDataService _demoDataService;
   late final CalculationService _calculationService;
   late final BackupService _backupService;
+  late final InstitutionService _institutionService;
 
   // Settings
   SettingsProvider? _settingsProvider;
@@ -52,6 +54,9 @@ class PortfolioProvider extends ChangeNotifier {
   BackgroundActivity _activity = const Idle();
   String? _syncMessage;
   AggregatedPortfolioData _aggregatedData = AggregatedPortfolioData.empty;
+  
+  // Cache pour optimisation O(1)
+  final Map<String, Asset> _assetMap = {};
 
   // Getters - État brut
   List<Portfolio> get portfolios => _portfolios;
@@ -62,6 +67,7 @@ class PortfolioProvider extends ChangeNotifier {
   String? get syncMessage => _syncMessage;
   Map<String, AssetMetadata> get allMetadata =>
       _repository.getAllAssetMetadata();
+  InstitutionService get institutionService => _institutionService;
 
   // Getters - Données calculées
   String get currentBaseCurrency => _aggregatedData.baseCurrency;
@@ -73,7 +79,7 @@ class PortfolioProvider extends ChangeNotifier {
   }
 
   double get activePortfolioEstimatedAnnualYield =>
-      _activePortfolio?.estimatedAnnualYield ?? 0.0;
+      _aggregatedData.estimatedAnnualYield;
 
   double getConvertedAccountValue(String accountId) =>
       _aggregatedData.accountValues[accountId] ?? 0.0;
@@ -91,6 +97,9 @@ class PortfolioProvider extends ChangeNotifier {
       _aggregatedData.aggregatedAssets;
   Map<AssetType, double> get aggregatedValueByAssetType =>
       _aggregatedData.valueByAssetType;
+
+  bool get hasCrowdfunding =>
+      (_aggregatedData.valueByAssetType[AssetType.RealEstateCrowdfunding] ?? 0.0) > 0;
 
   PortfolioProvider({
     required PortfolioRepository repository,
@@ -114,6 +123,8 @@ class PortfolioProvider extends ChangeNotifier {
     _demoDataService = DemoDataService(repository: _repository, uuid: _uuid);
     _calculationService = CalculationService(apiService: _apiService);
     _backupService = BackupService();
+    _institutionService = InstitutionService();
+    _institutionService.loadInstitutions(); // Chargement asynchrone (fire & forget)
     loadAllPortfolios();
   }
 
@@ -270,8 +281,11 @@ class PortfolioProvider extends ChangeNotifier {
 
     // 4. Calcul
     await _recalculateAggregatedData();
+    
+    // 5. Reconstruire le cache des actifs
+    _rebuildAssetMap();
 
-    // 5. Sauvegarder le choix actuel pour la prochaine fois
+    // 6. Sauvegarder le choix actuel pour la prochaine fois
     if (_activePortfolio != null) {
       _settingsProvider?.setLastPortfolioId(_activePortfolio!.id);
     }
@@ -662,16 +676,21 @@ class PortfolioProvider extends ChangeNotifier {
   // ASSETS
   // ============================================================
 
-  Asset? findAssetByTicker(String ticker) {
-    if (_activePortfolio == null) return null;
+  void _rebuildAssetMap() {
+    _assetMap.clear();
+    if (_activePortfolio == null) return;
+    
     for (var institution in _activePortfolio!.institutions) {
       for (var account in institution.accounts) {
         for (var asset in account.assets) {
-          if (asset.ticker == ticker) return asset;
+          _assetMap[asset.ticker] = asset;
         }
       }
     }
-    return null;
+  }
+
+  Asset? findAssetByTicker(String ticker) {
+    return _assetMap[ticker];
   }
 
   Future<void> updateAssetYield(String ticker, double newYield) async {

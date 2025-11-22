@@ -10,14 +10,21 @@ import 'package:portefeuille/core/ui/widgets/primitives/app_icon.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_button.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 
+import 'package:portefeuille/core/data/models/asset_metadata.dart';
+
 class SyncAlertsCard extends StatelessWidget {
   const SyncAlertsCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PortfolioProvider>(
-      builder: (context, provider, child) {
-        final metadata = provider.allMetadata;
+    return Selector<PortfolioProvider, ({Map<String, AssetMetadata> metadata, bool isProcessing})>(
+      selector: (context, provider) => (
+        metadata: provider.allMetadata,
+        isProcessing: provider.isProcessingInBackground
+      ),
+      builder: (context, data, child) {
+        final metadata = data.metadata;
+        final isProcessing = data.isProcessing;
 
         // Filtrer les actifs
         final assetsWithErrors = metadata.entries
@@ -44,7 +51,7 @@ class SyncAlertsCard extends StatelessWidget {
                   AppIcon(
                     icon: Icons.warning_amber_rounded,
                     color: AppColors.warning,
-                    backgroundColor: AppColors.warning.withOpacity(0.1),
+                    backgroundColor: AppColors.warning.withValues(alpha: 0.1),
                   ),
                   const SizedBox(width: AppDimens.paddingM),
                   Text('Alertes de synchronisation', style: AppTypography.h3),
@@ -85,11 +92,11 @@ class SyncAlertsCard extends StatelessWidget {
 
               // Bouton d'action
               AppButton(
-                label: provider.isProcessingInBackground ? 'TRAITEMENT...' : 'TOUT RESYNCHRONISER',
-                isLoading: provider.isProcessingInBackground,
-                onPressed: provider.isProcessingInBackground
+                label: isProcessing ? 'TRAITEMENT...' : 'TOUT RESYNCHRONISER',
+                isLoading: isProcessing,
+                onPressed: isProcessing
                     ? null
-                    : () => provider.synchroniserLesPrix(),
+                    : () => Provider.of<PortfolioProvider>(context, listen: false).synchroniserLesPrix(),
               ),
             ],
           ),
@@ -109,9 +116,9 @@ class SyncAlertsCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppDimens.paddingM),
       padding: const EdgeInsets.all(AppDimens.paddingM),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(AppDimens.radiusS),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

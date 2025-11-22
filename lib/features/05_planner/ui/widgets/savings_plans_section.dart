@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:provider/provider.dart';
 
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
@@ -61,13 +62,18 @@ class SavingsPlansSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PortfolioProvider>(
-      builder: (context, provider, child) {
-        final portfolio = provider.activePortfolio;
+    return Selector<PortfolioProvider, ({Portfolio? portfolio, String currency})>(
+      selector: (context, provider) => (
+        portfolio: provider.activePortfolio,
+        currency: provider.currentBaseCurrency
+      ),
+      builder: (context, data, child) {
+        final portfolio = data.portfolio;
         if (portfolio == null) return const SizedBox();
 
         final savingsPlans = portfolio.savingsPlans;
-        final baseCurrency = provider.currentBaseCurrency;
+        final baseCurrency = data.currency;
+        final provider = Provider.of<PortfolioProvider>(context, listen: false);
 
         return AppCard(
           child: Column(
@@ -79,7 +85,7 @@ class SavingsPlansSection extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      AppIcon(
+                      const AppIcon(
                           icon: Icons.savings_outlined,
                           size: 18,
                           color: AppColors.primary,
@@ -145,7 +151,7 @@ class SavingsPlansSection extends StatelessWidget {
                         icon: Icons.rocket_launch,
                         color: plan.isActive ? AppColors.success : AppColors.textSecondary,
                         backgroundColor: (plan.isActive ? AppColors.success : AppColors.textSecondary)
-                            .withOpacity(0.1),
+                            .withValues(alpha: 0.1),
                       ),
                       onTap: () => _openPlanForm(context, existingPlan: plan),
                       trailing: IconButton(
