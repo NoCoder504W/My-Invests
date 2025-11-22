@@ -18,6 +18,7 @@ import 'widgets/crowdfunding_planner_widget.dart';
 import 'widgets/crowdfunding_timeline_widget.dart';
 import 'widgets/crowdfunding_map_widget.dart';
 import 'widgets/crowdfunding_projection_chart.dart';
+import 'widgets/crowdfunding_summary_cards.dart'; // NOUVEL IMPORT
 
 class CrowdfundingTrackingTab extends StatelessWidget {
   const CrowdfundingTrackingTab({super.key});
@@ -48,7 +49,20 @@ class CrowdfundingTrackingTab extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingM),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // 1. Résumé / KPI
+                    // 1. Résumé / KPI (VRAI RÉSUMÉ)
+                    FadeInSlide(
+                      delay: 0.05,
+                      child: CrowdfundingSummaryCards(
+                        assets: portfolio.institutions
+                            .expand((i) => i.accounts)
+                            .expand((a) => a.assets)
+                            .toList(),
+                      ),
+                    ),
+
+                    const SizedBox(height: AppDimens.paddingM),
+
+                    // 2. Prochains Paiements (Anciennement Résumé)
                     FadeInSlide(
                       delay: 0.1,
                       child: CrowdfundingPlannerWidget(
@@ -65,7 +79,7 @@ class CrowdfundingTrackingTab extends StatelessWidget {
 
                     const SizedBox(height: AppDimens.paddingM),
 
-                    // 2. Timeline des remboursements
+                    // 3. Timeline des remboursements
                     FadeInSlide(
                       delay: 0.15,
                       child: CrowdfundingTimelineWidget(
@@ -90,6 +104,9 @@ class CrowdfundingTrackingTab extends StatelessWidget {
                         transactions: portfolio.institutions
                             .expand((i) => i.accounts)
                             .expand((a) => a.transactions)
+                            .toList(),
+                        accounts: portfolio.institutions
+                            .expand((i) => i.accounts)
                             .toList(),
                       ),
                     ),

@@ -93,6 +93,8 @@ class AccountTile extends StatelessWidget {
             style: theme.textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.w600),
             overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            softWrap: false,
           ),
           const SizedBox(height: 4),
           AccountTypeChip(

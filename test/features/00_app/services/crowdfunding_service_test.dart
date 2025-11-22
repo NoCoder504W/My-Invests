@@ -65,9 +65,8 @@ void main() {
       final simulation = service.simulateCrowdfundingEvolution(
         assets: [],
         transactions: transactions,
-        projectionYears: 0,
+        projectionMonths: 0,
       );
-
       // Find state at 2023-01-01
       // Note: The simulation might return states for every month or every event.
       // We assume it returns at least one state per event date or month.
@@ -100,7 +99,7 @@ void main() {
       final simulation = service.simulateCrowdfundingEvolution(
         assets: [asset],
         transactions: transactions,
-        projectionYears: 0,
+        projectionMonths: 0,
       );
 
       // State after Deposit
@@ -146,7 +145,7 @@ void main() {
       final simulation = service.simulateCrowdfundingEvolution(
         assets: [asset],
         transactions: transactions,
-        projectionYears: 0,
+        projectionMonths: 0,
       );
 
       final state = simulation.firstWhere((s) => s.date.year == 2023 && s.date.month == 2 && s.date.day == 1);
@@ -185,7 +184,7 @@ void main() {
       final simulation = service.simulateCrowdfundingEvolution(
         assets: [asset],
         transactions: transactions,
-        projectionYears: 0,
+        projectionMonths: 0,
       );
 
       final state = simulation.firstWhere((s) => s.date.year == 2023 && s.date.month == 6 && s.date.day == 1);
@@ -244,7 +243,7 @@ void main() {
       final simulation = service.simulateCrowdfundingEvolution(
         assets: [assetWithYield],
         transactions: transactionsRecent,
-        projectionYears: 1,
+        projectionMonths: 12,
       );
 
       // Check if there is ANY state where liquidity is 1000 (deposit) - 1000 (buy) + 500 (repayment) + 5 (interest) = 505.
