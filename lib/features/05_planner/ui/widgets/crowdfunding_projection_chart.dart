@@ -8,7 +8,7 @@ import 'package:portefeuille/core/ui/theme/app_dimens.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/features/00_app/services/crowdfunding_service.dart';
 
-class CrowdfundingProjectionChart extends StatelessWidget {
+class CrowdfundingProjectionChart extends StatefulWidget {
   final List<Asset> assets;
   final List<Transaction> transactions;
 
@@ -17,6 +17,14 @@ class CrowdfundingProjectionChart extends StatelessWidget {
     required this.assets,
     required this.transactions,
   });
+
+  @override
+  State<CrowdfundingProjectionChart> createState() => _CrowdfundingProjectionChartState();
+}
+
+class _CrowdfundingProjectionChartState extends State<CrowdfundingProjectionChart> {
+  int _projectionYears = 5;
+  CrowdfundingSimulationState? _selectedState;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +36,9 @@ class CrowdfundingProjectionChart extends StatelessWidget {
         child: Center(child: Text("Aucune donnée de projection disponible.")),
       );
     }
+
+    // Par défaut, afficher le dernier état si aucun n'est sélectionné
+    final displayState = _selectedState ?? projections.last;
 
     // Trouver le max pour l'échelle Y
     double maxY = 0;
@@ -48,12 +59,24 @@ class CrowdfundingProjectionChart extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingL),
-          child: Text(
-            "Projection Capital & Intérêts",
-            style: AppTypography.h3,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Projection",
+                style: AppTypography.h3,
+              ),
+              _buildTimeRangeSelector(),
+            ],
           ),
         ),
         const SizedBox(height: AppDimens.paddingM),
+        
+        // Résumé dynamique
+        _buildDynamicSummary(displayState),
+        
+        const SizedBox(height: AppDimens.paddingM),
+
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingM),
@@ -67,11 +90,21 @@ class CrowdfundingProjectionChart extends StatelessWidget {
             ),
             child: LineChart(
               LineChartData(
+                clipData: const FlClipData.all(),
                 minX: 0,
                 maxX: projections.length.toDouble() - 1,
                 minY: 0,
                 maxY: maxY,
-                gridData: const FlGridData(show: false),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: maxY / 5,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: AppColors.border.withValues(alpha: 0.5),
+                    strokeWidth: 1,
+                    dashArray: [5, 5],
+                  ),
+                ),
                 titlesData: FlTitlesData(
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
@@ -119,7 +152,14 @@ class CrowdfundingProjectionChart extends StatelessWidget {
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Colors.blue.withValues(alpha: 0.1),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.blue.withValues(alpha: 0.3),
+                          Colors.blue.withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
                   ),
                   // Ligne Intérêts Cumulés
@@ -133,7 +173,14 @@ class CrowdfundingProjectionChart extends StatelessWidget {
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Colors.green.withValues(alpha: 0.1),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.green.withValues(alpha: 0.3),
+                          Colors.green.withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
                   ),
                   // Ligne Liquidités Disponibles
@@ -147,28 +194,38 @@ class CrowdfundingProjectionChart extends StatelessWidget {
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Colors.orange.withValues(alpha: 0.1),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.orange.withValues(alpha: 0.3),
+                          Colors.orange.withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
                   ),
                 ],
                 lineTouchData: LineTouchData(
+                  touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
+                    if (event is FlTapUpEvent || event is FlPanEndEvent) {
+                       // Reset selection on end? No, keep it.
+                    }
+                    
+                    if (touchResponse != null && touchResponse.lineBarSpots != null && touchResponse.lineBarSpots!.isNotEmpty) {
+                      final index = touchResponse.lineBarSpots!.first.x.toInt();
+                      if (index >= 0 && index < projections.length) {
+                        setState(() {
+                          _selectedState = projections[index];
+                        });
+                      }
+                    }
+                  },
+                  handleBuiltInTouches: true,
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
-                        final index = spot.x.toInt();
-                        if (index < 0 || index >= projections.length) return null;
-                        final data = projections[index];
-                        final dateStr = DateFormat('MMM yyyy').format(data.date);
-                        
-                        String label;
-                        if (spot.barIndex == 0) label = "Capital Investi";
-                        else if (spot.barIndex == 1) label = "Intérêts Cumulés";
-                        else label = "Liquidités Dispo";
-
-                        return LineTooltipItem(
-                          "$dateStr\n$label: ${NumberFormat.currency(symbol: '€').format(spot.y)}",
-                          const TextStyle(color: Colors.white),
-                        );
+                        // Tooltip minimaliste car on a le résumé en haut
+                        return null; 
                       }).toList();
                     },
                   ),
@@ -183,15 +240,98 @@ class CrowdfundingProjectionChart extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem(Colors.blue, "Capital Investi"),
+              _buildLegendItem(Colors.blue, "Capital"),
               const SizedBox(width: 16),
-              _buildLegendItem(Colors.green, "Intérêts Cumulés"),
+              _buildLegendItem(Colors.green, "Intérêts"),
               const SizedBox(width: 16),
-              _buildLegendItem(Colors.orange, "Liquidités Dispo"),
+              _buildLegendItem(Colors.orange, "Liquidités"),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDynamicSummary(CrowdfundingSimulationState state) {
+    final currencyFormat = NumberFormat.currency(symbol: '€', decimalDigits: 0);
+    final dateFormat = DateFormat('MMM yyyy', 'fr_FR');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingL),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          children: [
+            Text(
+              dateFormat.format(state.date).toUpperCase(),
+              style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildSummaryValue("Capital", state.investedCapital, Colors.blue, currencyFormat),
+                _buildSummaryValue("Intérêts", state.cumulativeInterests, Colors.green, currencyFormat),
+                _buildSummaryValue("Liquidités", state.liquidity, Colors.orange, currencyFormat),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryValue(String label, double value, Color color, NumberFormat fmt) {
+    return Column(
+      children: [
+        Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+        Text(
+          fmt.format(value),
+          style: AppTypography.bodyBold.copyWith(color: color),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimeRangeSelector() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [1, 3, 5, 10].map((years) {
+        final isSelected = _projectionYears == years;
+        return Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: InkWell(
+            onTap: () => setState(() {
+              _projectionYears = years;
+              _selectedState = null; // Reset selection on range change
+            }),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : AppColors.textSecondary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Text(
+                "${years}A",
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -212,9 +352,9 @@ class CrowdfundingProjectionChart extends StatelessWidget {
   List<CrowdfundingSimulationState> _calculateProjections() {
     final service = CrowdfundingService();
     final rawHistory = service.simulateCrowdfundingEvolution(
-      assets: assets,
-      transactions: transactions,
-      projectionYears: 5,
+      assets: widget.assets,
+      transactions: widget.transactions,
+      projectionYears: _projectionYears,
     );
     
     if (rawHistory.isEmpty) return [];

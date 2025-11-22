@@ -25,6 +25,70 @@ class _CrowdfundingMapWidgetState extends State<CrowdfundingMapWidget> {
   static const double _defaultZoom = 5.5;
 
   @override
+  void initState() {
+    super.initState();
+    // On post-frame callback, fit bounds if we have assets
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fitBounds();
+    });
+  }
+
+  @override
+  void didUpdateWidget(CrowdfundingMapWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.assets != oldWidget.assets) {
+      _fitBounds();
+    }
+  }
+
+  void _fitBounds() {
+    final validAssets = widget.assets.where((asset) {
+      return asset.latitude != null && asset.longitude != null;
+    }).toList();
+
+    if (validAssets.isEmpty) return;
+
+    if (validAssets.length == 1) {
+      _mapController.move(
+        LatLng(validAssets.first.latitude!, validAssets.first.longitude!),
+        10.0,
+      );
+      return;
+    }
+
+    // Calculate bounds
+    double minLat = 90.0;
+    double maxLat = -90.0;
+    double minLng = 180.0;
+    double maxLng = -180.0;
+
+    for (var asset in validAssets) {
+      if (asset.latitude! < minLat) minLat = asset.latitude!;
+      if (asset.latitude! > maxLat) maxLat = asset.latitude!;
+      if (asset.longitude! < minLng) minLng = asset.longitude!;
+      if (asset.longitude! > maxLng) maxLng = asset.longitude!;
+    }
+
+    // Add some padding
+    final bounds = LatLngBounds(
+      LatLng(minLat, minLng),
+      LatLng(maxLat, maxLng),
+    );
+
+    try {
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.all(50),
+        ),
+      );
+    } catch (e) {
+      // Fallback if map not ready
+      debugPrint("Map fit bounds error: $e");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Filtrer les actifs qui ont des coordonnées valides
     final validAssets = widget.assets.where((asset) {
@@ -40,7 +104,7 @@ class _CrowdfundingMapWidgetState extends State<CrowdfundingMapWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Carte des Projets",
+                "Carte des Projets (${validAssets.length})",
                 style: AppTypography.h3,
               ),
               if (validAssets.isEmpty)
@@ -122,6 +186,16 @@ class _CrowdfundingMapWidgetState extends State<CrowdfundingMapWidget> {
                     ),
                   ),
                 ),
+                // Bouton de recentrage
+                Positioned(
+                  bottom: 16,
+                  right: 16,
+                  child: FloatingActionButton.small(
+                    backgroundColor: AppColors.surfaceLight.withValues(alpha: 0.9),
+                    onPressed: _fitBounds,
+                    child: const Icon(Icons.center_focus_strong, color: AppColors.textPrimary),
+                  ),
+                ),
               ],
             ),
           ),
@@ -133,9 +207,8 @@ class _CrowdfundingMapWidgetState extends State<CrowdfundingMapWidget> {
   void _toggleLock() {
     setState(() {
       _isLocked = !_isLocked;
-      if (_isLocked) {
-        _mapController.move(_franceCenter, _defaultZoom);
-      }
+      // If locking, maybe reset to France? Or just enable interaction.
+      // The user probably wants to pan around if unlocked.
     });
   }
 
