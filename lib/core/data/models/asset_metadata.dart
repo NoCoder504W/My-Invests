@@ -46,8 +46,7 @@ class AssetMetadata {
   String? lastSyncSource;
 
   // --- CROWDFUNDING ---
-  @HiveField(12)
-  String? platform;
+  // Note: 'platform' supprimé car redondant avec l'Institution du compte
 
   @HiveField(13)
   String? projectName;
@@ -91,7 +90,6 @@ class AssetMetadata {
     this.assetTypeDetailed,
     this.lastSyncSource,
     // --- CROWDFUNDING ---
-    this.platform,
     this.projectName,
     this.location,
     this.minDuration,
@@ -172,7 +170,6 @@ class AssetMetadata {
       assetTypeDetailed: assetTypeDetailed ?? this.assetTypeDetailed,
       lastSyncSource: lastSyncSource ?? this.lastSyncSource,
       // --- CROWDFUNDING ---
-      platform: platform ?? this.platform,
       projectName: projectName ?? this.projectName,
       location: location ?? this.location,
       minDuration: minDuration ?? this.minDuration,
@@ -201,7 +198,6 @@ class AssetMetadata {
       'assetTypeDetailed': assetTypeDetailed,
       'lastSyncSource': lastSyncSource,
       // --- CROWDFUNDING ---
-      'platform': platform,
       'projectName': projectName,
       'location': location,
       'minDuration': minDuration,
@@ -238,7 +234,6 @@ class AssetMetadata {
       assetTypeDetailed: json['assetTypeDetailed'] as String?,
       lastSyncSource: json['lastSyncSource'] as String?,
       // --- CROWDFUNDING ---
-      platform: json['platform'] as String?,
       projectName: json['projectName'] as String?,
       location: json['location'] as String?,
       minDuration: json['minDuration'] as int?,

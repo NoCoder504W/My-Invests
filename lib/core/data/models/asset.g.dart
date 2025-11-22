@@ -21,7 +21,6 @@ class AssetAdapter extends TypeAdapter<Asset> {
       name: fields[0] as String,
       ticker: fields[1] as String,
       type: fields[7] as AssetType?,
-      platform: fields[8] as String?,
       projectName: fields[9] as String?,
       location: fields[10] as String?,
       minDuration: fields[11] as int?,
@@ -38,7 +37,7 @@ class AssetAdapter extends TypeAdapter<Asset> {
   @override
   void write(BinaryWriter writer, Asset obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -51,8 +50,6 @@ class AssetAdapter extends TypeAdapter<Asset> {
       ..write(obj.id)
       ..writeByte(7)
       ..write(obj.type)
-      ..writeByte(8)
-      ..write(obj.platform)
       ..writeByte(9)
       ..write(obj.projectName)
       ..writeByte(10)

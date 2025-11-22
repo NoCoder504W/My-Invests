@@ -25,8 +25,8 @@ enum TransactionType {
   @HiveField(6)
   Fees, // Frais (débités des liquidités)
 
-  @HiveField(7)
-  InterestPayment, // Intérêts reçus (Crowdfunding)
+  // @HiveField(7) - SUPPRIMÉ (InterestPayment)
+  // On utilise Interest pour les intérêts reçus, quel que soit l'actif.
 
   @HiveField(8)
   CapitalRepayment, // Remboursement de capital (Crowdfunding)
@@ -52,8 +52,6 @@ extension TransactionTypeExtension on TransactionType {
         return 'Intérêts';
       case TransactionType.Fees:
         return 'Frais';
-      case TransactionType.InterestPayment:
-        return 'Intérêts (Immo)';
       case TransactionType.CapitalRepayment:
         return 'Remboursement Capital';
       case TransactionType.EarlyRepayment:

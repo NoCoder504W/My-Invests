@@ -48,9 +48,6 @@ class Asset {
   final AssetType type;
 
   // --- CROWDFUNDING IMMOBILIER ---
-  @HiveField(8)
-  String? platform;
-
   @HiveField(9)
   String? projectName;
 
@@ -136,7 +133,6 @@ class Asset {
     // --- FIN NOUVEAUX CHAMPS ---
 
     // --- CROWDFUNDING ---
-    this.platform,
     this.projectName,
     this.location,
     this.minDuration,
@@ -202,7 +198,6 @@ class Asset {
       transactions: List.from(transactions),
 
       // --- CROWDFUNDING ---
-      platform: platform,
       projectName: projectName,
       location: location,
       minDuration: minDuration,

@@ -25,7 +25,7 @@ class DynamicFields extends StatelessWidget {
       case TransactionType.Buy:
       case TransactionType.Sell:
         return const AssetFields();
-      case TransactionType.InterestPayment:
+      // case TransactionType.InterestPayment: // SUPPRIMÉ
       case TransactionType.CapitalRepayment:
       case TransactionType.EarlyRepayment:
         // Pour l'instant, on utilise CashFields car ce sont des flux d'argent liés à un actif

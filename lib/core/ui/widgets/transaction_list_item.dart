@@ -123,8 +123,8 @@ class TransactionListItem extends StatelessWidget {
         return (icon: Icons.receipt_long_outlined, color: AppColors.warning); // Orange
       case TransactionType.Interest:
         return (icon: Icons.percent, color: AppColors.success); // Vert
-      case TransactionType.InterestPayment:
-        return (icon: Icons.savings_outlined, color: AppColors.success); // Vert
+      // case TransactionType.InterestPayment: // SUPPRIMÉ
+      //   return (icon: Icons.savings_outlined, color: AppColors.success); // Vert
       case TransactionType.CapitalRepayment:
         return (icon: Icons.account_balance_wallet_outlined, color: AppColors.primary); // Bleu
       case TransactionType.EarlyRepayment:
@@ -141,7 +141,7 @@ class TransactionListItem extends StatelessWidget {
       case TransactionType.Withdrawal: return "Retrait";
       case TransactionType.Interest: return "Intérêts";
       case TransactionType.Fees:     return "Frais";
-      case TransactionType.InterestPayment: return "Intérêts (Crowdfunding)";
+      // case TransactionType.InterestPayment: return "Intérêts (Crowdfunding)"; // SUPPRIMÉ
       case TransactionType.CapitalRepayment: return "Remboursement Capital";
       case TransactionType.EarlyRepayment: return "Remboursement Anticipé";
     }

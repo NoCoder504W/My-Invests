@@ -15,16 +15,33 @@ class CrowdfundingTimelineWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<PortfolioProvider>();
-    final assets = provider.activePortfolio?.assets
-        .where((a) => a.type == AssetType.RealEstateCrowdfunding && a.quantity > 0)
-        .toList() ?? [];
+    final portfolio = provider.activePortfolio;
+    
+    if (portfolio == null) return const SizedBox.shrink();
 
-    if (assets.isEmpty) return const SizedBox.shrink();
+    // Collecter les projets avec leur plateforme (Institution)
+    final List<Map<String, dynamic>> items = [];
+    for (var institution in portfolio.institutions) {
+      for (var account in institution.accounts) {
+        for (var asset in account.assets) {
+          if (asset.type == AssetType.RealEstateCrowdfunding && asset.quantity > 0) {
+            items.add({
+              'asset': asset,
+              'platform': institution.name,
+            });
+          }
+        }
+      }
+    }
+
+    if (items.isEmpty) return const SizedBox.shrink();
 
     // Trier par date de fin estimée
-    assets.sort((a, b) {
-      final endA = _getEndDate(a);
-      final endB = _getEndDate(b);
+    items.sort((a, b) {
+      final assetA = a['asset'] as Asset;
+      final assetB = b['asset'] as Asset;
+      final endA = _getEndDate(assetA);
+      final endB = _getEndDate(assetB);
       return endA.compareTo(endB);
     });
 
@@ -43,9 +60,12 @@ class CrowdfundingTimelineWidget extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingM),
-          itemCount: assets.length,
+          itemCount: items.length,
           itemBuilder: (context, index) {
-            final asset = assets[index];
+            final item = items[index];
+            final asset = item['asset'] as Asset;
+            final platformName = item['platform'] as String;
+            
             final startDate = _getStartDate(asset);
             final endDate = _getEndDate(asset);
             final now = DateTime.now();
@@ -100,7 +120,7 @@ class CrowdfundingTimelineWidget extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        asset.platform ?? 'Inconnu',
+                        platformName,
                         style: AppTypography.caption,
                       ),
                       Text(

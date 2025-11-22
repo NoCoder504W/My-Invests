@@ -23,12 +23,7 @@ class CrowdfundingFields extends StatelessWidget {
         const Text("Détails Crowdfunding", style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: AppDimens.paddingM),
 
-        AppTextField(
-          controller: state.platformController,
-          label: 'Plateforme',
-          hint: 'Ex: ClubFunding',
-        ),
-        const SizedBox(height: AppDimens.paddingM),
+        // Plateforme supprimée (gérée par l'Institution)
 
         AppTextField(
           controller: state.locationController,

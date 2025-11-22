@@ -63,7 +63,7 @@ class AssetListItem extends StatelessWidget {
                 const SizedBox(height: 4),
                 if (asset.type == AssetType.RealEstateCrowdfunding)
                   Text(
-                    '${asset.platform ?? asset.ticker} • ${asset.expectedYield?.toStringAsFixed(1) ?? '?'}%${asset.repaymentType != null ? ' • ${asset.repaymentType!.displayName}' : ''}',
+                    '${asset.ticker} • ${asset.expectedYield?.toStringAsFixed(1) ?? '?'}%${asset.repaymentType != null ? ' • ${asset.repaymentType!.displayName}' : ''}',
                     style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12,

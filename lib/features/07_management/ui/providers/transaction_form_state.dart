@@ -103,7 +103,6 @@ class TransactionFormState extends ChangeNotifier
       if (tx.assetType == AssetType.RealEstateCrowdfunding && tx.assetTicker != null) {
         final metadata = _portfolioProvider.allMetadata[tx.assetTicker];
         if (metadata != null) {
-          platformController.text = metadata.platform ?? '';
           locationController.text = metadata.location ?? '';
           minDurationController.text = metadata.minDuration?.toString() ?? '';
           targetDurationController.text = metadata.targetDuration?.toString() ?? '';
@@ -250,7 +249,6 @@ class TransactionFormState extends ChangeNotifier
 
     switch (_selectedType) {
       case TransactionType.Deposit:
-      case TransactionType.Interest:
         finalAmount = amount;
         break;
       case TransactionType.Withdrawal:
@@ -258,10 +256,12 @@ class TransactionFormState extends ChangeNotifier
         finalAmount = -amount;
         break;
       case TransactionType.Dividend:
-      case TransactionType.InterestPayment:
+      case TransactionType.Interest:
         finalAmount = amount;
-        assetTicker = tickerController.text.toUpperCase();
-        assetName = nameController.text;
+        if (tickerController.text.isNotEmpty || nameController.text.isNotEmpty) {
+           assetTicker = tickerController.text.toUpperCase();
+           assetName = nameController.text;
+        }
         break;
       case TransactionType.Buy:
         finalAmount = -(quantity! * price! * (exchangeRate ?? 1.0));
@@ -312,7 +312,7 @@ class TransactionFormState extends ChangeNotifier
        
        // Update fields
        metadata = metadata.copyWith(
-         platform: platformController.text.trim().isEmpty ? null : platformController.text.trim(),
+         // platform: platformController.text.trim().isEmpty ? null : platformController.text.trim(), // SUPPRIMÉ
          location: locationController.text.trim().isEmpty ? null : locationController.text.trim(),
          minDuration: int.tryParse(minDurationController.text),
          targetDuration: int.tryParse(targetDurationController.text),

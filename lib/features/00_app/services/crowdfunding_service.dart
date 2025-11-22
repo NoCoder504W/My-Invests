@@ -80,7 +80,7 @@ class CrowdfundingService {
                assetName: asset.name,
                date: currentDate,
                amount: monthlyInterest,
-               type: TransactionType.InterestPayment,
+               type: TransactionType.Interest, // Utilisation de Interest standard
              ));
           }
         }
@@ -107,7 +107,7 @@ class CrowdfundingService {
              assetName: asset.name,
              date: endDate,
              amount: totalInterest,
-             type: TransactionType.InterestPayment,
+             type: TransactionType.Interest,
            ));
 
            projections.add(CrowdfundingProjection(
