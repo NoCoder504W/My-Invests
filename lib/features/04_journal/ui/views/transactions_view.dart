@@ -128,7 +128,9 @@ class _TransactionsViewState extends State<TransactionsView> {
               children: [
                 Padding(
                   padding: EdgeInsets.only(top: topPadding, bottom: AppDimens.paddingL),
-                  child: Text('Historique', style: AppTypography.h2),
+                  child: Center(
+                    child: Text('Historique', style: AppTypography.h2),
+                  ),
                 ),
                 Expanded(
                   child: Padding(
@@ -168,7 +170,9 @@ class _TransactionsViewState extends State<TransactionsView> {
               // Titre avec padding haut
               Padding(
                 padding: EdgeInsets.only(top: topPadding, bottom: AppDimens.paddingL),
-                child: Text('Transactions', style: AppTypography.h2),
+                child: Center(
+                  child: Text('Transactions', style: AppTypography.h2),
+                ),
               ),
 
               // Barre de tri

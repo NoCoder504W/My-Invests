@@ -1,34 +1,18 @@
 import 'dart:io';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:flutter/foundation.dart';
-
-class ImportedTransaction {
-  final DateTime date;
-  final String type; // BUY, SELL, DIVIDEND
-  final String ticker;
-  final double amount;
-  final double quantity;
-  final double price;
-  final String currency;
-
-  ImportedTransaction({
-    required this.date,
-    required this.type,
-    required this.ticker,
-    required this.amount,
-    required this.quantity,
-    required this.price,
-    required this.currency,
-  });
-  
-  @override
-  String toString() => '$type $ticker: $quantity @ $price ($amount $currency) on $date';
-}
+import 'package:portefeuille/features/07_management/services/pdf/statement_parser.dart';
+import 'package:portefeuille/features/07_management/services/pdf/parsers/trade_republic_parser.dart';
+import 'package:portefeuille/features/07_management/services/pdf/parsers/boursorama_parser.dart';
 
 class PdfImportService {
+  final List<StatementParser> _parsers = [
+    TradeRepublicParser(),
+    BoursoramaParser(),
+  ];
   
-  Future<List<ImportedTransaction>> extractTransactions(File file) async {
-    final List<ImportedTransaction> transactions = [];
+  Future<List<ParsedTransaction>> extractTransactions(File file) async {
+    final List<ParsedTransaction> transactions = [];
     
     try {
       // Load the PDF document.
@@ -36,21 +20,29 @@ class PdfImportService {
       final PdfDocument document = PdfDocument(inputBytes: bytes);
 
       // Extract text from all pages.
-      // Note: extractText() might merge lines. extractTextLines() is better if available, 
-      // but Syncfusion extractText returns a string.
       String text = PdfTextExtractor(document).extractText();
       
       // Dispose the document.
       document.dispose();
 
-      debugPrint("PDF Content extracted (first 100 chars): ${text.substring(0, text.length > 100 ? 100 : text.length)}");
+      debugPrint("--- PDF CONTENT START ---");
+      debugPrint(text);
+      debugPrint("--- PDF CONTENT END ---");
 
-      // Parse the text
-      if (text.contains('Trade Republic')) {
-        transactions.addAll(_parseTradeRepublic(text));
-      } else {
-        // Try generic parsing
-        transactions.addAll(_parseGeneric(text));
+      // Find the right parser
+      for (final parser in _parsers) {
+        debugPrint("Testing parser: ${parser.bankName}");
+        if (parser.canParse(text)) {
+          debugPrint("Parser MATCHED: ${parser.bankName}");
+          transactions.addAll(parser.parse(text));
+          break;
+        } else {
+          debugPrint("Parser REJECTED: ${parser.bankName}");
+        }
+      }
+      
+      if (transactions.isEmpty) {
+        debugPrint("No parser matched or no transactions found.");
       }
       
     } catch (e) {
@@ -58,18 +50,5 @@ class PdfImportService {
     }
     
     return transactions;
-  }
-
-  List<ImportedTransaction> _parseTradeRepublic(String text) {
-    // TODO: Implement Trade Republic parsing logic
-    // Trade Republic PDFs often have "Ordre de marché Achat" or "Market Order Buy"
-    // and lines like "10,0000 Int.  150,00 EUR"
-    return [];
-  }
-
-  List<ImportedTransaction> _parseGeneric(String text) {
-    // Generic parser looking for patterns
-    // This is a placeholder.
-    return [];
   }
 }

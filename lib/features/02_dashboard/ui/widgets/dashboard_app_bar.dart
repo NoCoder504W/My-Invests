@@ -17,6 +17,7 @@ import 'package:portefeuille/features/06_settings/ui/settings_screen.dart';
 
 // 3. IMPORT NOUVELLE FEATURE
 import 'package:portefeuille/features/07_management/ui/screens/ai_import_config_screen.dart';
+import 'package:portefeuille/features/07_management/ui/screens/pdf_import_screen.dart';
 
 class DashboardAppBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback onPressed;
@@ -107,6 +108,18 @@ class _DashboardAppBarState extends State<DashboardAppBar> {
                 icon: const Icon(Icons.add_circle, color: AppColors.primary),
                 tooltip: 'Ajouter une transaction',
                 onPressed: widget.onPressed,
+              ),
+
+              // --- Bouton Import PDF ---
+              IconButton(
+                icon: const Icon(Icons.upload_file, color: AppColors.primary),
+                tooltip: 'Import PDF',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PdfImportScreen()),
+                  );
+                },
               ),
 
               // --- NOUVEAU : Bouton Import IA ---
