@@ -104,7 +104,7 @@ class _CrowdfundingMapWidgetState extends State<CrowdfundingMapWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Carte des Projets (${validAssets.length})",
+                "Carte des Projets",
                 style: AppTypography.h3,
               ),
               if (validAssets.isEmpty)
