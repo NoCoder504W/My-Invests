@@ -31,8 +31,8 @@ class CrowdfundingTimelineWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppDimens.paddingL),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingL),
           child: Text(
             "Calendrier des Projets",
             style: AppTypography.h3,

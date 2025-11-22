@@ -7,7 +7,6 @@ import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/services/crowdfunding_service.dart';
-import 'package:portefeuille/core/data/models/asset.dart'; // AJOUT
 import 'package:portefeuille/core/data/models/transaction_type.dart';
 
 class CrowdfundingPlannerWidget extends StatelessWidget {

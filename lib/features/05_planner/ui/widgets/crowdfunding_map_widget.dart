@@ -13,8 +13,8 @@ class CrowdfundingMapWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppDimens.paddingL),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingL),
           child: Text(
             "Carte des Projets (Bientôt)",
             style: AppTypography.h3,
