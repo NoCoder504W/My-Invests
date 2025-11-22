@@ -67,6 +67,15 @@ class AppTheme {
         color: AppColors.border,
         thickness: 1,
       ),
+
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.surfaceLight,
+        contentTextStyle: AppTypography.body.copyWith(color: AppColors.textPrimary),
+        closeIconColor: AppColors.textPrimary,
+        actionTextColor: AppColors.primary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimens.radiusS)),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }

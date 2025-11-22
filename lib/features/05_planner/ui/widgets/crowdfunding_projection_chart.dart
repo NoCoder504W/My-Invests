@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:portefeuille/core/data/models/account.dart';
 import 'package:portefeuille/core/data/models/asset.dart';
 import 'package:portefeuille/core/data/models/transaction.dart';
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
@@ -11,11 +12,13 @@ import 'package:portefeuille/features/00_app/services/crowdfunding_service.dart'
 class CrowdfundingProjectionChart extends StatefulWidget {
   final List<Asset> assets;
   final List<Transaction> transactions;
+  final List<Account> accounts;
 
   const CrowdfundingProjectionChart({
     super.key,
     required this.assets,
     required this.transactions,
+    this.accounts = const [],
   });
 
   @override
@@ -23,230 +26,255 @@ class CrowdfundingProjectionChart extends StatefulWidget {
 }
 
 class _CrowdfundingProjectionChartState extends State<CrowdfundingProjectionChart> {
-  int _projectionYears = 5;
+  int _projectionMonths = 60; // Default 5 years
   CrowdfundingSimulationState? _selectedState;
+  late Future<List<CrowdfundingSimulationState>> _projectionsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _projectionsFuture = _calculateProjectionsAsync();
+  }
+
+  @override
+  void didUpdateWidget(CrowdfundingProjectionChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.assets != oldWidget.assets || 
+        widget.transactions != oldWidget.transactions || 
+        widget.accounts != oldWidget.accounts) {
+      _projectionsFuture = _calculateProjectionsAsync();
+    }
+  }
+
+  Future<List<CrowdfundingSimulationState>> _calculateProjectionsAsync() async {
+    // Allow UI to render first
+    await Future.delayed(Duration.zero);
+    return _calculateProjections();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final projections = _calculateProjections();
-
-    if (projections.isEmpty) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: Text("Aucune donnée de projection disponible.")),
-      );
-    }
-
-    // Par défaut, afficher le dernier état si aucun n'est sélectionné
-    final displayState = _selectedState ?? projections.last;
-
-    // Trouver le max pour l'échelle Y
-    double maxY = 0;
-    for (var p in projections) {
-      if (p.investedCapital > maxY) maxY = p.investedCapital;
-      if (p.cumulativeInterests > maxY) maxY = p.cumulativeInterests;
-      if (p.liquidity > maxY) maxY = p.liquidity;
-    }
-    maxY = maxY * 1.1; // Marge de 10%
-    if (maxY == 0) maxY = 100;
-
-    // Largeur dynamique : 30px par mois pour une meilleure lisibilité et scroll
-    // Minimum la largeur de l'écran
-    final double chartWidth = (projections.length * 30.0).clamp(MediaQuery.of(context).size.width - 64, 5000.0);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingL),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Projection",
-                style: AppTypography.h3,
-              ),
-              _buildTimeRangeSelector(),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppDimens.paddingM),
+    return FutureBuilder<List<CrowdfundingSimulationState>>(
+      future: _projectionsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+           return const SizedBox(
+             height: 300,
+             child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+           );
+        }
         
-        // Résumé dynamique
-        _buildDynamicSummary(displayState),
-        
-        const SizedBox(height: AppDimens.paddingM),
+        if (snapshot.hasError) {
+          return SizedBox(
+            height: 200,
+            child: Center(child: Text("Erreur de calcul: ${snapshot.error}")),
+          );
+        }
 
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingM),
-          child: Container(
-            height: 300,
-            width: chartWidth,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: LineChart(
-              LineChartData(
-                clipData: const FlClipData.all(),
-                minX: 0,
-                maxX: projections.length.toDouble() - 1,
-                minY: 0,
-                maxY: maxY,
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: maxY / 5,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppColors.border.withValues(alpha: 0.5),
-                    strokeWidth: 1,
-                    dashArray: [5, 5],
+        final projections = snapshot.data ?? [];
+
+        if (projections.isEmpty) {
+          return const SizedBox(
+            height: 200,
+            child: Center(child: Text("Aucune donnée de projection disponible.")),
+          );
+        }
+
+        // Par défaut, afficher le dernier état si aucun n'est sélectionné
+        final displayState = _selectedState ?? projections.last;
+
+        // Trouver le max pour l'échelle Y
+        double maxY = 0;
+        for (var p in projections) {
+          final total = p.investedCapital + p.cumulativeInterests; // Exclure liquidités
+          if (total > maxY) maxY = total;
+        }
+        maxY = maxY * 1.1; // Marge de 10%
+        if (maxY == 0) maxY = 100;
+
+        // Largeur dynamique : 16px par mois pour les barres + padding
+        final double chartWidth = (projections.length * 16.0 + 32.0).clamp(MediaQuery.of(context).size.width - 64, 5000.0);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingL),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Projection",
+                    style: AppTypography.h3,
                   ),
-                ),
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final index = value.toInt();
-                        if (index >= 0 && index < projections.length && index % 12 == 0) {
-                          final date = projections[index].date;
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(DateFormat('yyyy').format(date), style: const TextStyle(fontSize: 10)),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                      interval: 1,
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (value, meta) {
-                        if (value == 0) return const SizedBox.shrink();
-                        return Text(
-                          NumberFormat.compactCurrency(symbol: '').format(value),
-                          style: const TextStyle(fontSize: 10),
-                        );
-                      },
-                    ),
-                  ),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                ),
-                borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  // Ligne Capital Investi
-                  LineChartBarData(
-                    spots: projections.asMap().entries.map((e) {
-                      return FlSpot(e.key.toDouble(), e.value.investedCapital);
-                    }).toList(),
-                    isCurved: true,
-                    color: Colors.blue,
-                    barWidth: 3,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.blue.withValues(alpha: 0.3),
-                          Colors.blue.withValues(alpha: 0.0),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                  // Ligne Intérêts Cumulés
-                  LineChartBarData(
-                    spots: projections.asMap().entries.map((e) {
-                      return FlSpot(e.key.toDouble(), e.value.cumulativeInterests);
-                    }).toList(),
-                    isCurved: true,
-                    color: Colors.green,
-                    barWidth: 3,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.green.withValues(alpha: 0.3),
-                          Colors.green.withValues(alpha: 0.0),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                  // Ligne Liquidités Disponibles
-                  LineChartBarData(
-                    spots: projections.asMap().entries.map((e) {
-                      return FlSpot(e.key.toDouble(), e.value.liquidity);
-                    }).toList(),
-                    isCurved: true,
-                    color: Colors.orange,
-                    barWidth: 3,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.orange.withValues(alpha: 0.3),
-                          Colors.orange.withValues(alpha: 0.0),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
+                  _buildTimeRangeSelector(),
                 ],
-                lineTouchData: LineTouchData(
-                  touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
-                    if (event is FlTapUpEvent || event is FlPanEndEvent) {
-                       // Reset selection on end? No, keep it.
-                    }
-                    
-                    if (touchResponse != null && touchResponse.lineBarSpots != null && touchResponse.lineBarSpots!.isNotEmpty) {
-                      final index = touchResponse.lineBarSpots!.first.x.toInt();
-                      if (index >= 0 && index < projections.length) {
-                        setState(() {
-                          _selectedState = projections[index];
-                        });
-                      }
-                    }
-                  },
-                  handleBuiltInTouches: true,
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        // Tooltip minimaliste car on a le résumé en haut
-                        return null; 
-                      }).toList();
-                    },
+              ),
+            ),
+            const SizedBox(height: AppDimens.paddingM),
+            
+            // Résumé dynamique
+            _buildDynamicSummary(displayState),
+            
+            const SizedBox(height: AppDimens.paddingM),
+
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingM),
+              child: Container(
+                height: 300,
+                width: chartWidth,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.spaceAround,
+                    maxY: maxY,
+                    // Ensure we show all groups
+                    barTouchData: BarTouchData(
+                      touchTooltipData: BarTouchTooltipData(
+                        getTooltipColor: (group) => AppColors.surfaceLight,
+                        tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        tooltipMargin: 8,
+                        fitInsideHorizontally: true,
+                        fitInsideVertically: true,
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                          final state = projections[groupIndex];
+                          final total = state.investedCapital + state.cumulativeInterests + state.liquidity;
+                          final currencyFormat = NumberFormat.currency(symbol: '€', decimalDigits: 0);
+
+                          return BarTooltipItem(
+                            '${DateFormat('MMM yyyy', 'fr_FR').format(state.date)}\n',
+                            AppTypography.caption.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                            children: [
+                              const TextSpan(text: '\n', style: TextStyle(fontSize: 4)),
+                              _buildTooltipSpan("Liquidités: ", state.liquidity, AppColors.warning, currencyFormat),
+                              _buildTooltipSpan("Capital: ", state.investedCapital, AppColors.primary, currencyFormat),
+                              _buildTooltipSpan("Intérêts: ", state.cumulativeInterests, AppColors.success, currencyFormat),
+                              const TextSpan(text: '\n'),
+                              TextSpan(
+                                text: 'Total: ',
+                                style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontSize: 11),
+                              ),
+                              TextSpan(
+                                text: currencyFormat.format(total),
+                                style: AppTypography.bodyBold.copyWith(color: AppColors.textPrimary, fontSize: 12),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      touchCallback: (FlTouchEvent event, barTouchResponse) {
+                        if (!event.isInterestedForInteractions ||
+                            barTouchResponse == null ||
+                            barTouchResponse.spot == null) {
+                          return;
+                        }
+                        final index = barTouchResponse.spot!.touchedBarGroupIndex;
+                        if (index >= 0 && index < projections.length) {
+                          setState(() {
+                            _selectedState = projections[index];
+                          });
+                        }
+                      },
+                    ),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            final index = value.toInt();
+                            if (index >= 0 && index < projections.length && index % 12 == 0) {
+                              final date = projections[index].date;
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(DateFormat('yyyy').format(date), style: AppTypography.caption),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (value, meta) {
+                            if (value == 0) return const SizedBox.shrink();
+                            return Text(
+                              NumberFormat.compactCurrency(symbol: '').format(value),
+                              style: AppTypography.caption.copyWith(fontSize: 10),
+                              textAlign: TextAlign.right,
+                            );
+                          },
+                        ),
+                      ),
+                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    gridData: FlGridData(show: false),
+                    barGroups: projections.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final data = entry.value;
+                      final total = data.investedCapital + data.cumulativeInterests;
+                      
+                      return BarChartGroupData(
+                        x: index,
+                        barRods: [
+                          BarChartRodData(
+                            toY: total,
+                            width: 10,
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                            rodStackItems: [
+                              // Order: Capital (Bottom), Interest (Top)
+                              BarChartRodStackItem(0, data.investedCapital, AppColors.primary),
+                              BarChartRodStackItem(data.investedCapital, total, AppColors.success),
+                            ],
+                          ),
+                        ],
+                      );
+                    }).toList(),
                   ),
                 ),
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingL),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildLegendItem(AppColors.primary, "Capital"),
+                  const SizedBox(width: 16),
+                  _buildLegendItem(AppColors.success, "Intérêts"),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  TextSpan _buildTooltipSpan(String label, double value, Color color, NumberFormat fmt) {
+    return TextSpan(
+      children: [
+        TextSpan(
+          text: label,
+          style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontSize: 11),
         ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingL),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildLegendItem(Colors.blue, "Capital"),
-              const SizedBox(width: 16),
-              _buildLegendItem(Colors.green, "Intérêts"),
-              const SizedBox(width: 16),
-              _buildLegendItem(Colors.orange, "Liquidités"),
-            ],
-          ),
+        TextSpan(
+          text: '${fmt.format(value)}\n',
+          style: AppTypography.bodyBold.copyWith(color: color, fontSize: 11),
         ),
       ],
     );
@@ -275,9 +303,9 @@ class _CrowdfundingProjectionChartState extends State<CrowdfundingProjectionChar
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildSummaryValue("Capital", state.investedCapital, Colors.blue, currencyFormat),
-                _buildSummaryValue("Intérêts", state.cumulativeInterests, Colors.green, currencyFormat),
-                _buildSummaryValue("Liquidités", state.liquidity, Colors.orange, currencyFormat),
+                _buildSummaryValue("Liquidités", state.liquidity, AppColors.warning, currencyFormat),
+                _buildSummaryValue("Capital", state.investedCapital, AppColors.primary, currencyFormat),
+                _buildSummaryValue("Intérêts", state.cumulativeInterests, AppColors.success, currencyFormat),
               ],
             ),
           ],
@@ -299,16 +327,23 @@ class _CrowdfundingProjectionChartState extends State<CrowdfundingProjectionChar
   }
 
   Widget _buildTimeRangeSelector() {
+    final options = [6, 12, 24, 60, 120];
+    final labels = ["6M", "1A", "2A", "5A", "10A"];
+    
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [1, 3, 5, 10].map((years) {
-        final isSelected = _projectionYears == years;
+      children: List.generate(options.length, (index) {
+        final months = options[index];
+        final label = labels[index];
+        final isSelected = _projectionMonths == months;
+        
         return Padding(
           padding: const EdgeInsets.only(left: 4),
           child: InkWell(
             onTap: () => setState(() {
-              _projectionYears = years;
+              _projectionMonths = months;
               _selectedState = null; // Reset selection on range change
+              _projectionsFuture = _calculateProjectionsAsync();
             }),
             borderRadius: BorderRadius.circular(12),
             child: Container(
@@ -321,7 +356,7 @@ class _CrowdfundingProjectionChartState extends State<CrowdfundingProjectionChar
                 ),
               ),
               child: Text(
-                "${years}A",
+                label,
                 style: TextStyle(
                   color: isSelected ? Colors.white : AppColors.textSecondary,
                   fontSize: 12,
@@ -331,7 +366,7 @@ class _CrowdfundingProjectionChartState extends State<CrowdfundingProjectionChar
             ),
           ),
         );
-      }).toList(),
+      }),
     );
   }
 
@@ -354,7 +389,8 @@ class _CrowdfundingProjectionChartState extends State<CrowdfundingProjectionChar
     final rawHistory = service.simulateCrowdfundingEvolution(
       assets: widget.assets,
       transactions: widget.transactions,
-      projectionYears: _projectionYears,
+      accounts: widget.accounts,
+      projectionMonths: _projectionMonths,
     );
     
     if (rawHistory.isEmpty) return [];

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart'; // Pour ScrollConfiguration
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:portefeuille/core/data/models/asset.dart';
@@ -28,7 +29,7 @@ class CrowdfundingPlannerWidget extends StatelessWidget {
     final futureEvents = service.generateFutureEvents(
       assets: assets,
       transactions: transactions,
-      projectionYears: 2, // On regarde les 2 prochaines années pour le planner
+      projectionMonths: 24, // On regarde les 2 prochaines années pour le planner
     );
 
     if (futureEvents.isEmpty) {
@@ -49,58 +50,66 @@ class CrowdfundingPlannerWidget extends StatelessWidget {
         
         SizedBox(
           height: 160,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingM),
-            itemCount: futureEvents.length,
-            itemBuilder: (context, index) {
-              final event = futureEvents[index];
-              final isCapital = event.type == TransactionType.CapitalRepayment;
-              
-              // Récupérer le nom de l'actif
-              final asset = assets.where((a) => a.id == event.assetId || a.ticker == event.assetId).firstOrNull;
-              final assetName = asset?.name ?? event.assetId ?? "Inconnu";
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(
+              dragDevices: {
+                PointerDeviceKind.touch,
+                PointerDeviceKind.mouse,
+              },
+            ),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingM),
+              itemCount: futureEvents.length,
+              itemBuilder: (context, index) {
+                final event = futureEvents[index];
+                final isCapital = event.type == TransactionType.CapitalRepayment;
+                
+                // Récupérer le nom de l'actif
+                final asset = assets.where((a) => a.id == event.assetId || a.ticker == event.assetId).firstOrNull;
+                final assetName = asset?.name ?? event.assetId ?? "Inconnu";
 
-              return Container(
-                width: 140,
-                margin: const EdgeInsets.only(right: AppDimens.paddingS),
-                child: AppCard(
-                  padding: const EdgeInsets.all(AppDimens.paddingM),
-                  backgroundColor: isCapital ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        DateFormat('dd MMM yyyy', 'fr_FR').format(event.date),
-                        style: AppTypography.caption,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "${event.amount.toStringAsFixed(2)} €",
-                        style: AppTypography.h3.copyWith(
-                          color: isCapital ? AppColors.primary : AppColors.success,
-                          fontSize: 18,
+                return Container(
+                  width: 140,
+                  margin: const EdgeInsets.only(right: AppDimens.paddingS),
+                  child: AppCard(
+                    padding: const EdgeInsets.all(AppDimens.paddingM),
+                    backgroundColor: isCapital ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          DateFormat('dd MMM yyyy', 'fr_FR').format(event.date),
+                          style: AppTypography.caption,
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        assetName,
-                        style: AppTypography.body.copyWith(fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        isCapital ? "Remboursement" : "Intérêts",
-                        style: AppTypography.caption.copyWith(
-                          color: isCapital ? AppColors.primary : AppColors.success,
+                        const SizedBox(height: 4),
+                        Text(
+                          "${event.amount.toStringAsFixed(2)} €",
+                          style: AppTypography.h3.copyWith(
+                            color: isCapital ? AppColors.primary : AppColors.success,
+                            fontSize: 18,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          assetName,
+                          style: AppTypography.body.copyWith(fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          isCapital ? "Remboursement" : "Intérêts",
+                          style: AppTypography.caption.copyWith(
+                            color: isCapital ? AppColors.primary : AppColors.success,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ],

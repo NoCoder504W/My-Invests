@@ -2,9 +2,11 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data'; // Pour Uint8List
 import 'package:flutter/foundation.dart'; // Pour kIsWeb
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart'; // Pour l'export cross-platform
+import 'package:file_picker/file_picker.dart'; // Pour l'export Web
 import 'package:portefeuille/core/data/models/sync_log.dart';
 import 'package:portefeuille/core/data/models/sync_status.dart';
 
@@ -41,18 +43,12 @@ class SyncLogExportService {
 
     if (kIsWeb) {
       // --- VERSION WEB ---
-      // Sur le web, on crée un XFile à partir des bytes et on "partage"
-      // ce qui déclenche le téléchargement du fichier par le navigateur.
+      // On utilise FilePicker pour déclencher le téléchargement
       final bytes = utf8.encode(csvContent);
-      final xFile = XFile.fromData(
-        Uint8List.fromList(bytes),
-        mimeType: 'text/csv',
-        name: filename,
+      await FilePicker.platform.saveFile(
+        fileName: filename,
+        bytes: Uint8List.fromList(bytes),
       );
-
-      // shareXFiles sur le web déclenche le téléchargement
-      await Share.shareXFiles([xFile], subject: 'Export Logs Portefeuille');
-
     } else {
       // --- VERSION MOBILE / DESKTOP ---
       // On écrit dans un fichier temporaire puis on lance la sheet de partage native

@@ -65,6 +65,9 @@ class InstitutionTile extends StatelessWidget {
           title: Text(
             institution.name,
             style: AppTypography.h3,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            softWrap: false,
           ),
           // Partie Droite : Montant + P/L + Flèche
           trailing: Row(

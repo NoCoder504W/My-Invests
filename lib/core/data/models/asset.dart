@@ -157,6 +157,38 @@ class Asset {
   // MODIFIÉ : Valeur totale en devise de COMPTE
   // Conforme à l'étape 1.3 de la feuille de route
   double get totalValue {
+    if (type == AssetType.RealEstateCrowdfunding) {
+      // Calcul spécifique Crowdfunding : Capital Investi + Intérêts courus
+      double totalBuyValueWithInterest = 0.0;
+      double totalBuyQuantity = 0.0;
+
+      final buyTransactions = transactions.where((tr) => tr.type == TransactionType.Buy);
+
+      for (final tr in buyTransactions) {
+        final qty = tr.quantity ?? 0.0;
+        final price = tr.price ?? 0.0;
+        final invested = qty * price;
+        final yieldPercent = (expectedYield ?? 0.0) / 100.0;
+        final daysSince = DateTime.now().difference(tr.date).inDays;
+        // On ne compte pas d'intérêts négatifs si date future
+        final duration = daysSince < 0 ? 0 : daysSince;
+
+        final interest = invested * yieldPercent * (duration / 365.0);
+        totalBuyValueWithInterest += invested + interest;
+        totalBuyQuantity += qty;
+      }
+
+      if (totalBuyQuantity == 0) return 0.0;
+
+      // Ratio de détention (si on a vendu une partie)
+      final holdingRatio = quantity / totalBuyQuantity;
+
+      // Valeur ajustée
+      final adjustedValue = totalBuyValueWithInterest * holdingRatio;
+
+      return adjustedValue * currentExchangeRate;
+    }
+
     // (Quantité) * (Prix en USD) * (Taux USD -> EUR Compte)
     return quantity * currentPrice * currentExchangeRate;
   }

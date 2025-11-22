@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:convert'; // Pour utf8
+import 'dart:typed_data'; // Pour Uint8List
+import 'package:flutter/foundation.dart'; // Pour kIsWeb
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -28,7 +31,19 @@ class _BackupCardState extends State<BackupCard> {
     try {
       final jsonString = await provider.getExportJson();
 
-      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      if (kIsWeb) {
+        // --- WEB ---
+        final bytes = utf8.encode(jsonString);
+        await FilePicker.platform.saveFile(
+          fileName: 'backup_portefeuille_${DateTime.now().toIso8601String().replaceAll(':', '-')}.json',
+          bytes: Uint8List.fromList(bytes),
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Sauvegarde téléchargée')),
+          );
+        }
+      } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
         // Desktop: Save File Dialog
         String? outputFile = await FilePicker.platform.saveFile(
           dialogTitle: 'Enregistrer la sauvegarde',
@@ -72,6 +87,7 @@ class _BackupCardState extends State<BackupCard> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['json'],
+      withData: true, // Important pour le Web
     );
     if (result == null) return;
 
@@ -79,8 +95,16 @@ class _BackupCardState extends State<BackupCard> {
     setState(() => _isBusy = true);
 
     try {
-      final file = File(result.files.single.path!);
-      final jsonString = await file.readAsString();
+      String jsonString;
+      if (kIsWeb) {
+        final bytes = result.files.single.bytes;
+        if (bytes == null) throw Exception("Fichier vide ou illisible");
+        jsonString = utf8.decode(bytes);
+      } else {
+        final file = File(result.files.single.path!);
+        jsonString = await file.readAsString();
+      }
+
       await context.read<PortfolioProvider>().importDataFromJson(jsonString);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Import réussi')));
     } catch (e) {

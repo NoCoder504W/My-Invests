@@ -63,7 +63,7 @@ class _DashboardAppBarState extends State<DashboardAppBar> {
   @override
   Widget build(BuildContext context) {
     final portfolioProvider = context.watch<PortfolioProvider>();
-    final settingsProvider = context.read<SettingsProvider>();
+    final settingsProvider = context.watch<SettingsProvider>();
     final portfolio = portfolioProvider.activePortfolio;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

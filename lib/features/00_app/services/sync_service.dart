@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/core/data/models/sync_status.dart';
 import 'package:portefeuille/core/data/models/sync_log.dart';
+import 'package:portefeuille/core/data/models/asset_type.dart'; // NOUVEL IMPORT
 import 'package:portefeuille/core/data/repositories/portfolio_repository.dart';
 import 'package:portefeuille/core/data/services/api_service.dart';
 import 'package:uuid/uuid.dart';
@@ -92,7 +93,8 @@ class SyncService {
     for (var inst in portfolio.institutions) {
       for (var acc in inst.accounts) {
         for (var asset in acc.assets) {
-          if (asset.ticker.isNotEmpty) {
+          // MODIFIÉ : On ignore le Crowdfunding pour la synchro des prix
+          if (asset.ticker.isNotEmpty && asset.type != AssetType.RealEstateCrowdfunding) {
             tickers.add(asset.ticker);
           }
         }
