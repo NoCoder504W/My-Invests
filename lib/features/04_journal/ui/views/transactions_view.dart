@@ -15,6 +15,9 @@ import 'package:portefeuille/core/data/models/transaction.dart';
 import 'package:portefeuille/core/data/models/transaction_type.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/07_management/ui/screens/edit_transaction_screen.dart';
+import 'package:portefeuille/features/07_management/ui/screens/add_transaction_screen.dart';
+import 'package:portefeuille/features/07_management/ui/screens/pdf_import_screen.dart';
+import 'package:portefeuille/features/07_management/ui/screens/ai_import_config_screen.dart';
 
 // New Widgets & Models
 import 'package:portefeuille/features/04_journal/ui/models/transaction_group.dart';
@@ -209,6 +212,28 @@ class _TransactionsViewState extends State<TransactionsView> {
     );
   }
 
+  void _openAddTransactionModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => const AddTransactionScreen(),
+    );
+  }
+
+  void _openPdfImport() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PdfImportScreen()),
+    );
+  }
+
+  void _openAiImport() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AiImportConfigScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.of(context).padding.top + 90;
@@ -289,6 +314,9 @@ class _TransactionsViewState extends State<TransactionsView> {
                   onSelectAll: () => _selectAll(allTransactions),
                   onDeleteSelected: () => _deleteSelectedTransactions(provider),
                   onCancelSelection: () => setState(() => _selectedIds.clear()),
+                  onAddTransaction: _openAddTransactionModal,
+                  onImportPdf: _openPdfImport,
+                  onImportAi: _openAiImport,
                 ),
               ),
 

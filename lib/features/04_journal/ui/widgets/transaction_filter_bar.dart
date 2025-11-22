@@ -13,6 +13,9 @@ class TransactionFilterBar extends StatelessWidget {
   final VoidCallback onSelectAll;
   final VoidCallback onDeleteSelected;
   final VoidCallback onCancelSelection;
+  final VoidCallback onAddTransaction;
+  final VoidCallback onImportPdf;
+  final VoidCallback onImportAi;
 
   const TransactionFilterBar({
     super.key,
@@ -23,6 +26,9 @@ class TransactionFilterBar extends StatelessWidget {
     required this.onSelectAll,
     required this.onDeleteSelected,
     required this.onCancelSelection,
+    required this.onAddTransaction,
+    required this.onImportPdf,
+    required this.onImportAi,
   });
 
   @override
@@ -56,26 +62,55 @@ class TransactionFilterBar extends StatelessWidget {
                 ],
               ),
             ] else ...[
-              Text('Trier par', style: AppTypography.body),
-              DropdownButtonHideUnderline(
-                child: DropdownButton<TransactionSortOption>(
-                  value: sortOption,
-                  dropdownColor: AppColors.surfaceLight,
-                  icon: const Icon(Icons.sort, color: AppColors.primary),
-                  style: AppTypography.bodyBold,
-                  items: const [
-                    DropdownMenuItem(value: TransactionSortOption.dateDesc, child: Text('Date (Récent)')),
-                    DropdownMenuItem(value: TransactionSortOption.dateAsc, child: Text('Date (Ancien)')),
-                    DropdownMenuItem(value: TransactionSortOption.amountDesc, child: Text('Montant (Haut)')),
-                    DropdownMenuItem(value: TransactionSortOption.amountAsc, child: Text('Montant (Bas)')),
-                    DropdownMenuItem(value: TransactionSortOption.type, child: Text('Type')),
-                    DropdownMenuItem(value: TransactionSortOption.institution, child: Text('Institution')),
-                    DropdownMenuItem(value: TransactionSortOption.account, child: Text('Compte')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) onSortChanged(value);
-                  },
-                ),
+              // Actions (Gauche)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.add_circle, color: AppColors.primary),
+                    tooltip: 'Ajouter',
+                    onPressed: onAddTransaction,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.upload_file, color: AppColors.primary),
+                    tooltip: 'Import PDF',
+                    onPressed: onImportPdf,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.auto_awesome, color: AppColors.primary),
+                    tooltip: 'Import IA',
+                    onPressed: onImportAi,
+                  ),
+                ],
+              ),
+
+              // Tri (Droite)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Trier par', style: AppTypography.body),
+                  const SizedBox(width: AppDimens.paddingS),
+                  DropdownButtonHideUnderline(
+                    child: DropdownButton<TransactionSortOption>(
+                      value: sortOption,
+                      dropdownColor: AppColors.surfaceLight,
+                      icon: const Icon(Icons.sort, color: AppColors.primary),
+                      style: AppTypography.bodyBold,
+                      items: const [
+                        DropdownMenuItem(value: TransactionSortOption.dateDesc, child: Text('Date (Récent)')),
+                        DropdownMenuItem(value: TransactionSortOption.dateAsc, child: Text('Date (Ancien)')),
+                        DropdownMenuItem(value: TransactionSortOption.amountDesc, child: Text('Montant (Haut)')),
+                        DropdownMenuItem(value: TransactionSortOption.amountAsc, child: Text('Montant (Bas)')),
+                        DropdownMenuItem(value: TransactionSortOption.type, child: Text('Type')),
+                        DropdownMenuItem(value: TransactionSortOption.institution, child: Text('Institution')),
+                        DropdownMenuItem(value: TransactionSortOption.account, child: Text('Compte')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) onSortChanged(value);
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ],
