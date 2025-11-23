@@ -21,6 +21,9 @@ class MockSettings implements ISettings {
   bool get hasFmpApiKey => false;
   @override
   int get appColorValue => 0xFF0000FF;
+
+  @override
+  List<String> get serviceOrder => ['FMP', 'Yahoo', 'Google'];
 }
 
 class MockApiService extends ApiService {
