@@ -17,7 +17,7 @@ class HistoryReconstructionService {
   ///   - C'est une approximation, mais c'est le mieux qu'on puisse faire sans API historique.
   ///   - Pour le Cash, le prix est toujours 1.0 (dans la devise du compte).
   List<PortfolioValueHistoryPoint> reconstructHistory(Portfolio portfolio) {
-    debugPrint("--- 📜 Reconstruction de l'historique ---");
+    debugPrint("--- 📜 Reconstruction de l'historique (Interpolée) ---");
     
     // 1. Récupérer toutes les transactions à plat
     final allTransactions = portfolio.institutions
@@ -33,18 +33,20 @@ class HistoryReconstructionService {
     // Trier par date
     allTransactions.sort((a, b) => a.date.compareTo(b.date));
 
+    // 2. Préparer les points de prix connus pour chaque actif
+    final Map<String, List<MapEntry<DateTime, double>>> pricePoints = {};
+    for (final tx in allTransactions) {
+      if (tx.price != null && tx.price! > 0) {
+        final ticker = tx.assetTicker ?? tx.assetName ?? 'UNKNOWN';
+        pricePoints.putIfAbsent(ticker, () => []).add(MapEntry(tx.date, tx.price!));
+      }
+    }
+
     final startDate = allTransactions.first.date;
     final endDate = DateTime.now();
     
     // État courant
     final Map<String, double> quantities = {}; // Ticker -> Quantity
-    final Map<String, double> lastKnownPrices = {}; // Ticker -> Price
-    
-    // Pour gérer les devises, c'est complexe sans taux de change historiques.
-    // On va supposer que tout est converti dans la devise de base ou ignorer la conversion pour l'instant (somme brute).
-    // Idéalement, il faudrait les taux historiques.
-    // On va faire une somme simple des valeurs (Quantity * Price) en supposant que les prix sont dans la même devise ou que l'utilisateur gère ça.
-    // Note: Dans l'app, chaque compte a une devise.
     
     final List<PortfolioValueHistoryPoint> history = [];
     
@@ -52,38 +54,22 @@ class HistoryReconstructionService {
     int txIndex = 0;
 
     // On itère jour par jour
-    // Pour optimiser, on pourrait sauter aux jours de transaction, mais on veut un point par jour (ou semaine) pour le graphe.
-    // On va générer un point par jour.
-    
     for (var day = startDate; day.isBefore(endDate) || day.isAtSameMomentAs(endDate); day = day.add(const Duration(days: 1))) {
 
-      // Appliquer les transactions du jour
+      // Appliquer les transactions du jour (Mise à jour des quantités)
       while (txIndex < allTransactions.length && _isSameDay(allTransactions[txIndex].date, day)) {
         final tx = allTransactions[txIndex];
-        _applyTransaction(tx, quantities, lastKnownPrices);
+        _applyTransactionQuantities(tx, quantities);
         txIndex++;
       }
 
-      // Si c'est le dernier jour, ou s'il y a eu des changements, ou périodiquement (ex: chaque semaine)
-      // Pour un graphe fluide, on peut prendre chaque jour.
-      // Si on a beaucoup de jours, ça fait beaucoup de points.
-      // On va prendre chaque jour s'il y a changement, sinon on répète la valeur précédente ?
-      // Non, le graphe a besoin de points réguliers ou au moins aux changements.
-      
-      // Calculer la valeur totale ce jour-là
+      // Calculer la valeur totale ce jour-là avec interpolation des prix
       double totalValue = 0.0;
       quantities.forEach((ticker, qty) {
-        final price = lastKnownPrices[ticker] ?? 0.0;
+        final price = _getInterpolatedPrice(ticker, day, pricePoints);
         totalValue += qty * price;
       });
 
-      // Ajouter le point (on écrase s'il existe déjà pour ce jour, mais ici on génère une nouvelle liste)
-      // On évite les doublons de date si on itère jour par jour.
-      
-      // Optimisation : Si la valeur n'a pas changé depuis le dernier point, on n'ajoute pas forcément de point,
-      // SAUF si on veut une ligne plate explicite. Fl_chart gère bien les lignes.
-      // Mais pour "l'évolution", c'est bien d'avoir un point par jour.
-      
       history.add(PortfolioValueHistoryPoint(date: day, value: totalValue));
     }
 
@@ -91,18 +77,43 @@ class HistoryReconstructionService {
     return history;
   }
 
+  double _getInterpolatedPrice(String ticker, DateTime date, Map<String, List<MapEntry<DateTime, double>>> pricePoints) {
+    final points = pricePoints[ticker];
+    if (points == null || points.isEmpty) return 0.0;
+
+    // Trouver le point précédent et le point suivant
+    MapEntry<DateTime, double>? prev;
+    MapEntry<DateTime, double>? next;
+
+    for (final point in points) {
+      if (point.key.isBefore(date) || _isSameDay(point.key, date)) {
+        prev = point;
+      } else {
+        next = point;
+        break; // On a trouvé le premier point futur
+      }
+    }
+
+    if (prev == null) return next?.value ?? 0.0; // Avant tout historique connu
+    if (next == null) return prev.value; // Après le dernier historique connu (plateau)
+
+    // Interpolation linéaire
+    final totalDuration = next.key.difference(prev.key).inMilliseconds;
+    if (totalDuration == 0) return prev.value;
+
+    final currentDuration = date.difference(prev.key).inMilliseconds;
+    final t = currentDuration / totalDuration;
+
+    return prev.value + (next.value - prev.value) * t;
+  }
+
   bool _isSameDay(DateTime d1, DateTime d2) {
     return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
   }
 
-  void _applyTransaction(Transaction tx, Map<String, double> quantities, Map<String, double> lastKnownPrices) {
+  void _applyTransactionQuantities(Transaction tx, Map<String, double> quantities) {
     final ticker = tx.assetTicker ?? tx.assetName ?? 'UNKNOWN';
     
-    // Mise à jour du prix si disponible (Buy/Sell)
-    if (tx.price != null && tx.price! > 0) {
-      lastKnownPrices[ticker] = tx.price!;
-    }
-
     // Mise à jour de la quantité
     final currentQty = quantities[ticker] ?? 0.0;
     

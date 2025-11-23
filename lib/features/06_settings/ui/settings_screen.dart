@@ -13,6 +13,7 @@ import 'widgets/sync_logs_card.dart';
 import 'widgets/online_mode_card.dart';
 import 'widgets/backup_card.dart';
 import 'widgets/danger_zone_card.dart';
+import 'widgets/debug_card.dart';
 import 'widgets/about_card.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -84,6 +85,8 @@ class SettingsScreen extends StatelessWidget {
                   FadeInSlide(delay: 0.35, child: BackupCard()),
                   SizedBox(height: AppDimens.paddingM),
                   FadeInSlide(delay: 0.4, child: AboutCard()),
+                  SizedBox(height: AppDimens.paddingM),
+                  FadeInSlide(delay: 0.42, child: DebugCard()),
                   SizedBox(height: AppDimens.paddingM),
                   FadeInSlide(delay: 0.45, child: DangerZoneCard()),
                   SizedBox(height: 40),
