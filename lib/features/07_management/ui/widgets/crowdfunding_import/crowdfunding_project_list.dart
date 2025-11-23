@@ -42,7 +42,18 @@ class CrowdfundingProjectList extends StatelessWidget {
       );
     }
 
-    if (projects.isEmpty) return const SizedBox.shrink();
+    if (projects.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimens.paddingL),
+          child: Text(
+            "Aucun projet à importer.\nSélectionnez un fichier Excel.",
+            textAlign: TextAlign.center,
+            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+          ),
+        ),
+      );
+    }
 
     return Column(
       children: projects.asMap().entries.map((entry) {

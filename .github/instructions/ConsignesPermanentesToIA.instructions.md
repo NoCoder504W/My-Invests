@@ -23,3 +23,7 @@ You are an expert Flutter & Dart developer working in Android Studio. Your goal 
 - Assure-toi que l'UI est responsive.
 - Sépare bien la logique métier de l'interface utilisateur (UI).
 - L'UI est géré par core/ui, un Design Center propre à l'application.
+
+# Documentation & Logique Métier
+- **LogiqueCalculs.md :** Consulte systématiquement `lib/features/00_app/LogiqueCalculs.md` avant de modifier une logique financière.
+- **Mise à jour :** Si tu modifies une règle de calcul (liquidité, PRU, rendement...), tu DOIS mettre à jour `lib/features/00_app/LogiqueCalculs.md` pour refléter le changement.
