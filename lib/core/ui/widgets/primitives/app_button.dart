@@ -12,6 +12,8 @@ class AppButton extends StatefulWidget {
   final IconData? icon;
   final bool isLoading;
   final bool isFullWidth;
+  final Color? textColor;
+  final Color? borderColor; // AJOUT
 
   const AppButton({
     super.key,
@@ -21,6 +23,8 @@ class AppButton extends StatefulWidget {
     this.icon,
     this.isLoading = false,
     this.isFullWidth = true,
+    this.textColor,
+    this.borderColor, // AJOUT
   });
 
   @override
@@ -30,6 +34,7 @@ class AppButton extends StatefulWidget {
 class _AppButtonState extends State<AppButton> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  bool _isHovered = false;
 
   @override
   void initState() {
@@ -53,40 +58,50 @@ class _AppButtonState extends State<AppButton> with SingleTickerProviderStateMix
   Widget build(BuildContext context) {
     final isDisabled = widget.onPressed == null || widget.isLoading;
 
-    return GestureDetector(
-      onTapDown: isDisabled ? null : (_) => _controller.forward(),
-      onTapUp: isDisabled ? null : (_) => _controller.reverse(),
-      onTapCancel: isDisabled ? null : () => _controller.reverse(),
-      onTap: isDisabled ? null : widget.onPressed,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Opacity(
-          opacity: isDisabled ? 0.5 : 1.0,
-          child: Container(
-            width: widget.isFullWidth ? double.infinity : null,
-            alignment: Alignment.center, // Fix: Center content to prevent loader stretching
-            padding: const EdgeInsets.symmetric(
-              vertical: 14,
-              horizontal: 24,
-            ),
-            decoration: _getDecoration(),
-            child: widget.isLoading
-                ? _buildLoader()
-                : Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (widget.icon != null) ...[
-                  Icon(widget.icon, size: 18, color: _getTextColor()),
-                  const SizedBox(width: 8),
-                ],
-                Text(
-                  widget.label.toUpperCase(),
-                  style: AppTypography.label.copyWith(
-                    color: _getTextColor(),
-                  ),
+    return MouseRegion(
+      onEnter: isDisabled ? null : (_) => setState(() => _isHovered = true),
+      onExit: isDisabled ? null : (_) => setState(() => _isHovered = false),
+      cursor: isDisabled ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
+      child: GestureDetector(
+        onTapDown: isDisabled ? null : (_) => _controller.forward(),
+        onTapUp: isDisabled ? null : (_) => _controller.reverse(),
+        onTapCancel: isDisabled ? null : () => _controller.reverse(),
+        onTap: isDisabled ? null : widget.onPressed,
+        child: AnimatedScale(
+          scale: _isHovered ? 1.02 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutBack,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Opacity(
+              opacity: isDisabled ? 0.5 : 1.0,
+              child: Container(
+                width: widget.isFullWidth ? double.infinity : null,
+                alignment: Alignment.center, // Fix: Center content to prevent loader stretching
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 24,
                 ),
-              ],
+                decoration: _getDecoration(),
+                child: widget.isLoading
+                    ? _buildLoader()
+                    : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (widget.icon != null) ...[
+                      Icon(widget.icon, size: 18, color: _getTextColor()),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      widget.label.toUpperCase(),
+                      style: AppTypography.label.copyWith(
+                        color: _getTextColor(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -122,7 +137,7 @@ class _AppButtonState extends State<AppButton> with SingleTickerProviderStateMix
       case AppButtonType.secondary:
         return BoxDecoration(
           color: Colors.transparent,
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: widget.borderColor ?? AppColors.border), // Utilise la couleur personnalisée si dispo
           borderRadius: BorderRadius.circular(AppDimens.radiusS),
         );
       case AppButtonType.ghost:
@@ -131,6 +146,8 @@ class _AppButtonState extends State<AppButton> with SingleTickerProviderStateMix
   }
 
   Color _getTextColor() {
+    if (widget.textColor != null) return widget.textColor!; // Priorité à la couleur explicite
+
     switch (widget.type) {
       case AppButtonType.primary:
         return Colors.white;

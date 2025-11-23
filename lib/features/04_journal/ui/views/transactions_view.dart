@@ -14,11 +14,13 @@ import 'package:portefeuille/core/data/models/account.dart';
 import 'package:portefeuille/core/data/models/transaction.dart';
 import 'package:portefeuille/core/data/models/transaction_type.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
+import 'package:portefeuille/features/00_app/providers/transaction_provider.dart';
 import 'package:portefeuille/features/07_management/ui/screens/edit_transaction_screen.dart';
 import 'package:portefeuille/features/07_management/ui/screens/add_transaction_screen.dart';
 import 'package:portefeuille/features/07_management/ui/screens/pdf_import_screen.dart';
 import 'package:portefeuille/features/07_management/ui/screens/ai_import_config_screen.dart';
 import 'package:portefeuille/features/07_management/ui/screens/crowdfunding_import_screen.dart';
+import 'package:portefeuille/features/07_management/ui/screens/csv_import_screen.dart';
 
 // New Widgets & Models
 import 'package:portefeuille/features/04_journal/ui/models/transaction_group.dart';
@@ -60,7 +62,7 @@ class _TransactionsViewState extends State<TransactionsView> {
     });
   }
 
-  Future<void> _deleteSelectedTransactions(PortfolioProvider provider) async {
+  Future<void> _deleteSelectedTransactions(TransactionProvider provider) async {
     final count = _selectedIds.length;
     if (count == 0) return;
 
@@ -177,7 +179,7 @@ class _TransactionsViewState extends State<TransactionsView> {
     return groups;
   }
 
-  void _confirmDelete(BuildContext context, PortfolioProvider provider, Transaction transaction) {
+  void _confirmDelete(BuildContext context, TransactionProvider provider, Transaction transaction) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -228,6 +230,13 @@ class _TransactionsViewState extends State<TransactionsView> {
     );
   }
 
+  void _openCsvImport() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CsvImportScreen()),
+    );
+  }
+
   void _openAiImport() {
     Navigator.push(
       context,
@@ -246,16 +255,16 @@ class _TransactionsViewState extends State<TransactionsView> {
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.of(context).padding.top + 90;
 
-    return Selector<PortfolioProvider, Portfolio?>(
-      selector: (context, provider) => provider.activePortfolio,
-      builder: (context, portfolio, child) {
+    return Consumer<PortfolioProvider>(
+      builder: (context, provider, child) {
+        final portfolio = provider.activePortfolio;
         if (portfolio == null) {
           return const Center(child: Text("Aucun portefeuille."));
         }
 
         final accountsMap = <String, Account>{};
         final accountIdToInstitutionName = <String, String>{};
-        final provider = Provider.of<PortfolioProvider>(context, listen: false);
+        final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
         for (var inst in portfolio.institutions) {
           for (var acc in inst.accounts) {
             accountsMap[acc.id] = acc;
@@ -270,34 +279,6 @@ class _TransactionsViewState extends State<TransactionsView> {
 
         final groupedTransactions = _groupTransactions(allTransactions, accountsMap, accountIdToInstitutionName);
         final sortedGroupKeys = groupedTransactions.keys.toList();
-
-        if (allTransactions.isEmpty) {
-          return AppScreen(
-            withSafeArea: false,
-            body: Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(top: topPadding, bottom: AppDimens.paddingL),
-                  child: Center(
-                    child: FadeInSlide(
-                      duration: 0.6,
-                      child: Text('Historique', style: AppTypography.h2),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: FadeInSlide(
-                    delay: 0.2,
-                    duration: 0.6,
-                    child: EmptyTransactionsWidget(
-                      onAdd: _openAddTransactionModal,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
 
         return AppScreen(
           withSafeArea: false,
@@ -322,40 +303,53 @@ class _TransactionsViewState extends State<TransactionsView> {
                   isSelectionMode: _isSelectionMode,
                   selectedCount: _selectedIds.length,
                   onSelectAll: () => _selectAll(allTransactions),
-                  onDeleteSelected: () => _deleteSelectedTransactions(provider),
+                  onDeleteSelected: () => _deleteSelectedTransactions(transactionProvider),
                   onCancelSelection: () => setState(() => _selectedIds.clear()),
                   onAddTransaction: _openAddTransactionModal,
                   onImportPdf: _openPdfImport,
                   onImportAi: _openAiImport,
                   onImportCrowdfunding: _openCrowdfundingImport,
+                  onImportCsv: _openCsvImport,
                 ),
               ),
 
               const SizedBox(height: AppDimens.paddingM),
 
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(AppDimens.paddingM, 0, AppDimens.paddingM, 80),
-                  itemCount: sortedGroupKeys.length,
-                  itemBuilder: (context, groupIndex) {
-                    final key = sortedGroupKeys[groupIndex];
-                    final group = groupedTransactions[key]!;
-                    
-                    return FadeInSlide(
-                      delay: 0.2 + (groupIndex * 0.05), // Staggered animation
-                      duration: 0.5,
-                      child: TransactionGroupWidget(
-                        group: group,
-                        accountsMap: accountsMap,
-                        selectedIds: _selectedIds,
-                        isSelectionMode: _isSelectionMode,
-                        onToggleSelection: _toggleSelection,
-                        onDelete: (t) => _confirmDelete(context, provider, t),
-                        onEdit: (t) => _editTransaction(context, t),
+                child: allTransactions.isEmpty
+                    ? FadeInSlide(
+                        delay: 0.2,
+                        duration: 0.6,
+                        child: EmptyTransactionsWidget(
+                          onAdd: _openAddTransactionModal,
+                          onImportPdf: _openPdfImport,
+                          onImportCsv: _openCsvImport,
+                          onImportCrowdfunding: _openCrowdfundingImport,
+                          onImportAi: _openAiImport,
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(AppDimens.paddingM, 0, AppDimens.paddingM, 80),
+                        itemCount: sortedGroupKeys.length,
+                        itemBuilder: (context, groupIndex) {
+                          final key = sortedGroupKeys[groupIndex];
+                          final group = groupedTransactions[key]!;
+                          
+                          return FadeInSlide(
+                            delay: 0.2 + (groupIndex * 0.05), // Staggered animation
+                            duration: 0.5,
+                            child: TransactionGroupWidget(
+                              group: group,
+                              accountsMap: accountsMap,
+                              selectedIds: _selectedIds,
+                              isSelectionMode: _isSelectionMode,
+                              onToggleSelection: _toggleSelection,
+                              onDelete: (t) => _confirmDelete(context, transactionProvider, t),
+                              onEdit: (t) => _editTransaction(context, t),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               ),
             ],
           ),

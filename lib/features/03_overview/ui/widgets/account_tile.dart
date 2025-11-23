@@ -9,7 +9,9 @@ import 'package:provider/provider.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/ui/widgets/account_type_chip.dart';
 import 'package:portefeuille/core/ui/widgets/asset_list_item.dart';
+import 'package:portefeuille/core/ui/widgets/primitives/privacy_blur.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
+import 'package:portefeuille/features/00_app/providers/portfolio_calculation_provider.dart';
 
 // Enum pour les actions du menu contextuel
 enum _AccountAction { edit, delete }
@@ -71,12 +73,12 @@ class AccountTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final settingsProvider = context.watch<SettingsProvider>();
-    final provider = context.watch<PortfolioProvider>();
+    final calculationProvider = context.watch<PortfolioCalculationProvider>();
 
     // 1. Récupération des valeurs converties via le Provider
-    final convertedTotalValue = provider.getConvertedAccountValue(account.id);
-    final convertedPL = provider.getConvertedAccountPL(account.id);
-    final convertedInvested = provider.getConvertedAccountInvested(account.id);
+    final convertedTotalValue = calculationProvider.getConvertedAccountValue(account.id);
+    final convertedPL = calculationProvider.getConvertedAccountPL(account.id);
+    final convertedInvested = calculationProvider.getConvertedAccountInvested(account.id);
 
     // 2. Calcul du pourcentage
     final plPercentage =
@@ -112,15 +114,19 @@ class AccountTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                CurrencyFormatter.format(convertedTotalValue, baseCurrency),
-                style: theme.textTheme.bodyLarge
-                    ?.copyWith(fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis,
+              PrivacyBlur(
+                child: Text(
+                  CurrencyFormatter.format(convertedTotalValue, baseCurrency),
+                  style: theme.textTheme.bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               // Affichage de la P/L
-              _buildProfitAndLoss(
-                  convertedPL, plPercentage, theme, baseCurrency),
+              PrivacyBlur(
+                child: _buildProfitAndLoss(
+                    convertedPL, plPercentage, theme, baseCurrency),
+              ),
             ],
           ),
           // Menu d'actions
@@ -169,12 +175,14 @@ class AccountTile extends StatelessWidget {
                   color: Colors.grey[400], fontStyle: FontStyle.italic)),
           trailing: SizedBox(
             width: 100, // Largeur fixe pour aligner avec les assets
-            child: Text(
-              CurrencyFormatter.format(account.cashBalance, accountCurrency),
-              style: TextStyle(
-                  color: Colors.grey[300], fontStyle: FontStyle.italic),
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
+            child: PrivacyBlur(
+              child: Text(
+                CurrencyFormatter.format(account.cashBalance, accountCurrency),
+                style: TextStyle(
+                    color: Colors.grey[300], fontStyle: FontStyle.italic),
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+              ),
             ),
           ),
         ),

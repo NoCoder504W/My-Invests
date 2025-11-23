@@ -14,32 +14,47 @@ import 'package:portefeuille/core/ui/widgets/fade_in_slide.dart';
 
 // Logic
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
+import 'package:portefeuille/features/00_app/providers/portfolio_calculation_provider.dart';
+import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
+import 'package:portefeuille/core/data/models/asset_type.dart'; // AJOUT
 
 // Widgets & Dialogs refactorisés
 import 'package:portefeuille/features/04_journal/ui/dialogs/asset_dialogs.dart';
 import 'package:portefeuille/features/04_journal/ui/widgets/asset_card.dart';
 import 'package:portefeuille/features/04_journal/ui/widgets/summary_empty_state.dart';
 
-class SyntheseView extends StatelessWidget {
+class SyntheseView extends StatefulWidget {
   const SyntheseView({super.key});
+
+  @override
+  State<SyntheseView> createState() => _SyntheseViewState();
+}
+
+class _SyntheseViewState extends State<SyntheseView> {
+  final Set<AssetType> _selectedFilters = {};
 
   @override
   Widget build(BuildContext context) {
     // Calcul du padding pour aligner le titre sous la navbar/status bar
     final double topPadding = MediaQuery.of(context).padding.top + 90;
 
-    return Consumer<PortfolioProvider>(
-      builder: (context, provider, child) {
-        final baseCurrency = provider.currentBaseCurrency;
-        final aggregatedAssets = provider.aggregatedAssets;
-        final isProcessing = provider.isProcessingInBackground;
+    return Consumer3<PortfolioProvider, PortfolioCalculationProvider, SettingsProvider>(
+      builder: (context, portfolioProvider, calculationProvider, settingsProvider, child) {
+        final baseCurrency = settingsProvider.baseCurrency;
+        var aggregatedAssets = calculationProvider.aggregatedAssets;
+        final isProcessing = portfolioProvider.isProcessingInBackground || calculationProvider.isCalculating;
 
-        if (provider.activePortfolio == null) {
+        if (portfolioProvider.activePortfolio == null) {
           return const Center(child: Text("Aucun portefeuille sélectionné."));
         }
 
-        // État Vide
-        if (aggregatedAssets.isEmpty) {
+        // Filtrage
+        if (_selectedFilters.isNotEmpty) {
+          aggregatedAssets = aggregatedAssets.where((a) => _selectedFilters.contains(a.type)).toList();
+        }
+
+        // État Vide (si aucun actif au total, pas juste après filtre)
+        if (calculationProvider.aggregatedAssets.isEmpty) {
           return AppScreen(
             withSafeArea: false,
             body: SummaryEmptyState(topPadding: topPadding),
@@ -58,8 +73,44 @@ class SyntheseView extends StatelessWidget {
                     padding: EdgeInsets.only(top: topPadding),
                     sliver: SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.only(bottom: AppDimens.paddingL),
-                        child: Center(child: Text('Synthèse', style: AppTypography.h2)),
+                        padding: const EdgeInsets.only(bottom: AppDimens.paddingM),
+                        child: Column(
+                          children: [
+                            Center(child: Text('Synthèse', style: AppTypography.h2)),
+                            const SizedBox(height: AppDimens.paddingM),
+                            // Filtres
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingM),
+                              child: Row(
+                                children: AssetType.values.map((type) {
+                                  final isSelected = _selectedFilters.contains(type);
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8.0),
+                                    child: FilterChip(
+                                      label: Text(type.displayName),
+                                      selected: isSelected,
+                                      onSelected: (selected) {
+                                        setState(() {
+                                          if (selected) {
+                                            _selectedFilters.add(type);
+                                          } else {
+                                            _selectedFilters.remove(type);
+                                          }
+                                        });
+                                      },
+                                      selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                                      checkmarkColor: AppColors.primary,
+                                      labelStyle: TextStyle(
+                                        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -82,12 +133,12 @@ class SyntheseView extends StatelessWidget {
                                 onEditPrice: () => AssetDialogs.showEditPriceDialog(
                                   context,
                                   asset,
-                                  provider,
+                                  portfolioProvider,
                                 ),
                                 onEditYield: () => AssetDialogs.showEditYieldDialog(
                                   context,
                                   asset,
-                                  provider,
+                                  portfolioProvider,
                                 ),
                               ),
                             ),

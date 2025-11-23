@@ -9,7 +9,11 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.background,
+      // On teinte aussi le fond de l'application très légèrement
+      scaffoldBackgroundColor: Color.alphaBlend(
+          primaryColor.withValues(alpha: 0.02), // 2% de la couleur choisie
+          AppColors.background // sur le fond noir
+      ),
       fontFamily: 'Manrope',
 
       colorScheme: const ColorScheme.dark(
@@ -20,6 +24,8 @@ class AppTheme {
         // C'est ICI que la magie opère : on injecte la couleur utilisateur
         primary: primaryColor,
         secondary: primaryColor, // Ou une variante
+        // On utilise la couleur primaire pour teinter légèrement le fond
+        surfaceTint: primaryColor.withValues(alpha: 0.05),
       ),
 
       textTheme: TextTheme(

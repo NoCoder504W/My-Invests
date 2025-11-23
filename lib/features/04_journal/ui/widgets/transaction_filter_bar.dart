@@ -3,6 +3,7 @@ import 'package:portefeuille/core/ui/theme/app_colors.dart';
 import 'package:portefeuille/core/ui/theme/app_dimens.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
+import 'package:portefeuille/core/ui/widgets/primitives/app_icon_button.dart';
 import 'package:portefeuille/features/04_journal/ui/models/transaction_sort_option.dart';
 
 class TransactionFilterBar extends StatelessWidget {
@@ -15,6 +16,7 @@ class TransactionFilterBar extends StatelessWidget {
   final VoidCallback onCancelSelection;
   final VoidCallback onAddTransaction;
   final VoidCallback onImportPdf;
+  final VoidCallback onImportCsv;
   final VoidCallback onImportAi;
   final VoidCallback onImportCrowdfunding;
 
@@ -29,6 +31,7 @@ class TransactionFilterBar extends StatelessWidget {
     required this.onCancelSelection,
     required this.onAddTransaction,
     required this.onImportPdf,
+    required this.onImportCsv,
     required this.onImportAi,
     required this.onImportCrowdfunding,
   });
@@ -68,23 +71,33 @@ class TransactionFilterBar extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.add_circle, color: AppColors.primary),
+                  AppIconButton(
+                    icon: Icons.add_circle,
+                    color: AppColors.primary,
                     tooltip: 'Ajouter',
                     onPressed: onAddTransaction,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.upload_file, color: AppColors.primary),
+                  AppIconButton(
+                    icon: Icons.upload_file,
+                    color: AppColors.primary,
                     tooltip: 'Import PDF',
                     onPressed: onImportPdf,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.table_view, color: AppColors.primary),
+                  AppIconButton(
+                    icon: Icons.grid_on,
+                    color: AppColors.primary,
+                    tooltip: 'Import CSV (Revolut)',
+                    onPressed: onImportCsv,
+                  ),
+                  AppIconButton(
+                    icon: Icons.table_view,
+                    color: AppColors.primary,
                     tooltip: 'Import Excel (Crowdfunding)',
                     onPressed: onImportCrowdfunding,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.auto_awesome, color: AppColors.primary),
+                  AppIconButton(
+                    icon: Icons.auto_awesome,
+                    color: AppColors.primary,
                     tooltip: 'Import IA',
                     onPressed: onImportAi,
                   ),
@@ -126,3 +139,5 @@ class TransactionFilterBar extends StatelessWidget {
     );
   }
 }
+
+

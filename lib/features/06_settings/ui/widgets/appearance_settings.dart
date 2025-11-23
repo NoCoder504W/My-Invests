@@ -26,19 +26,26 @@ class AppearanceSettings extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Apparence',
+          'Couleur principale',
           style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Cette couleur sera utilisée pour les boutons, les icônes et les éléments actifs de l\'interface.',
+          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0),
-          child: Wrap(
-            alignment: WrapAlignment.spaceEvenly,
-            spacing: 8.0,
-            runSpacing: 8.0,
-            children: _colorOptions.map((color) {
-              return _buildColorChip(
-                  context, color, settingsProvider.appColor == color);
-            }).toList(),
+          child: Center( // Centrer les options
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16.0, // Plus d'espace
+              runSpacing: 16.0,
+              children: _colorOptions.map((color) {
+                return _buildColorChip(
+                    context, color, settingsProvider.appColor == color);
+              }).toList(),
+            ),
           ),
         ),
       ],
@@ -47,31 +54,65 @@ class AppearanceSettings extends StatelessWidget {
 
   Widget _buildColorChip(
       BuildContext context, Color color, bool isSelected) {
-    return GestureDetector(
+    return _ColorChip(
+      color: color,
+      isSelected: isSelected,
       onTap: () {
         Provider.of<SettingsProvider>(context, listen: false).setAppColor(color);
       },
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
-            width: 3,
+    );
+  }
+}
+
+class _ColorChip extends StatefulWidget {
+  final Color color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ColorChip({
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_ColorChip> createState() => _ColorChipState();
+}
+
+class _ColorChipState extends State<_ColorChip> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: widget.isSelected || _isHovered ? 48 : 40,
+          height: widget.isSelected || _isHovered ? 48 : 40,
+          decoration: BoxDecoration(
+            color: widget.color,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: widget.isSelected ? Colors.white : Colors.transparent,
+              width: widget.isSelected ? 4 : 0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withValues(alpha: 0.4),
+                blurRadius: widget.isSelected || _isHovered ? 12 : 4,
+                offset: const Offset(0, 4),
+              )
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            )
-          ],
+          child: widget.isSelected
+              ? const Icon(Icons.check, color: Colors.white, size: 24)
+              : null,
         ),
-        child: isSelected
-            ? const Icon(Icons.check, color: Colors.white, size: 20)
-            : null,
       ),
     );
   }

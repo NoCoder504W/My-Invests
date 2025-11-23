@@ -16,6 +16,7 @@ class SettingsProvider extends ChangeNotifier implements ISettings {
   static const String _kMigrationV2Done = 'migration_v2_done';
   static const String _kBaseCurrency = 'baseCurrency';
   static const String _kLastPortfolioId = 'lastPortfolioId';
+  static const String _kServiceOrder = 'serviceOrder';
 
   // Clés sécurisée
   static const String _kFmpApiKey = 'fmpApiKey';
@@ -26,6 +27,7 @@ class SettingsProvider extends ChangeNotifier implements ISettings {
   static const int _defaultUserLevelIndex = 0;
   static const int _defaultAppColorValue = 0xFF00bcd4;
   static const String _defaultBaseCurrency = 'EUR';
+  static const List<String> _defaultServiceOrder = ['FMP', 'Yahoo', 'Google'];
 
   late final SettingsRepository _settingsRepo;
   late final FlutterSecureStorage _secureStorage;
@@ -35,18 +37,24 @@ class SettingsProvider extends ChangeNotifier implements ISettings {
   UserLevel _userLevel = UserLevel.values[_defaultUserLevelIndex];
   Color _appColor = const Color(_defaultAppColorValue);
   String _baseCurrency = _defaultBaseCurrency;
+  List<String> _serviceOrder = _defaultServiceOrder;
   String? _fmpApiKey;
   String? _geminiApiKey; // AJOUT
   bool _migrationV1Done = false;
   bool _migrationV2Done = false;
   String? _lastPortfolioId;
+  bool _isPrivacyMode = false; // AJOUT: Mode confidentialité
 
   // Getters
   bool get isOnlineMode => _isOnlineMode;
+  bool get isPrivacyMode => _isPrivacyMode; // AJOUT
   UserLevel get userLevel => _userLevel;
   Color get appColor => _appColor;
   @override
   String get baseCurrency => _baseCurrency;
+
+  @override
+  List<String> get serviceOrder => _serviceOrder;
 
   @override
   String? get fmpApiKey => _fmpApiKey;
@@ -84,6 +92,7 @@ class SettingsProvider extends ChangeNotifier implements ISettings {
     _appColor = Color(appColorValue);
 
     _baseCurrency = _settingsRepo.get(_kBaseCurrency, defaultValue: _defaultBaseCurrency);
+    _serviceOrder = _settingsRepo.get(_kServiceOrder, defaultValue: _defaultServiceOrder).cast<String>();
     _migrationV1Done = _settingsRepo.get(_kMigrationV1Done, defaultValue: false);
     _migrationV2Done = _settingsRepo.get(_kMigrationV2Done, defaultValue: false);
     _lastPortfolioId = _settingsRepo.get(_kLastPortfolioId);
@@ -153,6 +162,12 @@ class SettingsProvider extends ChangeNotifier implements ISettings {
     notifyListeners();
   }
 
+  void setServiceOrder(List<String> order) {
+    _serviceOrder = order;
+    _settingsRepo.put(_kServiceOrder, order);
+    notifyListeners();
+  }
+
   /// Recharge tous les paramètres depuis Hive et SecureStorage.
   Future<void> reloadSettings() async {
     debugPrint("🔄 [SettingsProvider] Rechargement des paramètres...");
@@ -163,8 +178,21 @@ class SettingsProvider extends ChangeNotifier implements ISettings {
 
   String? get lastPortfolioId => _lastPortfolioId;
 
-  void setLastPortfolioId(String id) {
+  void setLastPortfolioId(String? id) {
     _lastPortfolioId = id;
-    _settingsRepo.put(_kLastPortfolioId, id);
+    if (id != null) {
+      _settingsRepo.put(_kLastPortfolioId, id);
+    } else {
+      _settingsRepo.delete(_kLastPortfolioId);
+    }
+    notifyListeners();
   }
+
+  // AJOUT: Toggle Privacy Mode
+  void togglePrivacyMode() {
+    _isPrivacyMode = !_isPrivacyMode;
+    notifyListeners();
+  }
+
+  // --- SECURE STORAGE ---
 }

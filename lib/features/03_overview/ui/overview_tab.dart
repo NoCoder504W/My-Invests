@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:portefeuille/core/data/models/asset_type.dart';
-import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -10,44 +9,45 @@ import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/components/app_screen.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_icon.dart';
+import 'package:portefeuille/core/ui/widgets/primitives/app_icon_button.dart';
 import 'package:portefeuille/core/ui/widgets/fade_in_slide.dart';
 import 'package:portefeuille/core/ui/widgets/portfolio_header.dart';
 
 // Features
 import '../../00_app/providers/portfolio_provider.dart';
+import '../../00_app/providers/portfolio_calculation_provider.dart';
 import '../../00_app/services/modal_service.dart';
 import 'package:portefeuille/features/03_overview/ui/widgets/portfolio_history_chart.dart';
 import 'widgets/allocation_chart.dart';
 import 'widgets/asset_type_allocation_chart.dart';
 import 'widgets/sync_alerts_card.dart';
 import 'package:portefeuille/features/03_overview/ui/widgets/institution_tile.dart';
+import 'package:portefeuille/core/ui/widgets/empty_states/app_empty_state.dart';
 
 class OverviewTab extends StatelessWidget {
   const OverviewTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Selector<PortfolioProvider, ({Portfolio? portfolio, Map<AssetType, double> allocation, double totalValue})>(
-      selector: (context, provider) => (
-        portfolio: provider.activePortfolio,
-        allocation: provider.aggregatedValueByAssetType,
-        totalValue: provider.activePortfolioTotalValue
-      ),
-      builder: (context, data, child) {
-        final portfolio = data.portfolio;
+    final provider = context.watch<PortfolioProvider>();
+    final calculationProvider = context.watch<PortfolioCalculationProvider>();
+    
+    final portfolio = provider.activePortfolio;
+    final allocation = calculationProvider.aggregatedValueByAssetType;
+    final totalValue = calculationProvider.activePortfolioTotalValue;
 
-        if (portfolio == null) {
-          return const Center(child: Text("Aucun portefeuille sélectionné."));
-        }
+    if (portfolio == null) {
+      return const Center(child: Text("Aucun portefeuille sélectionné."));
+    }
 
-        final institutions = portfolio.institutions;
+    final institutions = portfolio.institutions;
 
-        // Calcul de l'espace nécessaire en haut pour la barre flottante
-        // Hauteur Barre (60) + Marge (4) + SafeArea + un peu d'air (20)
-        final double topPadding = MediaQuery.of(context).padding.top + 90;
+    // Calcul de l'espace nécessaire en haut pour la barre flottante
+    // Hauteur Barre (60) + Marge (4) + SafeArea + un peu d'air (20)
+    final double topPadding = MediaQuery.of(context).padding.top + 90;
 
-        return AppScreen(
-          withSafeArea: false, // Important pour que le gradient monte tout en haut
+    return AppScreen(
+      withSafeArea: false, // Important pour que le gradient monte tout en haut
           body: CustomScrollView(
             slivers: [
               // CORRECTION : On pousse le contenu vers le bas ICI
@@ -64,7 +64,7 @@ class OverviewTab extends StatelessWidget {
                     child: FadeInSlide(
                       delay: 0.0,
                       child: Text(
-                        'Vue d\'ensemble',
+                        'Patrimoine',
                         style: AppTypography.h1,
                         textAlign: TextAlign.center,
                       ),
@@ -112,7 +112,7 @@ class OverviewTab extends StatelessWidget {
                               Expanded(
                                 child: FadeInSlide(
                                     delay: 0.35,
-                                    child: _buildAssetTypeCard(data.allocation, data.totalValue)
+                                    child: _buildAssetTypeCard(allocation, totalValue)
                                 ),
                               ),
                             ],
@@ -129,7 +129,7 @@ class OverviewTab extends StatelessWidget {
                               FadeInSlide(
                                   key: const ValueKey('asset_chart'),
                                   delay: 0.35,
-                                  child: _buildAssetTypeCard(data.allocation, data.totalValue)
+                                  child: _buildAssetTypeCard(allocation, totalValue)
                               ),
                             ],
                           );
@@ -151,14 +151,15 @@ class OverviewTab extends StatelessWidget {
                     const SizedBox(height: AppDimens.paddingS),
 
                     if (institutions.isEmpty)
-                      const FadeInSlide(
+                      FadeInSlide(
                         delay: 0.45,
                         child: AppCard(
-                          child: Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child: Text('Aucune institution. Ajoutez-en une pour commencer.'),
-                            ),
+                          child: AppEmptyState(
+                            title: 'Aucune institution',
+                            message: 'Ajoutez votre première banque ou plateforme pour commencer à suivre votre patrimoine.',
+                            icon: Icons.account_balance,
+                            buttonLabel: 'Ajouter une institution',
+                            onAction: () => ModalService.showAddInstitution(context),
                           ),
                         ),
                       )
@@ -200,8 +201,6 @@ class OverviewTab extends StatelessWidget {
             ],
           ),
         );
-      },
-    );
   }
 
   Widget _buildAllocationCard(dynamic portfolio) {
@@ -240,17 +239,14 @@ class OverviewTab extends StatelessWidget {
             ],
           ),
           if (onAdd != null)
-            GestureDetector(
-              onTap: onAdd,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: const Icon(Icons.add, size: 16, color: AppColors.textPrimary),
-              ),
+            AppIconButton(
+              icon: Icons.add,
+              size: 16,
+              color: AppColors.textPrimary,
+              backgroundColor: AppColors.surfaceLight,
+              borderColor: AppColors.border,
+              borderRadius: 4,
+              onPressed: onAdd,
             ),
         ],
       ),

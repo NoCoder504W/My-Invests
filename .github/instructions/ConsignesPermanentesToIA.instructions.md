@@ -17,8 +17,13 @@ You are an expert Flutter & Dart developer working in Android Studio. Your goal 
 - **Clean Code:** Privilégie la composition de widgets plutôt que l'héritage complexe.
 - **Async:** Utilise `async`/`await` plutôt que la syntaxe `.then()`.
 - **Refactoring:** Si tu vois du code qui peut être optimisé ou nettoyé, signale-le ou propose une version refactorisée.
+- **Testing:** Crée systématiquement des tests unitaires après chaque modification de logique ou de widget pour éviter les régressions.
 
 # Architecture & UI
 - Assure-toi que l'UI est responsive.
 - Sépare bien la logique métier de l'interface utilisateur (UI).
 - L'UI est géré par core/ui, un Design Center propre à l'application.
+
+# Documentation & Logique Métier
+- **LogiqueCalculs.md :** Consulte systématiquement `lib/features/00_app/LogiqueCalculs.md` avant de modifier une logique financière.
+- **Mise à jour :** Si tu modifies une règle de calcul (liquidité, PRU, rendement...), tu DOIS mettre à jour `lib/features/00_app/LogiqueCalculs.md` pour refléter le changement.

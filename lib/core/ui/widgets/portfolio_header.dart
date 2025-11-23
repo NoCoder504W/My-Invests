@@ -8,8 +8,10 @@ import 'package:portefeuille/core/ui/theme/app_colors.dart';
 import 'package:portefeuille/core/ui/theme/app_dimens.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
+import 'package:portefeuille/core/ui/widgets/primitives/privacy_blur.dart';
 import 'package:portefeuille/core/utils/currency_formatter.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
+import 'package:portefeuille/features/00_app/providers/portfolio_calculation_provider.dart';
 
 class PortfolioHeader extends StatelessWidget {
   const PortfolioHeader({super.key});
@@ -17,12 +19,14 @@ class PortfolioHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<PortfolioProvider>();
-    final baseCurrency = provider.currentBaseCurrency;
-    final isProcessing = provider.isProcessingInBackground;
+    final calculationProvider = context.watch<PortfolioCalculationProvider>();
+    
+    final baseCurrency = calculationProvider.currentBaseCurrency;
+    final isProcessing = provider.isProcessingInBackground || calculationProvider.isCalculating;
 
-    final totalValue = provider.activePortfolioTotalValue;
-    final totalPL = provider.activePortfolioTotalPL;
-    final totalPLPercentage = provider.activePortfolioTotalPLPercentage;
+    final totalValue = calculationProvider.activePortfolioTotalValue;
+    final totalPL = calculationProvider.activePortfolioTotalPL;
+    final totalPLPercentage = calculationProvider.activePortfolioTotalPLPercentage;
     final isPositive = totalPL >= 0;
 
     return AppCard(
@@ -33,23 +37,44 @@ class PortfolioHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         // ▲▲▲ FIN MODIFICATION ▲▲▲
         children: [
-          Text(
-            'Solde total'.toUpperCase(),
-            style: AppTypography.label.copyWith(
-              color: AppColors.textSecondary,
-              letterSpacing: 1.5,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Solde total'.toUpperCase(),
+                style: AppTypography.label.copyWith(
+                  color: AppColors.textSecondary,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              if (calculationProvider.hasConversionError) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _showConversionErrorDialog(
+                    context,
+                    calculationProvider.failedConversions,
+                  ),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.warning,
+                    size: 18,
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: AppDimens.paddingS),
 
           if (isProcessing)
             _buildShimmer()
           else
-            AppAnimatedValue(
-              value: totalValue,
-              currency: baseCurrency,
-              style: AppTypography.hero.copyWith(
-                fontSize: 36,
+            PrivacyBlur(
+              child: AppAnimatedValue(
+                value: totalValue,
+                currency: baseCurrency,
+                style: AppTypography.hero.copyWith(
+                  fontSize: 36,
+                ),
               ),
             ),
 
@@ -64,7 +89,7 @@ class PortfolioHeader extends StatelessWidget {
                     child: _buildSummaryCard(
                       context,
                       label: 'Capital Investi',
-                      value: provider.activePortfolioTotalInvested,
+                      value: calculationProvider.activePortfolioTotalInvested,
                       currency: baseCurrency,
                       color: AppColors.primary,
                       icon: Icons.account_balance_wallet,
@@ -91,7 +116,7 @@ class PortfolioHeader extends StatelessWidget {
                     child: _buildSummaryCard(
                       context,
                       label: 'Liquidités',
-                      value: provider.activePortfolioCashValue,
+                      value: calculationProvider.activePortfolioCashValue,
                       currency: baseCurrency,
                       color: Colors.orange,
                       icon: Icons.savings,
@@ -147,13 +172,16 @@ class PortfolioHeader extends StatelessWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 16, color: color),
               const SizedBox(width: 8),
-              Expanded(
+              Flexible(
                 child: Text(
                   label,
                   style: AppTypography.caption.copyWith(
@@ -161,16 +189,20 @@ class PortfolioHeader extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                   overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            displayValue,
-            style: AppTypography.h3.copyWith(
-              color: color,
-              fontSize: 18,
+          PrivacyBlur(
+            child: Text(
+              displayValue,
+              style: AppTypography.h3.copyWith(
+                color: color,
+                fontSize: 18,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -189,6 +221,55 @@ class PortfolioHeader extends StatelessWidget {
           color: Colors.black,
           borderRadius: BorderRadius.circular(AppDimens.radiusS),
         ),
+      ),
+    );
+  }
+
+  void _showConversionErrorDialog(BuildContext context, List<String> failedCurrencies) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+            const SizedBox(width: 8),
+            Text('Erreur de conversion', style: AppTypography.h3),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Impossible de récupérer les taux de change pour les devises suivantes :',
+              style: AppTypography.body,
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: failedCurrencies.map((currency) {
+                return Chip(
+                  label: Text(currency, style: AppTypography.caption),
+                  backgroundColor: AppColors.surfaceLight,
+                  side: BorderSide.none,
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Un taux de 1.0 a été utilisé par défaut. Vérifiez votre connexion internet.',
+              style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }

@@ -30,18 +30,24 @@ class AddAccountScreen extends StatefulWidget {
 
 class _AddAccountScreenState extends State<AddAccountScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  late final TextEditingController _nameController;
+  final _uuid = const Uuid();
+  
+  bool _isSaving = false;
+
   AccountType _selectedType = AccountType.cto;
   String _selectedCurrency = 'EUR';
-  final _uuid = const Uuid();
 
   final List<String> _currencies = ['EUR', 'USD', 'CHF', 'GBP', 'CAD', 'JPY'];
 
   bool get _isEditing => widget.accountToEdit != null;
 
+  String? _institutionName;
+
   @override
   void initState() {
     super.initState();
+    _nameController = TextEditingController();
     if (_isEditing) {
       final account = widget.accountToEdit!;
       _nameController.text = account.name;
@@ -51,40 +57,89 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_institutionName == null) {
+      final provider = Provider.of<PortfolioProvider>(context, listen: false);
+      final portfolio = provider.activePortfolio;
+      if (portfolio != null) {
+        try {
+          final institution =
+              portfolio.institutions.firstWhere((i) => i.id == widget.institutionId);
+          _institutionName = institution.name;
+
+          // Auto-fill initial si nouveau compte
+          if (!_isEditing && _nameController.text.isEmpty) {
+            _updateNameIfEmpty();
+          }
+        } catch (_) {}
+      }
+    }
+  }
+
+  void _updateNameIfEmpty() {
+    final currentName = _nameController.text.trim();
+    final suffix = _institutionName != null ? " - $_institutionName" : "";
+    
+    // Update if empty OR if it looks like an auto-generated name
+    if (currentName.isEmpty || (suffix.isNotEmpty && currentName.endsWith(suffix))) {
+      _nameController.text = "${_selectedType.displayName}$suffix";
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      final provider = Provider.of<PortfolioProvider>(context, listen: false);
+      setState(() {
+        _isSaving = true;
+      });
 
-      if (_isEditing) {
-        final oldAccount = widget.accountToEdit!;
-        final updatedAccount = Account(
-          id: oldAccount.id,
-          name: _nameController.text,
-          type: _selectedType,
-          currency: oldAccount.currency, // Non modifiable
-        );
-        updatedAccount.assets = oldAccount.assets;
-        updatedAccount.transactions = oldAccount.transactions;
-        provider.updateAccount(widget.institutionId, updatedAccount);
-      } else {
-        final newAccount = Account(
-          id: _uuid.v4(),
-          name: _nameController.text,
-          type: _selectedType,
-          currency: _selectedCurrency,
-        );
-        if (widget.onAccountCreated != null) {
-          widget.onAccountCreated!(newAccount);
+      try {
+        final provider = Provider.of<PortfolioProvider>(context, listen: false);
+
+        if (_isEditing) {
+          final oldAccount = widget.accountToEdit!;
+          final updatedAccount = Account(
+            id: oldAccount.id,
+            name: _nameController.text,
+            type: _selectedType,
+            currency: oldAccount.currency, // Non modifiable
+          );
+          updatedAccount.assets = oldAccount.assets;
+          updatedAccount.transactions = oldAccount.transactions;
+          await provider.updateAccount(widget.institutionId, updatedAccount);
         } else {
-          provider.addAccount(widget.institutionId, newAccount);
+          final newAccount = Account(
+            id: _uuid.v4(),
+            name: _nameController.text,
+            type: _selectedType,
+            currency: _selectedCurrency,
+          );
+          if (widget.onAccountCreated != null) {
+            widget.onAccountCreated!(newAccount);
+          } else {
+            await provider.addAccount(widget.institutionId, newAccount);
+          }
+        }
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        debugPrint("Erreur lors de la sauvegarde du compte : $e");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Erreur lors de la sauvegarde : $e")),
+          );
+          setState(() {
+            _isSaving = false;
+          });
         }
       }
-      Navigator.of(context).pop();
     }
   }
 
@@ -106,23 +161,13 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                _isEditing ? 'Modifier le Compte' : 'Nouveau Compte',
-                style: AppTypography.h2,
+              Center(
+                child: Text(
+                  _isEditing ? 'Modifier le Compte' : 'Nouveau Compte',
+                  style: AppTypography.h2,
+                ),
               ),
               const SizedBox(height: AppDimens.paddingL),
-
-              // Nom
-              AppTextField(
-                controller: _nameController,
-                label: 'Nom du compte',
-                hint: 'ex: PEA, CTO...',
-                prefixIcon: Icons.account_balance_wallet,
-                autofocus: true,
-                textCapitalization: TextCapitalization.words,
-                validator: (value) => (value == null || value.trim().isEmpty) ? 'Requis' : null,
-              ),
-              const SizedBox(height: AppDimens.paddingM),
 
               // Type
               AppDropdown<AccountType>(
@@ -136,8 +181,23 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
                   );
                 }).toList(),
                 onChanged: (type) {
-                  if (type != null) setState(() => _selectedType = type);
+                  if (type != null) {
+                    setState(() => _selectedType = type);
+                    _updateNameIfEmpty();
+                  }
                 },
+              ),
+              const SizedBox(height: AppDimens.paddingM),
+
+              // Nom
+              AppTextField(
+                controller: _nameController,
+                label: 'Nom du compte',
+                hint: 'ex: PEA, CTO...',
+                prefixIcon: Icons.account_balance_wallet,
+                autofocus: true,
+                textCapitalization: TextCapitalization.words,
+                validator: (value) => (value == null || value.trim().isEmpty) ? 'Requis' : null,
               ),
               const SizedBox(height: AppDimens.paddingM),
 
@@ -163,7 +223,8 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
               AppButton(
                 label: _isEditing ? 'Enregistrer' : 'Créer',
                 icon: _isEditing ? Icons.save : Icons.add,
-                onPressed: _submitForm,
+                onPressed: _isSaving ? null : _submitForm,
+                isLoading: _isSaving,
               )
             ],
           ),

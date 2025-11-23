@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:provider/provider.dart';
 
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
@@ -7,11 +6,13 @@ import 'package:portefeuille/core/ui/theme/app_dimens.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_icon.dart';
-import 'package:portefeuille/core/ui/widgets/primitives/app_button.dart';
+import 'package:portefeuille/core/ui/widgets/primitives/app_icon_button.dart';
 import 'package:portefeuille/core/ui/widgets/components/app_tile.dart';
+import 'package:portefeuille/core/ui/widgets/empty_states/app_empty_state.dart';
 
 import 'package:portefeuille/core/utils/currency_formatter.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
+import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
 import 'package:portefeuille/features/07_management/ui/screens/add_savings_plan_screen.dart';
 
 class SavingsPlansSection extends StatelessWidget {
@@ -62,23 +63,31 @@ class SavingsPlansSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<PortfolioProvider, ({Portfolio? portfolio, String currency})>(
-      selector: (context, provider) => (
-        portfolio: provider.activePortfolio,
-        currency: provider.currentBaseCurrency
-      ),
-      builder: (context, data, child) {
-        final portfolio = data.portfolio;
-        if (portfolio == null) return const SizedBox();
+    final settings = context.watch<SettingsProvider>();
+    final provider = context.watch<PortfolioProvider>();
+    
+    final portfolio = provider.activePortfolio;
+    if (portfolio == null) return const SizedBox();
 
-        final savingsPlans = portfolio.savingsPlans;
-        final baseCurrency = data.currency;
-        final provider = Provider.of<PortfolioProvider>(context, listen: false);
+    final savingsPlans = portfolio.savingsPlans;
+    final baseCurrency = settings.baseCurrency;
 
-        return AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+    if (savingsPlans.isEmpty) {
+      return AppCard(
+        child: AppEmptyState(
+          title: 'Aucun plan d\'épargne',
+          message: 'Programmez vos versements réguliers pour simuler votre patrimoine futur.',
+          icon: Icons.savings_outlined,
+          buttonLabel: 'Créer un plan',
+          onAction: () => _openPlanForm(context),
+        ),
+      );
+    }
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
               // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -95,49 +104,21 @@ class SavingsPlansSection extends StatelessWidget {
                           style: AppTypography.label.copyWith(color: AppColors.textTertiary)),
                     ],
                   ),
-                  GestureDetector(
-                    onTap: () => _openPlanForm(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: const Icon(Icons.add, size: 16, color: AppColors.textPrimary),
-                    ),
+                  AppIconButton(
+                    icon: Icons.add,
+                    size: 16,
+                    color: AppColors.textPrimary,
+                    backgroundColor: AppColors.surfaceLight,
+                    borderColor: AppColors.border,
+                    borderRadius: 4,
+                    onPressed: () => _openPlanForm(context),
                   ),
                 ],
               ),
               const SizedBox(height: AppDimens.paddingM),
 
               // Liste ou Empty State
-              if (savingsPlans.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        Text('Aucun plan configuré', style: AppTypography.h3),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Créez un plan pour simuler vos investissements.',
-                          style: AppTypography.caption,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        AppButton(
-                          label: 'Créer un plan',
-                          onPressed: () => _openPlanForm(context),
-                          icon: Icons.add,
-                          isFullWidth: false,
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                ...savingsPlans.map((plan) {
+              ...savingsPlans.map((plan) {
                   final targetAsset = provider.findAssetByTicker(plan.targetTicker);
                   final assetYield = targetAsset?.estimatedAnnualYield ?? 0.0;
 
@@ -167,7 +148,5 @@ class SavingsPlansSection extends StatelessWidget {
             ],
           ),
         );
-      },
-    );
   }
 }
