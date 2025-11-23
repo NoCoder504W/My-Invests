@@ -68,20 +68,44 @@ class LaPremiereBriqueParser {
       
       // Dates
       final dateSignIdx = headers['Date de signature (JJ/MM/AAAA)'];
-      final dateEndIdx = headers['Date de remboursement maximale (JJ/MM/AAAA)'];
+      final dateMinIdx = headers['Date de remboursement minimale (JJ/MM/AAAA)'];
+      final dateMaxIdx = headers['Date de remboursement maximale (JJ/MM/AAAA)'];
       
       DateTime? startDate = (dateSignIdx != null && dateSignIdx < row.length) 
           ? _parseDate(row[dateSignIdx]) 
           : null;
           
-      DateTime? endDate = (dateEndIdx != null && dateEndIdx < row.length) 
-          ? _parseDate(row[dateEndIdx]) 
+      DateTime? minDate = (dateMinIdx != null && dateMinIdx < row.length) 
+          ? _parseDate(row[dateMinIdx]) 
+          : null;
+
+      DateTime? maxDate = (dateMaxIdx != null && dateMaxIdx < row.length) 
+          ? _parseDate(row[dateMaxIdx]) 
           : null;
       
       // Duration
+      int? minMonths;
+      int? maxMonths;
       int durationMonths = 0;
-      if (startDate != null && endDate != null) {
-        durationMonths = ((endDate.difference(startDate).inDays) / 30.437).round();
+
+      if (startDate != null) {
+        if (minDate != null) {
+           minMonths = ((minDate.difference(startDate).inDays) / 30.437).round();
+        }
+        if (maxDate != null) {
+           maxMonths = ((maxDate.difference(startDate).inDays) / 30.437).round();
+        }
+      }
+
+      // Logic: Min + 6 months, capped at Max
+      if (minMonths != null) {
+        int target = minMonths + 6;
+        if (maxMonths != null && target > maxMonths) {
+          target = maxMonths;
+        }
+        durationMonths = target;
+      } else if (maxMonths != null) {
+        durationMonths = maxMonths;
       }
       
       // Amount
@@ -98,7 +122,7 @@ class LaPremiereBriqueParser {
         rate = _parseDouble(row[rateIdx]) ?? 0.0;
       }
       
-      // Repayment Type
+      // RepaymentType
       RepaymentType type = repaymentTypes[projectName] ?? RepaymentType.InFine;
       
       projects.add(ParsedCrowdfundingProject(
@@ -108,6 +132,8 @@ class LaPremiereBriqueParser {
         investedAmount: amount,
         yieldPercent: rate,
         durationMonths: durationMonths,
+        minDurationMonths: minMonths,
+        maxDurationMonths: maxMonths,
         repaymentType: type,
         country: "France",
       ));

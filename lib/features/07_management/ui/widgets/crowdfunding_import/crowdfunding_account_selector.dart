@@ -44,8 +44,9 @@ class CrowdfundingAccountSelector extends StatelessWidget {
                 final groupedAccounts = <String, List<Account>>{};
                 final provider = context.read<PortfolioProvider>();
                 
-                // Iterate through all portfolios/institutions to group correctly
-                for (var portfolio in provider.portfolios) {
+                // Iterate through active portfolio institutions to group correctly
+                final portfolio = provider.activePortfolio;
+                if (portfolio != null) {
                   for (var inst in portfolio.institutions) {
                      if (inst.accounts.isNotEmpty) {
                        groupedAccounts.putIfAbsent(inst.name, () => []).addAll(inst.accounts);

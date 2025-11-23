@@ -137,7 +137,21 @@ class _CrowdfundingImportScreenState extends State<CrowdfundingImportScreen> {
           continue;
         }
 
-        // 1. Create Transaction
+        // 1. Create Deposit Transaction (Liquidity)
+        final depositTransaction = Transaction(
+          id: _uuid.v4(),
+          accountId: _selectedAccount!.id,
+          type: TransactionType.Deposit,
+          date: project.investmentDate ?? DateTime.now(),
+          amount: project.investedAmount,
+          fees: 0.0,
+          notes: "Apport auto (Import)",
+          assetType: AssetType.Cash,
+          priceCurrency: 'EUR',
+        );
+        newTransactions.add(depositTransaction);
+
+        // 2. Create Buy Transaction
         final transaction = Transaction(
           id: _uuid.v4(),
           accountId: _selectedAccount!.id,
