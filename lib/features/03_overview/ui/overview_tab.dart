@@ -9,6 +9,7 @@ import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/components/app_screen.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_icon.dart';
+import 'package:portefeuille/core/ui/widgets/primitives/app_icon_button.dart';
 import 'package:portefeuille/core/ui/widgets/fade_in_slide.dart';
 import 'package:portefeuille/core/ui/widgets/portfolio_header.dart';
 
@@ -238,17 +239,14 @@ class OverviewTab extends StatelessWidget {
             ],
           ),
           if (onAdd != null)
-            GestureDetector(
-              onTap: onAdd,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: const Icon(Icons.add, size: 16, color: AppColors.textPrimary),
-              ),
+            AppIconButton(
+              icon: Icons.add,
+              size: 16,
+              color: AppColors.textPrimary,
+              backgroundColor: AppColors.surfaceLight,
+              borderColor: AppColors.border,
+              borderRadius: 4,
+              onPressed: onAdd,
             ),
         ],
       ),
