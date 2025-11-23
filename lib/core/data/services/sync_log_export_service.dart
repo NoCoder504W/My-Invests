@@ -35,7 +35,7 @@ class SyncLogExportService {
     return value;
   }
 
-  /// Exporte les logs (Téléchargement sur Web, Partage sur Mobile)
+  /// Exporte les logs (Téléchargement sur Web, Sauvegarde sur Desktop, Partage sur Mobile)
   static Future<void> exportLogs(List<SyncLog> logs) async {
     final csvContent = logsToCSV(logs);
     final now = DateTime.now();
@@ -49,8 +49,20 @@ class SyncLogExportService {
         fileName: filename,
         bytes: Uint8List.fromList(bytes),
       );
+    } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      // --- VERSION DESKTOP ---
+      // On ouvre une boite de dialogue pour choisir l'emplacement
+      final outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Enregistrer les logs CSV',
+        fileName: filename,
+      );
+
+      if (outputFile != null) {
+        final file = File(outputFile);
+        await file.writeAsString(csvContent);
+      }
     } else {
-      // --- VERSION MOBILE / DESKTOP ---
+      // --- VERSION MOBILE ---
       // On écrit dans un fichier temporaire puis on lance la sheet de partage native
       final directory = await getTemporaryDirectory();
       final file = File('${directory.path}/$filename');

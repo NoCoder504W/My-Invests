@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/ui/widgets/account_type_chip.dart';
 import 'package:portefeuille/core/ui/widgets/asset_list_item.dart';
+import 'package:portefeuille/core/ui/widgets/primitives/privacy_blur.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_calculation_provider.dart';
 
@@ -113,15 +114,19 @@ class AccountTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                CurrencyFormatter.format(convertedTotalValue, baseCurrency),
-                style: theme.textTheme.bodyLarge
-                    ?.copyWith(fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis,
+              PrivacyBlur(
+                child: Text(
+                  CurrencyFormatter.format(convertedTotalValue, baseCurrency),
+                  style: theme.textTheme.bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               // Affichage de la P/L
-              _buildProfitAndLoss(
-                  convertedPL, plPercentage, theme, baseCurrency),
+              PrivacyBlur(
+                child: _buildProfitAndLoss(
+                    convertedPL, plPercentage, theme, baseCurrency),
+              ),
             ],
           ),
           // Menu d'actions
@@ -170,12 +175,14 @@ class AccountTile extends StatelessWidget {
                   color: Colors.grey[400], fontStyle: FontStyle.italic)),
           trailing: SizedBox(
             width: 100, // Largeur fixe pour aligner avec les assets
-            child: Text(
-              CurrencyFormatter.format(account.cashBalance, accountCurrency),
-              style: TextStyle(
-                  color: Colors.grey[300], fontStyle: FontStyle.italic),
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
+            child: PrivacyBlur(
+              child: Text(
+                CurrencyFormatter.format(account.cashBalance, accountCurrency),
+                style: TextStyle(
+                    color: Colors.grey[300], fontStyle: FontStyle.italic),
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+              ),
             ),
           ),
         ),

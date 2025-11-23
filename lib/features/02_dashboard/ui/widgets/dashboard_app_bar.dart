@@ -127,6 +127,14 @@ class _DashboardAppBarState extends State<DashboardAppBar> {
                   children: [
                     _buildStatusIndicator(settingsProvider, portfolioProvider),
                     IconButton(
+                      icon: Icon(
+                        settingsProvider.isPrivacyMode ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: AppColors.textSecondary,
+                        size: 22,
+                      ),
+                      onPressed: () => settingsProvider.togglePrivacyMode(),
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary, size: 22),
                       onPressed: () => _openSettings(context),
                     ),

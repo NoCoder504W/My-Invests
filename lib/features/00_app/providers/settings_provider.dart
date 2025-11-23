@@ -43,9 +43,11 @@ class SettingsProvider extends ChangeNotifier implements ISettings {
   bool _migrationV1Done = false;
   bool _migrationV2Done = false;
   String? _lastPortfolioId;
+  bool _isPrivacyMode = false; // AJOUT: Mode confidentialité
 
   // Getters
   bool get isOnlineMode => _isOnlineMode;
+  bool get isPrivacyMode => _isPrivacyMode; // AJOUT
   UserLevel get userLevel => _userLevel;
   Color get appColor => _appColor;
   @override
@@ -176,8 +178,21 @@ class SettingsProvider extends ChangeNotifier implements ISettings {
 
   String? get lastPortfolioId => _lastPortfolioId;
 
-  void setLastPortfolioId(String id) {
+  void setLastPortfolioId(String? id) {
     _lastPortfolioId = id;
-    _settingsRepo.put(_kLastPortfolioId, id);
+    if (id != null) {
+      _settingsRepo.put(_kLastPortfolioId, id);
+    } else {
+      _settingsRepo.delete(_kLastPortfolioId);
+    }
+    notifyListeners();
   }
+
+  // AJOUT: Toggle Privacy Mode
+  void togglePrivacyMode() {
+    _isPrivacyMode = !_isPrivacyMode;
+    notifyListeners();
+  }
+
+  // --- SECURE STORAGE ---
 }

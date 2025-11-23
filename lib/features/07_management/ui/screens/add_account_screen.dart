@@ -78,8 +78,12 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
   }
 
   void _updateNameIfEmpty() {
-    if (_nameController.text.trim().isEmpty && _institutionName != null) {
-      _nameController.text = "${_selectedType.displayName} - $_institutionName";
+    final currentName = _nameController.text.trim();
+    final suffix = _institutionName != null ? " - $_institutionName" : "";
+    
+    // Update if empty OR if it looks like an auto-generated name
+    if (currentName.isEmpty || (suffix.isNotEmpty && currentName.endsWith(suffix))) {
+      _nameController.text = "${_selectedType.displayName}$suffix";
     }
   }
 
@@ -157,9 +161,11 @@ class _AddAccountScreenState extends State<AddAccountScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                _isEditing ? 'Modifier le Compte' : 'Nouveau Compte',
-                style: AppTypography.h2,
+              Center(
+                child: Text(
+                  _isEditing ? 'Modifier le Compte' : 'Nouveau Compte',
+                  style: AppTypography.h2,
+                ),
               ),
               const SizedBox(height: AppDimens.paddingL),
 

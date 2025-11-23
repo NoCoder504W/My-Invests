@@ -8,6 +8,7 @@ import 'package:portefeuille/core/ui/theme/app_colors.dart';
 import 'package:portefeuille/core/ui/theme/app_dimens.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
+import 'package:portefeuille/core/ui/widgets/primitives/privacy_blur.dart';
 import 'package:portefeuille/core/utils/currency_formatter.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/providers/portfolio_calculation_provider.dart';
@@ -67,11 +68,13 @@ class PortfolioHeader extends StatelessWidget {
           if (isProcessing)
             _buildShimmer()
           else
-            AppAnimatedValue(
-              value: totalValue,
-              currency: baseCurrency,
-              style: AppTypography.hero.copyWith(
-                fontSize: 36,
+            PrivacyBlur(
+              child: AppAnimatedValue(
+                value: totalValue,
+                currency: baseCurrency,
+                style: AppTypography.hero.copyWith(
+                  fontSize: 36,
+                ),
               ),
             ),
 
@@ -192,13 +195,15 @@ class PortfolioHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            displayValue,
-            style: AppTypography.h3.copyWith(
-              color: color,
-              fontSize: 18,
+          PrivacyBlur(
+            child: Text(
+              displayValue,
+              style: AppTypography.h3.copyWith(
+                color: color,
+                fontSize: 18,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

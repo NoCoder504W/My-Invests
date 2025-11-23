@@ -18,6 +18,8 @@ import 'package:portefeuille/core/data/models/transaction.dart';
 import 'package:portefeuille/core/utils/isin_validator.dart';
 import 'package:portefeuille/core/data/models/asset_type.dart';
 import 'package:portefeuille/core/data/models/transaction_type.dart';
+import 'package:portefeuille/core/data/models/asset_metadata.dart';
+import 'package:portefeuille/core/data/models/sync_status.dart';
 
 import 'package:portefeuille/features/07_management/ui/widgets/pdf_import/pdf_header.dart';
 import 'package:portefeuille/features/07_management/ui/widgets/pdf_import/pdf_account_selector.dart';
@@ -221,6 +223,29 @@ class _PdfImportScreenState extends State<PdfImportScreen> {
       );
 
       newTransactions.add(transaction);
+
+      // Create Metadata with default 5% yield if it doesn't exist
+      final metadata = AssetMetadata(
+        ticker: transaction.assetTicker ?? transaction.assetName ?? 'UNKNOWN',
+        projectName: transaction.assetName,
+        assetTypeDetailed: (transaction.assetType ?? AssetType.Stock).displayName,
+        estimatedAnnualYield: 0.05, // Default 5%
+        lastUpdated: DateTime.now(),
+        priceCurrency: transaction.priceCurrency,
+        currentPrice: transaction.price ?? 0.0,
+        syncStatus: SyncStatus.manual,
+        isManualYield: true,
+      );
+      
+      // We don't save metadata here directly, but usually the PortfolioProvider handles it
+      // or we should add it. For now, let's assume the user wants this default.
+      // Since addTransactions doesn't automatically create metadata with specific yield,
+      // we might need to update metadata explicitly.
+      
+      // However, looking at the code, we only add transactions.
+      // Let's add metadata update.
+      final provider = Provider.of<PortfolioProvider>(context, listen: false);
+      await provider.updateAssetMetadatas([metadata]);
 
       // Auto-Deposit for Buy transactions to neutralize liquidity impact
       if (parsed.type == TransactionType.Buy) {

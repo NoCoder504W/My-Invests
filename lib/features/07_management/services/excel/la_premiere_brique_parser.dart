@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart'; // Pour debugPrint
 import 'package:excel/excel.dart';
 import 'package:portefeuille/core/data/models/repayment_type.dart';
 import 'parsed_crowdfunding_project.dart';
@@ -72,11 +71,6 @@ class LaPremiereBriqueParser {
       final dateMinIdx = headers['Date de remboursement minimale (JJ/MM/AAAA)'];
       final dateMaxIdx = headers['Date de remboursement maximale (JJ/MM/AAAA)'];
       
-      debugPrint("--- DEBUG PARSER: $projectName ---");
-      debugPrint("Raw Date Sign: ${dateSignIdx != null ? _getCellValue(row[dateSignIdx]) : 'NULL'}");
-      debugPrint("Raw Date Min: ${dateMinIdx != null ? _getCellValue(row[dateMinIdx]) : 'NULL'}");
-      debugPrint("Raw Date Max: ${dateMaxIdx != null ? _getCellValue(row[dateMaxIdx]) : 'NULL'}");
-
       DateTime? startDate = (dateSignIdx != null && dateSignIdx < row.length) 
           ? _parseDate(row[dateSignIdx]) 
           : null;
@@ -88,10 +82,6 @@ class LaPremiereBriqueParser {
       DateTime? maxDate = (dateMaxIdx != null && dateMaxIdx < row.length) 
           ? _parseDate(row[dateMaxIdx]) 
           : null;
-      
-      debugPrint("Parsed Start: $startDate");
-      debugPrint("Parsed Min: $minDate");
-      debugPrint("Parsed Max: $maxDate");
 
       // Duration
       int? minMonths;
@@ -118,8 +108,6 @@ class LaPremiereBriqueParser {
         durationMonths = maxMonths;
       }
       
-      debugPrint("Calculated Duration: $durationMonths (Min: $minMonths, Max: $maxMonths)");
-
       
       // Amount
       final amountIdx = headers['Montant investi (€)'];

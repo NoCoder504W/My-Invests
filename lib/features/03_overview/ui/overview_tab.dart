@@ -64,7 +64,7 @@ class OverviewTab extends StatelessWidget {
                     child: FadeInSlide(
                       delay: 0.0,
                       child: Text(
-                        'Vue d\'ensemble',
+                        'Patrimoine',
                         style: AppTypography.h1,
                         textAlign: TextAlign.center,
                       ),
