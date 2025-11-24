@@ -20,7 +20,10 @@ enum SyncStatus {
   never, // Jamais synchronisé (nouveau)
 
   @HiveField(4)
-  unsyncable, // Non synchronisable (ex: fonds en euros)
+  unsyncable, // Non synchronisable (ex: Fonds Euro)
+
+  @HiveField(5)
+  pendingValidation, // En attente de validation (écart de prix important)
 }
 
 extension SyncStatusExtension on SyncStatus {
@@ -37,6 +40,8 @@ extension SyncStatusExtension on SyncStatus {
         return 'Non synchronisé';
       case SyncStatus.unsyncable:
         return 'Non synchronisable';
+      case SyncStatus.pendingValidation:
+        return 'En attente de validation';
     }
   }
 
@@ -53,6 +58,8 @@ extension SyncStatusExtension on SyncStatus {
         return '⭕';
       case SyncStatus.unsyncable:
         return '🚫';
+      case SyncStatus.pendingValidation:
+        return '⏳';
     }
   }
 
@@ -69,6 +76,8 @@ extension SyncStatusExtension on SyncStatus {
         return 'grey';
       case SyncStatus.unsyncable:
         return 'grey';
+      case SyncStatus.pendingValidation:
+        return 'orange';
     }
   }
 }

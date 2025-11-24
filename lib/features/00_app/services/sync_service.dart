@@ -117,23 +117,46 @@ class SyncService {
         // Succès
         if (metadata.currentPrice != result.price ||
             metadata.priceCurrency != result.currency) {
-          metadata.updatePrice(
-            result.price!,
-            result.currency,
-            source: result.source.name,
-          );
+          
+          // PROTECTION : Si le prix est beaucoup plus élevé (> 50%)
+          // et qu'il y avait déjà un prix valide (> 0)
+          final isPriceSpike = metadata.currentPrice > 0 && 
+              result.price! > metadata.currentPrice * 1.5;
+              
+          if (isPriceSpike) {
+             metadata.setPendingPrice(
+               result.price!,
+               result.currency,
+               result.source.name,
+             );
+             
+             saveFutures.add(_saveSyncLog(SyncLog.error(
+                id: _uuid.v4(),
+                ticker: result.ticker,
+                errorMessage: 'Prix en attente de validation (Hausse suspecte)',
+             )));
+             
+             // On ne compte pas comme une mise à jour réussie pour l'instant
+          } else {
+            metadata.updatePrice(
+              result.price!,
+              result.currency,
+              source: result.source.name,
+            );
 
+            saveFutures.add(_saveSyncLog(SyncLog.success(
+              id: _uuid.v4(),
+              ticker: result.ticker,
+              source: result.source.name,
+              price: result.price!,
+              currency: result.currency,
+            )));
+
+            if (result.source == ApiSource.Fmp) fmpUpdates++;
+            if (result.source == ApiSource.Yahoo) yahooUpdates++;
+          }
+          
           saveFutures.add(_repository.saveAssetMetadata(metadata));
-          saveFutures.add(_saveSyncLog(SyncLog.success(
-            id: _uuid.v4(),
-            ticker: result.ticker,
-            source: result.source.name,
-            price: result.price!,
-            currency: result.currency,
-          )));
-
-          if (result.source == ApiSource.Fmp) fmpUpdates++;
-          if (result.source == ApiSource.Yahoo) yahooUpdates++;
         } else if (result.source == ApiSource.Cache) {
           cacheUpdates++;
         }

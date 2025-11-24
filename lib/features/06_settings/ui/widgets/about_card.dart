@@ -78,6 +78,10 @@ class AboutSheet extends StatelessWidget {
             [
               'Trade Republic',
               'Boursorama Banque',
+              'Fortuneo',
+              'Degiro',
+              'Interactive Brokers',
+              'Binance',
             ],
           ),
           const SizedBox(height: AppDimens.paddingM),
@@ -93,7 +97,7 @@ class AboutSheet extends StatelessWidget {
           _buildSection(
             'Informations',
             [
-              'Version: 1.0.0+1',
+              'Version: 1.0.2',
               'Développé avec Flutter',
             ],
           ),

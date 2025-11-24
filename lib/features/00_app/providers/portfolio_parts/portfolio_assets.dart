@@ -82,4 +82,9 @@ mixin PortfolioAssets on PortfolioState {
     }
     await refreshData();
   }
+
+  Future<void> saveMetadata(AssetMetadata metadata) async {
+    await _repository.saveAssetMetadata(metadata);
+    notifyListeners();
+  }
 }

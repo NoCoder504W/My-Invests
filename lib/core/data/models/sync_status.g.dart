@@ -46,6 +46,9 @@ class SyncStatusAdapter extends TypeAdapter<SyncStatus> {
       case SyncStatus.unsyncable:
         writer.writeByte(4);
         break;
+      case SyncStatus.pendingValidation:
+        writer.writeByte(5);
+        break;
     }
   }
 

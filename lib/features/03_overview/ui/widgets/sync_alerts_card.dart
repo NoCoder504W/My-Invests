@@ -13,32 +13,54 @@ import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 
 import 'package:portefeuille/core/data/models/asset_metadata.dart';
 
+import 'package:portefeuille/core/data/models/portfolio.dart';
+
 class SyncAlertsCard extends StatelessWidget {
   const SyncAlertsCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Selector<PortfolioProvider, ({Map<String, AssetMetadata> metadata, bool isProcessing})>(
+    return Selector<PortfolioProvider, ({Map<String, AssetMetadata> metadata, bool isProcessing, Portfolio? activePortfolio})>(
       selector: (context, provider) => (
         metadata: provider.allMetadata,
-        isProcessing: provider.isProcessingInBackground
+        isProcessing: provider.isProcessingInBackground,
+        activePortfolio: provider.activePortfolio
       ),
       builder: (context, data, child) {
         final metadata = data.metadata;
         final isProcessing = data.isProcessing;
+        final activePortfolio = data.activePortfolio;
 
-        // Filtrer les actifs
-        final assetsWithErrors = metadata.entries
+        // Filtrer les actifs pour ne garder que ceux du portefeuille actif
+        final activeTickers = <String>{};
+        if (activePortfolio != null) {
+          for (var inst in activePortfolio.institutions) {
+            for (var acc in inst.accounts) {
+              for (var asset in acc.assets) {
+                if (asset.ticker.isNotEmpty) activeTickers.add(asset.ticker);
+              }
+            }
+          }
+        }
+
+        final relevantMetadata = metadata.entries
+            .where((entry) => activeTickers.contains(entry.key));
+
+        // Filtrer les actifs par statut
+        final assetsWithErrors = relevantMetadata
             .where((entry) => entry.value.syncStatus == SyncStatus.error)
             .toList();
-        final neverSyncedCount = metadata.values
-            .where((meta) => meta.syncStatus == SyncStatus.never)
+        final neverSyncedCount = relevantMetadata
+            .where((entry) => entry.value.syncStatus == SyncStatus.never)
             .length;
-        final unsyncableCount = metadata.values
-            .where((meta) => meta.syncStatus == SyncStatus.unsyncable)
+        final unsyncableCount = relevantMetadata
+            .where((entry) => entry.value.syncStatus == SyncStatus.unsyncable)
             .length;
+        final pendingValidation = relevantMetadata
+            .where((entry) => entry.value.syncStatus == SyncStatus.pendingValidation)
+            .toList();
 
-        if (assetsWithErrors.isEmpty && neverSyncedCount == 0 && unsyncableCount == 0) {
+        if (assetsWithErrors.isEmpty && neverSyncedCount == 0 && unsyncableCount == 0 && pendingValidation.isEmpty) {
           return const SizedBox.shrink();
         }
 
@@ -59,6 +81,73 @@ class SyncAlertsCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppDimens.paddingL),
+
+              // 0. En attente de validation (Prioritaire)
+              ...pendingValidation.map((entry) {
+                final meta = entry.value;
+                final oldPrice = meta.currentPrice;
+                final newPrice = meta.pendingPrice ?? 0.0;
+                final percent = oldPrice > 0 ? ((newPrice - oldPrice) / oldPrice * 100).toStringAsFixed(1) : "N/A";
+                
+                return Container(
+                  margin: const EdgeInsets.only(bottom: AppDimens.paddingM),
+                  padding: const EdgeInsets.all(AppDimens.paddingM),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppDimens.radiusS),
+                    border: Border.all(color: AppColors.warning),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.price_change, color: AppColors.warning),
+                          const SizedBox(width: AppDimens.paddingS),
+                          Expanded(
+                            child: Text(
+                              "Validation requise : ${entry.key}",
+                              style: AppTypography.bodyBold.copyWith(color: AppColors.warning),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppDimens.paddingS),
+                      Text(
+                        "Le nouveau prix est beaucoup plus élevé (+$percent%).",
+                        style: AppTypography.body,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Ancien: $oldPrice ${meta.priceCurrency}  →  Nouveau: $newPrice ${meta.pendingPriceCurrency}",
+                        style: AppTypography.caption,
+                      ),
+                      const SizedBox(height: AppDimens.paddingM),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              meta.ignorePendingPrice();
+                              Provider.of<PortfolioProvider>(context, listen: false).saveMetadata(meta);
+                            },
+                            child: const Text("IGNORER", style: TextStyle(color: AppColors.textSecondary)),
+                          ),
+                          const SizedBox(width: AppDimens.paddingS),
+                          ElevatedButton(
+                            onPressed: () {
+                              meta.validatePendingPrice();
+                              Provider.of<PortfolioProvider>(context, listen: false).saveMetadata(meta);
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
+                            child: const Text("VALIDER", style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                );
+              }),
 
               // 1. Jamais synchronisés
               if (neverSyncedCount > 0)
