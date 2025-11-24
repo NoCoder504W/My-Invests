@@ -42,12 +42,17 @@ import 'package:portefeuille/features/00_app/providers/portfolio_calculation_pro
 import 'package:portefeuille/features/00_app/services/transaction_service.dart';
 import 'package:portefeuille/features/00_app/services/calculation_service.dart';
 import 'package:portefeuille/features/00_app/services/route_manager.dart';
+import 'package:portefeuille/features/00_app/services/security_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 2. ACTIVATION DU MODE IMMERSIF
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+  // Initialisation des SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
 
   // 1. Initialiser Hive
   await Hive.initFlutter();
@@ -185,19 +190,32 @@ void main() async {
 
   // 4. Instancier le Repository
   final portfolioRepository = PortfolioRepository();
-  runApp(MyApp(repository: portfolioRepository));
+  
+  // 5. Instancier le SecurityService
+  final securityService = SecurityService(prefs: prefs);
+
+  runApp(MyApp(
+    repository: portfolioRepository,
+    securityService: securityService,
+  ));
 }
 
 class MyApp extends StatelessWidget {
   final PortfolioRepository repository;
+  final SecurityService securityService;
 
-  const MyApp({super.key, required this.repository});
+  const MyApp({
+    super.key,
+    required this.repository,
+    required this.securityService,
+  });
 
   @override
   Widget build(BuildContext context) {
     // Le MultiProvider reste inchangé
     return MultiProvider(
       providers: [
+        Provider<SecurityService>.value(value: securityService),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         Provider<ApiService>(
           create: (context) => ApiService(

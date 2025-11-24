@@ -1,99 +1,89 @@
 import 'package:flutter/material.dart';
-
+import 'package:portefeuille/core/ui/theme/app_colors.dart';
 import 'package:portefeuille/core/ui/theme/app_dimens.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/components/app_screen.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_icon.dart';
-import 'package:portefeuille/core/ui/widgets/fade_in_slide.dart';
 
-import 'widgets/appearance_card.dart';
-import 'widgets/general_settings_card.dart';
-import 'widgets/portfolio_card.dart';
-import 'widgets/sync_logs_card.dart';
-import 'widgets/online_mode_card.dart';
-import 'widgets/backup_card.dart';
-import 'widgets/danger_zone_card.dart';
-import 'widgets/debug_card.dart';
-import 'widgets/about_card.dart';
+import 'tabs/general_settings_tab.dart';
+import 'tabs/security_settings_tab.dart';
+import 'tabs/advanced_settings_tab.dart';
+import 'tabs/about_tab.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // CORRECTION : Ajout de ClipRRect pour arrondir les coins supérieurs
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(
-        top: Radius.circular(AppDimens.radiusL), // Utilise le rayon standard (ex: 24.0)
+        top: Radius.circular(AppDimens.radiusL),
       ),
-      child: AppScreen(
-        withSafeArea: false, // Géré par le modal ou le parent
-        body: Column(
-          children: [
-            // Header personnalisé avec Stack pour un centrage parfait
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppDimens.paddingL,
-                  AppDimens.paddingL,
-                  AppDimens.paddingM,
-                  AppDimens.paddingM
+      child: DefaultTabController(
+        length: 4,
+        child: AppScreen(
+          withSafeArea: false,
+          body: Column(
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppDimens.paddingL,
+                    AppDimens.paddingL,
+                    AppDimens.paddingM,
+                    0 // Réduit le padding bas pour coller aux tabs
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        'Paramètres',
+                        style: AppTypography.h1,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: AppIcon(
+                        icon: Icons.close,
+                        onTap: () => Navigator.of(context).pop(),
+                        backgroundColor: Colors.transparent,
+                        size: 24,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // 1. Le titre centré
-                  // On utilise SizedBox pour s'assurer qu'il prend toute la largeur
-                  // et permettre au texte de se centrer dedans
-                  SizedBox(
-                    width: double.infinity,
-                    child: Text(
-                      'Paramètres',
-                      style: AppTypography.h1,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
 
-                  // 2. Le bouton fermer aligné à droite
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: AppIcon(
-                      icon: Icons.close,
-                      onTap: () => Navigator.of(context).pop(),
-                      backgroundColor: Colors.transparent,
-                      size: 24,
-                    ),
-                  ),
+              // TabBar
+              const TabBar(
+                isScrollable: true,
+                indicatorColor: AppColors.primary,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textSecondary,
+                tabs: [
+                  Tab(text: 'Général'),
+                  Tab(text: 'Sécurité'),
+                  Tab(text: 'Avancé'),
+                  Tab(text: 'À propos'),
                 ],
               ),
-            ),
 
-            // Liste des options
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: AppDimens.paddingM),
-                children: const [
-                  FadeInSlide(delay: 0.1, child: AppearanceCard()),
-                  SizedBox(height: AppDimens.paddingM),
-                  FadeInSlide(delay: 0.15, child: GeneralSettingsCard()),
-                  SizedBox(height: AppDimens.paddingM),
-                  FadeInSlide(delay: 0.2, child: PortfolioCard()),
-                  SizedBox(height: AppDimens.paddingM),
-                  FadeInSlide(delay: 0.25, child: OnlineModeCard()),
-                  SizedBox(height: AppDimens.paddingM),
-                  FadeInSlide(delay: 0.3, child: SyncLogsCard()),
-                  SizedBox(height: AppDimens.paddingM),
-                  FadeInSlide(delay: 0.35, child: BackupCard()),
-                  SizedBox(height: AppDimens.paddingM),
-                  FadeInSlide(delay: 0.4, child: AboutCard()),
-                  SizedBox(height: AppDimens.paddingM),
-                  FadeInSlide(delay: 0.42, child: DebugCard()),
-                  SizedBox(height: AppDimens.paddingM),
-                  FadeInSlide(delay: 0.45, child: DangerZoneCard()),
-                  SizedBox(height: 40),
-                ],
+              // TabBarView
+              const Expanded(
+                child: TabBarView(
+                  children: [
+                    GeneralSettingsTab(),
+                    SecuritySettingsTab(),
+                    AdvancedSettingsTab(),
+                    AboutTab(),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

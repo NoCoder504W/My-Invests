@@ -17,6 +17,8 @@ import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/providers/settings_provider.dart';
 import 'package:portefeuille/features/00_app/services/route_manager.dart';
 
+import 'package:portefeuille/features/00_app/services/security_service.dart';
+
 // ignore_for_file: use_build_context_synchronously
 
 class SplashScreen extends StatefulWidget {
@@ -28,6 +30,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _backgroundController;
   late AnimationController _entranceController;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -58,6 +61,72 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     super.dispose();
   }
 
+  Future<void> _checkSecurityAndNavigate(bool hasPortfolios) async {
+    if (_hasNavigated) return;
+
+    final securityService = context.read<SecurityService>();
+    
+    // 1. Vérifier si la sécurité est activée
+    if (securityService.isSecurityEnabled) {
+      final authenticated = await securityService.authenticate();
+      if (!authenticated) {
+        // Si échec, on ne fait rien (l'utilisateur reste sur le splash ou on affiche un bouton retry)
+        // Pour l'instant, on suppose que l'OS gère le retry ou le fallback PIN
+        // Si l'utilisateur annule, on peut afficher un bouton "Réessayer"
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Authentification requise'),
+              action: SnackBarAction(
+                label: 'Réessayer',
+                onPressed: () => _checkSecurityAndNavigate(hasPortfolios),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+    } else {
+      // 2. Si sécurité désactivée, proposer de l'activer si c'est possible (optionnel, première fois)
+      if (!securityService.hasProposedSecurity && await securityService.canCheckBiometrics) {
+        if (mounted) {
+          await securityService.setHasProposedSecurity(); // Marquer comme proposé
+          
+          final bool? enable = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: const Text('Sécuriser l\'application'),
+              content: const Text('Voulez-vous activer l\'authentification biométrique pour protéger vos données ?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Plus tard'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Activer'),
+                ),
+              ],
+            ),
+          );
+
+          if (enable == true) {
+            await securityService.setSecurityEnabled(true);
+            // On tente une auth immédiate pour confirmer
+            await securityService.authenticate();
+          }
+        }
+      }
+    }
+
+    if (!mounted) return;
+    _hasNavigated = true;
+    
+    final String nextRoute = hasPortfolios ? RouteManager.dashboard : RouteManager.launch;
+    Navigator.of(context).pushReplacementNamed(nextRoute);
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -66,15 +135,15 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
     // Navigation Logic
     final portfolioProvider = context.watch<PortfolioProvider>();
-    if (!portfolioProvider.isLoading) {
+    
+    // On attend que le chargement soit fini ET que l'animation soit bien avancée
+    if (!portfolioProvider.isLoading && !_hasNavigated) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          // Petit délai artificiel pour laisser l'utilisateur apprécier l'animation (optionnel)
+          // Petit délai artificiel pour laisser l'utilisateur apprécier l'animation
           Future.delayed(const Duration(milliseconds: 800), () {
             if (!mounted) return;
-            final bool hasPortfolios = portfolioProvider.portfolios.isNotEmpty;
-            final String nextRoute = hasPortfolios ? RouteManager.dashboard : RouteManager.launch;
-            Navigator.of(context).pushReplacementNamed(nextRoute);
+            _checkSecurityAndNavigate(portfolioProvider.portfolios.isNotEmpty);
           });
         }
       });
