@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -46,15 +45,14 @@ class _CrowdfundingImportScreenState extends State<CrowdfundingImportScreen> {
       allowedExtensions: ['xlsx', 'xls'],
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result != null) {
       setState(() {
         _loadingStatus = "Lecture du fichier Excel...";
         _fileName = result.files.single.name;
       });
 
       try {
-        final file = File(result.files.single.path!);
-        final projects = await _parser.parse(file);
+        final projects = await _parser.parse(result.files.single);
 
         setState(() {
           _extractedProjects = projects;

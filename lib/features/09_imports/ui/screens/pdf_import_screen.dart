@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -50,14 +49,13 @@ class _PdfImportScreenState extends State<PdfImportScreen> {
       allowedExtensions: ['pdf'],
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result != null) {
       setState(() {
         _isLoading = true;
         _fileName = result.files.single.name;
       });
 
-      final file = File(result.files.single.path!);
-      final transactions = await _pdfService.extractTransactions(file);
+      final transactions = await _pdfService.extractTransactions(result.files.single);
 
       setState(() {
         _extractedTransactions = transactions;

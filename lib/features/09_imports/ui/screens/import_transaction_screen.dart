@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui; // Nécessaire pour la manipulation d'image
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:file_picker/file_picker.dart';
@@ -66,15 +67,22 @@ class _ImportTransactionScreenState extends State<ImportTransactionScreen> {
         allowedExtensions: ['pdf', 'jpg', 'png'],
       );
 
-      if (result != null && result.files.single.path != null) {
-        final path = result.files.single.path!;
-        final file = File(path);
+      if (result != null) {
+        final platformFile = result.files.single;
+        final isPdf = platformFile.extension?.toLowerCase() == 'pdf' || 
+                      platformFile.name.toLowerCase().endsWith('.pdf');
+        
+        Uint8List bytes;
+        if (kIsWeb) {
+           bytes = platformFile.bytes!;
+        } else {
+           bytes = await File(platformFile.path!).readAsBytes();
+        }
 
-        if (path.toLowerCase().endsWith('.pdf')) {
-          await _renderPdfPage(file);
+        if (isPdf) {
+          await _renderPdfPage(bytes);
         } else {
           // Même pour une image JPG/PNG directe, on force le fond blanc par sécurité
-          final bytes = await file.readAsBytes();
           final flatBytes = await _flattenTransparency(bytes);
 
           setState(() { _imageData = flatBytes; _statusMessage = 'Sélectionnez la zone'; });
@@ -89,9 +97,8 @@ class _ImportTransactionScreenState extends State<ImportTransactionScreen> {
     }
   }
 
-  Future<void> _renderPdfPage(File file) async {
+  Future<void> _renderPdfPage(Uint8List pdfBytes) async {
     try {
-      final pdfBytes = await file.readAsBytes();
       // On reste en DPI 300 pour la qualité OCR
       await for (final page in Printing.raster(pdfBytes, pages: [0], dpi: 300)) {
         final pngBytes = await page.toPng();

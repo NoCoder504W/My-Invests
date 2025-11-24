@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:portefeuille/features/09_imports/services/pdf/statement_parser.dart';
 import 'package:portefeuille/features/09_imports/services/pdf/parsers/trade_republic_parser.dart';
 import 'package:portefeuille/features/09_imports/services/pdf/parsers/boursorama_parser.dart';
@@ -13,12 +14,18 @@ class PdfImportService {
     RevolutParser(),
   ];
   
-  Future<List<ParsedTransaction>> extractTransactions(File file) async {
+  Future<List<ParsedTransaction>> extractTransactions(PlatformFile file) async {
     final List<ParsedTransaction> transactions = [];
     
     try {
       // Load the PDF document.
-      final List<int> bytes = await file.readAsBytes();
+      List<int> bytes;
+      if (kIsWeb) {
+        bytes = file.bytes!;
+      } else {
+        bytes = await File(file.path!).readAsBytes();
+      }
+      
       final PdfDocument document = PdfDocument(inputBytes: bytes);
 
       // Extract text from all pages.

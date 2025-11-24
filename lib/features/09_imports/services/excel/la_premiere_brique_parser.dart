@@ -1,12 +1,20 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:excel/excel.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:portefeuille/core/data/models/repayment_type.dart';
 import 'parsed_crowdfunding_project.dart';
 
 class LaPremiereBriqueParser {
   
-  Future<List<ParsedCrowdfundingProject>> parse(File file) async {
-    final bytes = await file.readAsBytes();
+  Future<List<ParsedCrowdfundingProject>> parse(PlatformFile file) async {
+    List<int> bytes;
+    if (kIsWeb) {
+      bytes = file.bytes!;
+    } else {
+      bytes = await File(file.path!).readAsBytes();
+    }
+    
     final excel = Excel.decodeBytes(bytes);
     
     Sheet? loansSheet;
