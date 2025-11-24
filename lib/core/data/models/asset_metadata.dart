@@ -80,6 +80,21 @@ class AssetMetadata {
 
   @HiveField(22)
   double? longitude;
+
+  // --- PENDING VALIDATION ---
+  @HiveField(23)
+  double? pendingPrice;
+
+  @HiveField(24)
+  String? pendingPriceCurrency;
+
+  @HiveField(25)
+  String? pendingPriceSource;
+
+  @HiveField(26)
+  DateTime? pendingPriceDate;
+  // --- FIN PENDING VALIDATION ---
+
   // --- FIN CROWDFUNDING ---
 
   String get activeCurrency => priceCurrency ?? 'EUR';
@@ -109,6 +124,10 @@ class AssetMetadata {
     this.riskRating,
     this.latitude,
     this.longitude,
+    this.pendingPrice,
+    this.pendingPriceCurrency,
+    this.pendingPriceSource,
+    this.pendingPriceDate,
     // --- FIN CROWDFUNDING ---
   }) : lastUpdated = lastUpdated ?? DateTime.now();
 
@@ -124,12 +143,45 @@ class AssetMetadata {
     if (source != null) {
       lastSyncSource = source;
     }
+    
+    // Clear pending
+    pendingPrice = null;
+    pendingPriceCurrency = null;
+    pendingPriceSource = null;
+    pendingPriceDate = null;
   }
 
   void markSyncError(String errorMessage) {
     lastSyncAttempt = DateTime.now();
     syncStatus = SyncStatus.error;
     syncErrorMessage = errorMessage;
+  }
+
+  /// Enregistre un prix en attente de validation
+  void setPendingPrice(double price, String currency, String source) {
+    pendingPrice = price;
+    pendingPriceCurrency = currency;
+    pendingPriceSource = source;
+    pendingPriceDate = DateTime.now();
+    syncStatus = SyncStatus.pendingValidation;
+    lastSyncAttempt = DateTime.now();
+    syncErrorMessage = null;
+  }
+
+  /// Valide le prix en attente
+  void validatePendingPrice() {
+    if (pendingPrice != null) {
+      updatePrice(pendingPrice!, pendingPriceCurrency ?? 'EUR', source: pendingPriceSource);
+    }
+  }
+
+  /// Ignore le prix en attente
+  void ignorePendingPrice() {
+    pendingPrice = null;
+    pendingPriceCurrency = null;
+    pendingPriceSource = null;
+    pendingPriceDate = null;
+    syncStatus = SyncStatus.synced; 
   }
 
   void markAsManual() {

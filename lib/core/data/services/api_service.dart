@@ -140,6 +140,41 @@ class ApiService {
         }
       }
 
+      // 4. Si échec et que le ticker ressemble à un ISIN, tenter une recherche
+      if (_isISIN(ticker)) {
+        debugPrint(
+            "🔍 Tentative de résolution ISIN pour $ticker via recherche...");
+        try {
+          final suggestions = await searchTicker(ticker);
+          if (suggestions.isNotEmpty) {
+            final bestMatch = suggestions.first;
+            debugPrint(
+                "✅ ISIN $ticker résolu en ${bestMatch.ticker} (${bestMatch.name})");
+
+            // Appel récursif avec le nouveau ticker
+            final resolvedResult = await getPrice(bestMatch.ticker);
+
+            if (resolvedResult.price != null) {
+              // On retourne le résultat mais avec le ticker ORIGINAL (l'ISIN)
+              // pour que le SyncService puisse mapper correctement
+              final finalResult = PriceResult(
+                price: resolvedResult.price,
+                currency: resolvedResult.currency,
+                source: resolvedResult.source,
+                ticker: ticker, // IMPORTANT: On garde l'ISIN ici
+                errorDetails: resolvedResult.errorDetails,
+              );
+              _priceCache[ticker] = _CacheEntry(finalResult);
+              return finalResult;
+            }
+          } else {
+            errors['ISIN_Search'] = "Aucun ticker trouvé pour cet ISIN";
+          }
+        } catch (e) {
+          errors['ISIN_Search'] = e.toString();
+        }
+      }
+
       // 5. Échec complet
       return PriceResult.failure(ticker,
           currency: _settings.baseCurrency, errorDetails: errors);
@@ -303,7 +338,9 @@ class ApiService {
           final String currency =
               result['response']?[0]?['meta']?['currency'] ?? 'EUR';
 
-          if (resultSymbol == ticker && newPriceNum != null) {
+          if (resultSymbol != null &&
+              resultSymbol.toUpperCase() == ticker.toUpperCase() &&
+              newPriceNum != null) {
             debugPrint(
                 "✅ Yahoo Finance: Prix $ticker = $newPriceNum $currency (tentative ${attempt + 1})");
             return PriceResult(
@@ -601,5 +638,9 @@ class ApiService {
     _exchangeRateCache.clear();
     _exchangeRateCacheTimestamps.clear();
     debugPrint("ℹ️ Caches de l'ApiService vidés (prix, recherche, taux).");
+  }
+
+  bool _isISIN(String input) {
+    return RegExp(r'^[A-Z]{2}[A-Z0-9]{9}[0-9]$').hasMatch(input);
   }
 }
