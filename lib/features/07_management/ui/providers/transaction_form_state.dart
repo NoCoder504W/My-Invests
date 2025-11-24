@@ -39,8 +39,12 @@ class TransactionFormState extends ChangeNotifier
   AssetType _selectedAssetType;
   RepaymentType? _selectedRepaymentType;
   List<Account> _availableAccounts = [];
+  
+  bool _hasChanges = false;
+  bool _isInitializing = true;
 
   bool get isEditing => existingTransaction != null;
+  bool get hasChanges => _hasChanges;
   Account? get selectedAccount => _selectedAccount;
   TransactionType get selectedType => _selectedType;
   DateTime get selectedDate => _selectedDate;
@@ -54,6 +58,19 @@ class TransactionFormState extends ChangeNotifier
   @override
   String get accountCurrency {
     return _selectedAccount?.currency ?? settingsProvider.baseCurrency;
+  }
+
+  void markAsChanged() {
+    if (_isInitializing) return;
+    if (!_hasChanges) {
+      _hasChanges = true;
+      notifyListeners();
+    }
+  }
+
+  void discardChanges() {
+    _hasChanges = false;
+    notifyListeners();
   }
 
   TransactionFormState({
@@ -87,6 +104,21 @@ class TransactionFormState extends ChangeNotifier
         notifyListeners();
       }
     });
+
+    // Track changes
+    final controllers = [
+      tickerController, nameController, quantityController, priceController,
+      feesController, exchangeRateController, priceCurrencyController,
+      // dateController is handled by setDate
+      locationController, minDurationController,
+      targetDurationController, maxDurationController, expectedYieldController,
+      riskRatingController
+    ];
+    for (var c in controllers) {
+      c.addListener(markAsChanged);
+    }
+    
+    _isInitializing = false;
   }
 
   void _initializeValues() {
@@ -151,6 +183,7 @@ class TransactionFormState extends ChangeNotifier
   void selectType(TransactionType? type) {
     if (type != null) {
       _selectedType = type;
+      markAsChanged();
       notifyListeners();
     }
   }
@@ -160,6 +193,7 @@ class TransactionFormState extends ChangeNotifier
   void selectAssetType(AssetType? type) {
     if (type != null) {
       _selectedAssetType = type;
+      markAsChanged();
       notifyListeners();
     }
   }
@@ -168,11 +202,13 @@ class TransactionFormState extends ChangeNotifier
   @override
   void setDate(DateTime date) {
     _selectedDate = date;
+    markAsChanged();
     notifyListeners();
   }
 
   void setRepaymentType(RepaymentType? type) {
     _selectedRepaymentType = type;
+    markAsChanged();
     notifyListeners();
   }
 
@@ -193,6 +229,7 @@ class TransactionFormState extends ChangeNotifier
     if (picked != null && picked != _selectedDate) {
       _selectedDate = picked;
       dateController.text = DateFormat('dd/MM/yyyy').format(_selectedDate);
+      markAsChanged();
       notifyListeners();
     }
   }
@@ -202,6 +239,7 @@ class TransactionFormState extends ChangeNotifier
       _selectedAccount = account;
       priceCurrencyController.text = account.activeCurrency;
       exchangeRateController.text = "1.0";
+      markAsChanged();
       notifyListeners();
     }
   }
@@ -467,6 +505,7 @@ class TransactionFormState extends ChangeNotifier
             showCloseIcon: true,
           ),
         );
+        _hasChanges = false; // Allow pop
         Navigator.of(context).pop();
       }
     }

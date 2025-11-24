@@ -118,9 +118,16 @@ class _DashboardAppBarState extends State<DashboardAppBar> {
             children: [
               // --- Sélecteur de Portefeuille (Aligné à gauche) ---
               Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: _buildPortfolioSelector(portfolioProvider, portfolio),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+                        child: _buildPortfolioSelector(portfolioProvider, portfolio),
+                      ),
+                    );
+                  },
                 ),
               ),
 

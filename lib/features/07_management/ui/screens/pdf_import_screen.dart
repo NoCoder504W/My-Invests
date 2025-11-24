@@ -63,6 +63,15 @@ class _PdfImportScreenState extends State<PdfImportScreen> {
         _extractedTransactions = transactions;
         _isLoading = false;
       });
+
+      if (transactions.isEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Aucune transaction trouvée dans ce fichier.'),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+      }
     }
   }
 

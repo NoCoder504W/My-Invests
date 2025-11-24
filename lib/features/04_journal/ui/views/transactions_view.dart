@@ -223,11 +223,11 @@ class _TransactionsViewState extends State<TransactionsView> {
   }
 
   void _editTransaction(BuildContext context, Transaction transaction) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      builder: (context) => EditTransactionScreen(existingTransaction: transaction),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditTransactionScreen(existingTransaction: transaction),
+      ),
     );
   }
 
