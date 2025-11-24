@@ -144,15 +144,19 @@ class _DashboardAppBarState extends State<DashboardAppBar> {
                     ),
                     onPressed: () => settingsProvider.togglePrivacyMode(),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary, size: 22),
-                    onPressed: () => _openSettings(context),
-                  ),
                 ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _openSettings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SettingsScreen(),
       ),
     );
   }
@@ -276,17 +280,6 @@ class _DashboardAppBarState extends State<DashboardAppBar> {
           ],
         ),
       ),
-    );
-  }
-
-  void _openSettings(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      // CORRECTION CRITIQUE ICI :
-      // On met transparent pour laisser le ClipRRect du SettingsScreen faire l'arrondi
-      backgroundColor: Colors.transparent,
-      builder: (context) => const SettingsScreen(),
     );
   }
 
