@@ -17,6 +17,7 @@ import 'package:portefeuille/core/ui/theme/app_typography.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_icon.dart';
 import 'package:portefeuille/core/ui/widgets/primitives/app_button.dart';
+import 'package:portefeuille/core/utils/downloader/downloader.dart';
 
 class BackupCard extends StatefulWidget {
   const BackupCard({super.key});
@@ -36,9 +37,9 @@ class _BackupCardState extends State<BackupCard> {
       if (kIsWeb) {
         // --- WEB ---
         final bytes = utf8.encode(jsonString);
-        await FilePicker.platform.saveFile(
-          fileName: 'backup_portefeuille_${DateTime.now().toIso8601String().replaceAll(':', '-')}.json',
-          bytes: Uint8List.fromList(bytes),
+        await getFileDownloader().downloadFile(
+          'backup_portefeuille_${DateTime.now().toIso8601String().replaceAll(':', '-')}.json',
+          Uint8List.fromList(bytes),
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

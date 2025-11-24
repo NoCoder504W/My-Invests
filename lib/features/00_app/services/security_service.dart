@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
@@ -30,6 +31,10 @@ class SecurityService {
 
   /// Vérifie si le matériel supporte la biométrie
   Future<bool> get canCheckBiometrics async {
+    // Sur le Web, la biométrie via local_auth n'est pas fiable ou supportée de la même façon.
+    // On désactive pour éviter les blocages.
+    if (kIsWeb) return false;
+
     try {
       return await _localAuth.canCheckBiometrics && await _localAuth.isDeviceSupported();
     } on PlatformException {
@@ -39,6 +44,8 @@ class SecurityService {
 
   /// Authentifie l'utilisateur via biométrie
   Future<bool> authenticate() async {
+    if (kIsWeb) return true; // Bypass sur le web pour l'instant
+
     try {
       return await _localAuth.authenticate(
         localizedReason: 'Veuillez vous authentifier pour accéder à l\'application',
