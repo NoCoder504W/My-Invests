@@ -1,7 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:portefeuille/core/ui/theme/app_colors.dart';
 import 'package:portefeuille/core/ui/theme/app_typography.dart';
-import 'package:portefeuille/core/ui/widgets/components/app_screen.dart';
 import 'package:portefeuille/features/07_management/ui/screens/add_transaction_screen.dart';
 
 class ImportHubScreen extends StatelessWidget {
@@ -9,59 +9,80 @@ class ImportHubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppScreen(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text('Ajouter une transaction', style: AppTypography.h2),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 48),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Drag Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            Text(
+              'Ajouter une transaction',
+              style: AppTypography.h2,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
             Text(
               'Comment souhaitez-vous ajouter vos données ?',
               style: AppTypography.body,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            Expanded(
-              child: _buildOptionCard(
-                context,
-                title: 'Saisie Manuelle',
-                description: 'Ajouter une transaction unitaire rapidement.',
-                icon: Icons.edit_note,
-                color: AppColors.primary,
-                onTap: () {
-                  Navigator.push(
+            
+            Row(
+              children: [
+                Expanded(
+                  child: _buildOptionCard(
                     context,
-                    MaterialPageRoute(builder: (context) => const AddTransactionScreen()),
-                  );
-                },
-              ),
+                    title: 'Saisie\nManuelle',
+                    description: 'Rapide & Unitaire',
+                    icon: Icons.edit_note,
+                    color: AppColors.primary,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AddTransactionScreen()),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildOptionCard(
+                    context,
+                    title: 'Importer\nun Fichier',
+                    description: 'PDF, CSV, Excel...',
+                    icon: Icons.upload_file,
+                    color: AppColors.accent,
+                    onTap: () {
+                      // TODO: Navigate to FileImportWizard
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Assistant d\'import bientôt disponible')),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _buildOptionCard(
-                context,
-                title: 'Importer un Fichier',
-                description: 'Relevés bancaires (PDF), Exports (CSV, Excel)...',
-                icon: Icons.upload_file,
-                color: AppColors.accent,
-                onTap: () {
-                  // TODO: Navigate to FileImportWizard
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Assistant d\'import bientôt disponible')),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -77,38 +98,64 @@ class ImportHubScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Container(
+      height: 180,
       decoration: BoxDecoration(
         gradient: AppColors.surfaceGradient,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: color.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, size: 48, color: color),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(24),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: color.withValues(alpha: 0.2)),
+                      ),
+                      child: Icon(icon, size: 32, color: color),
+                    ),
+                    const Spacer(),
+                    Text(
+                      title,
+                      style: AppTypography.h3.copyWith(fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: AppTypography.body.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const Spacer(),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                Text(title, style: AppTypography.h2),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: AppTypography.body,
-                  textAlign: TextAlign.center,
-                ),
-              ],
+              ),
             ),
           ),
         ),

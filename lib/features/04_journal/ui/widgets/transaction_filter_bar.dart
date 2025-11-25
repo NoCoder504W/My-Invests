@@ -78,11 +78,6 @@ class TransactionFilterBar extends StatelessWidget {
                   ),
                 ],
               ),
-                    tooltip: 'Import IA',
-                    onPressed: onImportAi,
-                  ),
-                ],
-              ),
 
               // Tri (Droite)
               PopupMenuButton<TransactionSortOption>(

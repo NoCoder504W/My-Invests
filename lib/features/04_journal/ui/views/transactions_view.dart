@@ -261,9 +261,11 @@ class _TransactionsViewState extends State<TransactionsView> {
   });
 
   void _openImportHub() => _checkAndOpen(() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ImportHubScreen()),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const ImportHubScreen(),
     );
   });
 
