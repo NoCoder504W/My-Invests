@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portefeuille/core/data/models/portfolio.dart';
 import 'package:provider/provider.dart';
 
 // Core UI
@@ -16,10 +17,7 @@ import 'package:portefeuille/features/00_app/providers/portfolio_provider.dart';
 import 'package:portefeuille/features/00_app/providers/transaction_provider.dart';
 import 'package:portefeuille/features/07_management/ui/screens/edit_transaction_screen.dart';
 import 'package:portefeuille/features/07_management/ui/screens/add_transaction_screen.dart';
-import 'package:portefeuille/features/09_imports/ui/screens/pdf_import_screen.dart';
-import 'package:portefeuille/features/09_imports/ui/screens/ai_import_config_screen.dart';
-import 'package:portefeuille/features/09_imports/ui/screens/crowdfunding_import_screen.dart';
-import 'package:portefeuille/features/09_imports/ui/screens/csv_import_screen.dart';
+import 'package:portefeuille/features/09_imports/ui/screens/import_hub_screen.dart';
 import 'package:portefeuille/features/00_app/services/institution_service.dart';
 import 'package:portefeuille/core/data/models/institution_metadata.dart';
 
@@ -262,31 +260,10 @@ class _TransactionsViewState extends State<TransactionsView> {
     );
   });
 
-  void _openPdfImport() => _checkAndOpen(() {
+  void _openImportHub() => _checkAndOpen(() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const PdfImportScreen()),
-    );
-  });
-
-  void _openCsvImport() => _checkAndOpen(() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CsvImportScreen()),
-    );
-  });
-
-  void _openAiImport() => _checkAndOpen(() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AiImportConfigScreen()),
-    );
-  });
-
-  void _openCrowdfundingImport() => _checkAndOpen(() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CrowdfundingImportScreen()),
+      MaterialPageRoute(builder: (_) => const ImportHubScreen()),
     );
   });
 
@@ -360,11 +337,7 @@ class _TransactionsViewState extends State<TransactionsView> {
                   onSelectAll: () => _selectAll(allTransactions),
                   onDeleteSelected: () => _deleteSelectedTransactions(transactionProvider),
                   onCancelSelection: () => setState(() => _selectedIds.clear()),
-                  onAddTransaction: _openAddTransactionModal,
-                  onImportPdf: _openPdfImport,
-                  onImportAi: _openAiImport,
-                  onImportCrowdfunding: _openCrowdfundingImport,
-                  onImportCsv: _openCsvImport,
+                  onImportHub: _openImportHub,
                 ),
               ),
 
@@ -376,11 +349,7 @@ class _TransactionsViewState extends State<TransactionsView> {
                         delay: 0.2,
                         duration: 0.6,
                         child: EmptyTransactionsWidget(
-                          onAdd: _openAddTransactionModal,
-                          onImportPdf: _openPdfImport,
-                          onImportCsv: _openCsvImport,
-                          onImportCrowdfunding: _openCrowdfundingImport,
-                          onImportAi: _openAiImport,
+                          onImportHub: _openImportHub,
                         ),
                       )
                     : ListView.builder(

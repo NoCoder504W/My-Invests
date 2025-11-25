@@ -14,11 +14,7 @@ class TransactionFilterBar extends StatelessWidget {
   final VoidCallback onSelectAll;
   final VoidCallback onDeleteSelected;
   final VoidCallback onCancelSelection;
-  final VoidCallback onAddTransaction;
-  final VoidCallback onImportPdf;
-  final VoidCallback onImportCsv;
-  final VoidCallback onImportAi;
-  final VoidCallback onImportCrowdfunding;
+  final VoidCallback onImportHub;
 
   const TransactionFilterBar({
     super.key,
@@ -29,11 +25,7 @@ class TransactionFilterBar extends StatelessWidget {
     required this.onSelectAll,
     required this.onDeleteSelected,
     required this.onCancelSelection,
-    required this.onAddTransaction,
-    required this.onImportPdf,
-    required this.onImportCsv,
-    required this.onImportAi,
-    required this.onImportCrowdfunding,
+    required this.onImportHub,
   });
 
   @override
@@ -71,33 +63,21 @@ class TransactionFilterBar extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AppIconButton(
-                    icon: Icons.add_circle,
-                    color: AppColors.primary,
-                    tooltip: 'Ajouter',
-                    onPressed: onAddTransaction,
+                  ElevatedButton.icon(
+                    onPressed: onImportHub,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text("Ajouter / Importer"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.textPrimary,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
                   ),
-                  AppIconButton(
-                    icon: Icons.upload_file,
-                    color: AppColors.primary,
-                    tooltip: 'Import PDF',
-                    onPressed: onImportPdf,
-                  ),
-                  AppIconButton(
-                    icon: Icons.grid_on,
-                    color: AppColors.primary,
-                    tooltip: 'Import CSV (Revolut)',
-                    onPressed: onImportCsv,
-                  ),
-                  AppIconButton(
-                    icon: Icons.table_view,
-                    color: AppColors.primary,
-                    tooltip: 'Import Excel (Crowdfunding)',
-                    onPressed: onImportCrowdfunding,
-                  ),
-                  AppIconButton(
-                    icon: Icons.auto_awesome,
-                    color: AppColors.primary,
+                ],
+              ),
                     tooltip: 'Import IA',
                     onPressed: onImportAi,
                   ),
