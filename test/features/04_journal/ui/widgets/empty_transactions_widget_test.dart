@@ -13,6 +13,10 @@ void main() {
         home: Scaffold(
           body: EmptyTransactionsWidget(
             onAdd: () => addPressed = true,
+            onImportPdf: () {},
+            onImportCsv: () {},
+            onImportCrowdfunding: () {},
+            onImportAi: () {},
           ),
         ),
       ),
@@ -20,14 +24,16 @@ void main() {
 
     // Assert
     expect(find.text('Aucune transaction'), findsOneWidget);
-    expect(find.textContaining('assurez-vous d\'avoir créé un compte'), findsOneWidget);
-    expect(find.textContaining('importer plusieurs transactions'), findsOneWidget);
+    expect(find.text('Commencez par alimenter votre journal.'), findsOneWidget);
     
-    final buttonFinder = find.text('AJOUTER UNE TRANSACTION MANUELLE'); // AppButton uppercases label
-    expect(buttonFinder, findsOneWidget);
-
-    // Test interaction
-    await tester.tap(buttonFinder);
+    // Check for Action Cards
+    expect(find.text('Manuel'), findsOneWidget);
+    expect(find.text('Import PDF'), findsOneWidget);
+    expect(find.text('Import CSV'), findsOneWidget);
+    
+    // Test interaction with Manuel card
+    final manualCardFinder = find.text('Manuel');
+    await tester.tap(manualCardFinder);
     expect(addPressed, isTrue);
   });
 
@@ -45,7 +51,6 @@ void main() {
 
     // Assert
     expect(find.text('Aucune transaction'), findsOneWidget);
-    expect(find.byType(ElevatedButton), findsNothing); // Assuming AppButton uses a button widget internally or we check for text
-    expect(find.text('AJOUTER UNE TRANSACTION MANUELLE'), findsNothing);
+    expect(find.text('Manuel'), findsNothing);
   });
 }
