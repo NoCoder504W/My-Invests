@@ -13,6 +13,7 @@ import 'package:portefeuille/core/ui/widgets/primitives/app_card.dart';
 import 'package:portefeuille/features/09_imports/services/pdf/statement_parser.dart';
 import 'package:portefeuille/features/09_imports/services/pdf/parsers/boursorama_parser.dart';
 import 'package:portefeuille/features/09_imports/services/pdf/parsers/trade_republic_parser.dart';
+import 'package:portefeuille/features/09_imports/services/pdf/parsers/trade_republic_account_statement_parser.dart';
 import 'package:portefeuille/features/09_imports/services/csv/parsers/revolut_parser.dart';
 import 'package:portefeuille/features/09_imports/services/excel/la_premiere_brique_parser.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +40,7 @@ class _FileImportWizardState extends State<FileImportWizard> {
   // Step 3: Validation & Parsing
   bool _isParsing = false;
   String? _parsingError;
+  String? _parserWarning; // New state variable
   List<ParsedTransaction>? _parsedTransactions;
   String? _selectedAccountId;
   
@@ -116,6 +118,7 @@ class _FileImportWizardState extends State<FileImportWizard> {
     setState(() {
       _isParsing = true;
       _parsingError = null;
+      _parserWarning = null;
       _parsedTransactions = null;
       _duplicateTransactions = [];
       _invalidIsinTransactions = [];
@@ -155,11 +158,19 @@ class _FileImportWizardState extends State<FileImportWizard> {
              parser = RevolutParser();
              break;
            case 'trade_republic':
-             parser = TradeRepublicParser();
+             final trSnapshotParser = TradeRepublicParser();
+             final trStatementParser = TradeRepublicAccountStatementParser();
+             
+             if (trStatementParser.canParse(text)) {
+               parser = trStatementParser;
+             } else {
+               parser = trSnapshotParser;
+             }
              break;
          }
          
          if (parser != null) {
+           _parserWarning = parser.warningMessage;
            results = parser.parse(text);
          }
       }
@@ -436,6 +447,35 @@ class _FileImportWizardState extends State<FileImportWizard> {
       );
     }
 
+    if (_parserWarning != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              "Avertissement lors de l'analyse",
+              style: AppTypography.h3.copyWith(color: AppColors.warning),
+            ),
+            const SizedBox(height: 8),
+            Text(_parserWarning!, textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            AppButton(
+              label: "Continuer malgré l'avertissement",
+              onPressed: () {
+                setState(() {
+                  _hasConfirmedWarnings = true;
+                });
+                _saveTransactions();
+              },
+              type: AppButtonType.secondary,
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_parsedTransactions == null || _parsedTransactions!.isEmpty) {
       return const Center(child: Text("Aucune transaction trouvée."));
     }
@@ -460,6 +500,29 @@ class _FileImportWizardState extends State<FileImportWizard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_parserWarning != null) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: AppColors.info.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.info),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: AppColors.info),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _parserWarning!,
+                    style: AppTypography.body.copyWith(color: AppColors.textPrimary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         Text("Validation", style: AppTypography.h2),
         const SizedBox(height: 8),
         Text(
