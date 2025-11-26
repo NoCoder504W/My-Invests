@@ -41,6 +41,11 @@ class _FileImportWizardState extends State<FileImportWizard> {
   String? _parsingError;
   List<ParsedTransaction>? _parsedTransactions;
   String? _selectedAccountId;
+  
+  // Validation Warnings
+  List<ParsedTransaction> _duplicateTransactions = [];
+  List<ParsedTransaction> _invalidIsinTransactions = [];
+  bool _hasConfirmedWarnings = false;
 
   // Step 1: File Selection
   Future<void> _pickFile() async {
@@ -112,6 +117,9 @@ class _FileImportWizardState extends State<FileImportWizard> {
       _isParsing = true;
       _parsingError = null;
       _parsedTransactions = null;
+      _duplicateTransactions = [];
+      _invalidIsinTransactions = [];
+      _hasConfirmedWarnings = false;
     });
 
     try {
@@ -156,8 +164,50 @@ class _FileImportWizardState extends State<FileImportWizard> {
          }
       }
 
+      // --- VALIDATION LOGIC ---
+      final portfolioProvider = context.read<PortfolioProvider>();
+      final activePortfolio = portfolioProvider.activePortfolio;
+      final List<Transaction> existingTransactions = [];
+      if (activePortfolio != null) {
+        for (var inst in activePortfolio.institutions) {
+          for (var acc in inst.accounts) {
+            existingTransactions.addAll(acc.transactions);
+          }
+        }
+      }
+      
+      final isinRegex = RegExp(r'^[A-Z]{2}[A-Z0-9]{9}[0-9]$');
+
+      final List<ParsedTransaction> duplicates = [];
+      final List<ParsedTransaction> invalidIsins = [];
+
+      for (final parsed in results) {
+        // 1. Check Duplicates
+        final isDuplicate = existingTransactions.any((existing) {
+          final isSameDate = parsed.date.year == existing.date.year &&
+              parsed.date.month == existing.date.month &&
+              parsed.date.day == existing.date.day;
+          final isSameQty = (parsed.quantity - (existing.quantity ?? 0.0)).abs() < 0.0001;
+          final isSameAmount = (parsed.amount - existing.amount).abs() < 0.0001;
+          return isSameDate && isSameQty && isSameAmount;
+        });
+
+        if (isDuplicate) {
+          duplicates.add(parsed);
+        }
+
+        // 2. Check ISIN Validity
+        if (parsed.isin != null && parsed.isin!.isNotEmpty) {
+          if (!isinRegex.hasMatch(parsed.isin!)) {
+            invalidIsins.add(parsed);
+          }
+        }
+      }
+
       setState(() {
         _parsedTransactions = results;
+        _duplicateTransactions = duplicates;
+        _invalidIsinTransactions = invalidIsins;
         _isParsing = false;
       });
 
@@ -416,7 +466,64 @@ class _FileImportWizardState extends State<FileImportWizard> {
           "${_parsedTransactions!.length} transactions trouvées.",
           style: AppTypography.body.copyWith(color: AppColors.textSecondary),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
+
+        // --- WARNINGS SECTION ---
+        if (_duplicateTransactions.isNotEmpty || _invalidIsinTransactions.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.warning),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+                    const SizedBox(width: 8),
+                    Text("Attention requise", style: AppTypography.h3.copyWith(color: AppColors.warning)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (_duplicateTransactions.isNotEmpty)
+                  Text(
+                    "• ${_duplicateTransactions.length} doublons potentiels détectés (même date, quantité, montant).",
+                    style: AppTypography.body.copyWith(color: AppColors.textPrimary),
+                  ),
+                if (_invalidIsinTransactions.isNotEmpty)
+                  Text(
+                    "• ${_invalidIsinTransactions.length} codes ISIN semblent invalides.",
+                    style: AppTypography.body.copyWith(color: AppColors.textPrimary),
+                  ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _hasConfirmedWarnings,
+                      activeColor: AppColors.warning,
+                      onChanged: (val) {
+                        setState(() {
+                          _hasConfirmedWarnings = val ?? false;
+                        });
+                      },
+                    ),
+                    Expanded(
+                      child: Text(
+                        "Je confirme vouloir importer ces transactions malgré les avertissements.",
+                        style: AppTypography.caption,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        // --- END WARNINGS SECTION ---
         
         AppDropdown<String>(
           label: "Compte de destination",
@@ -485,7 +592,13 @@ class _FileImportWizardState extends State<FileImportWizard> {
     bool canGoNext = false;
     if (_currentStep == 0 && _selectedFile != null) canGoNext = true;
     if (_currentStep == 1 && _selectedSourceId != null) canGoNext = true;
-    if (_currentStep == 2 && _selectedAccountId != null && _parsedTransactions != null && _parsedTransactions!.isNotEmpty) canGoNext = true;
+    if (_currentStep == 2 && _selectedAccountId != null && _parsedTransactions != null && _parsedTransactions!.isNotEmpty) {
+      if (_duplicateTransactions.isNotEmpty || _invalidIsinTransactions.isNotEmpty) {
+        canGoNext = _hasConfirmedWarnings;
+      } else {
+        canGoNext = true;
+      }
+    }
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
